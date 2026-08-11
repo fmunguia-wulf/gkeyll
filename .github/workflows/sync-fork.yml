@@ -12,11 +12,29 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
-      - name: Fast-forward default branch from upstream
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.SYNC_TOKEN }}
+
+      - name: Rebase onto upstream's default branch
         env:
-          # GITHUB_TOKEN can't merge changes that touch .github/workflows/*
-          # (GitHub blocks this regardless of the permissions block above),
-          # which breaks the sync whenever upstream updates its own CI. A
-          # token with the `workflow` scope is required instead.
           GH_TOKEN: ${{ secrets.SYNC_TOKEN }}
-        run: gh repo sync ${{ github.repository }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          branch="${GITHUB_REF#refs/heads/}"
+          upstream_repo="$(gh repo view "$GITHUB_REPOSITORY" --json parent --jq .parent.nameWithOwner)"
+
+          # This repo's own commits that add/update this workflow file necessarily
+          # live on the default branch (scheduled workflows only fire from what's
+          # there), so this branch is never a strict ancestor of upstream once that
+          # exists. A plain fast-forward merge (e.g. `gh repo sync`) refuses to
+          # merge as soon as upstream moves past that point -- rebasing our
+          # workflow-file commit(s) on top of upstream's latest instead tolerates
+          # that indefinitely, with no manual reconciliation ever needed.
+          git remote add upstream "https://github.com/$upstream_repo.git"
+          git fetch upstream "$branch"
+          git rebase "upstream/$branch"
+          git push --force-with-lease origin "$branch"
