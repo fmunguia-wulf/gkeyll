@@ -25,7 +25,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
           branch="${GITHUB_REF#refs/heads/}"
-          upstream_repo="$(gh repo view "$GITHUB_REPOSITORY" --json parent --jq .parent.nameWithOwner)"
+          upstream_repo="$(gh api "repos/$GITHUB_REPOSITORY" --jq .parent.full_name)"
 
           # This repo's own commits that add/update this workflow file necessarily
           # live on the default branch (scheduled workflows only fire from what's
