@@ -261,7 +261,13 @@ The CI-branch selection is intentional during bring-up. Do not point this job
 at a PR branch or let the requested PR select its own Jenkinsfile. Once this
 pipeline is validated and merged, change this branch specifier to `*/main`.
 
-Save the job. It has one parameter, `PR_NUMBER`.
+Leave **This project is parameterized** unchecked. The trusted Pipeline file
+declares and owns its one parameter, `PR_NUMBER`; do not add it manually in
+the Jenkins UI. On a newly created job, click **Build Now** once. That initial
+build will stop immediately because `PR_NUMBER` is empty, but it registers the
+Pipeline-declared parameter with Jenkins. Thereafter Jenkins displays **Build
+with Parameters**, where you enter the pull-request number. The initial empty
+build is expected and does not submit a Slurm job.
 
 ## 7. Run and inspect a build
 

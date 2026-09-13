@@ -18,8 +18,8 @@ properties([
     ])
 ])
 
-def requireEnv(String name) {
-    def value = env[name]?.trim()
+def requireValue(String name, String value) {
+    value = value?.trim()
     if (!value) {
         error("${name} is not configured. See ci/jenkins/README.stellar-intel.md.")
     }
@@ -52,7 +52,7 @@ def checkoutPullRequest(String credentialsId) {
 }
 
 def submitUnitTests() {
-    def qos = requireEnv('STELLAR_SLURM_QOS')
+    def qos = requireValue('STELLAR_SLURM_QOS', env.STELLAR_SLURM_QOS)
     def timeLimit = (env.STELLAR_SLURM_TIME ?: '00:30:00').trim()
     def account = env.STELLAR_SLURM_ACCOUNT?.trim()
 
@@ -95,8 +95,8 @@ if (!(params.PR_NUMBER ==~ /[1-9][0-9]*/)) {
 }
 
 def nodeLabel = (env.STELLAR_INTEL_NODE_LABEL ?: 'stellar-intel').trim()
-def workspaceRoot = requireEnv('CI_STELLAR_WORKSPACE_ROOT')
-def credentialsId = requireEnv('STELLAR_GITHUB_CREDENTIAL_ID')
+def workspaceRoot = requireValue('CI_STELLAR_WORKSPACE_ROOT', env.CI_STELLAR_WORKSPACE_ROOT)
+def credentialsId = requireValue('STELLAR_GITHUB_CREDENTIAL_ID', env.STELLAR_GITHUB_CREDENTIAL_ID)
 
 node(nodeLabel) {
     // Stellar compute nodes must see this path. Configure the root on a shared
