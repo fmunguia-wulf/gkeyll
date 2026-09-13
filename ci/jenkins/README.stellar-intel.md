@@ -233,7 +233,6 @@ set:
 
 | Name | Required value |
 | --- | --- |
-| `CI_STELLAR_WORKSPACE_ROOT` | `/scratch/gpfs/$USER/gkeyll_ci/workspaces` |
 | `STELLAR_GITHUB_CREDENTIAL_ID` | Jenkins credential ID, e.g. `gkeyll-github-read` |
 | `STELLAR_SLURM_QOS` | Your valid CPU QoS, e.g. `pppl-short` |
 | `STELLAR_SLURM_ACCOUNT` | Project account, if required; otherwise omit it |
@@ -243,7 +242,9 @@ set:
 
 Do not set a broad global `PATH` to an interactive shell configuration. The
 pipeline explicitly initializes the Stellar modules for every build and Slurm
-job.
+job. The Pipeline derives its workspace root as
+`$GKEYLL_CI_ROOT/workspaces`; do not define a separate workspace-root
+variable under Jenkins' Global properties.
 
 ## 6. Create the one parameterized Pipeline job
 

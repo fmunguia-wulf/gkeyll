@@ -95,7 +95,8 @@ if (!(params.PR_NUMBER ==~ /[1-9][0-9]*/)) {
 }
 
 def nodeLabel = (env.STELLAR_INTEL_NODE_LABEL ?: 'stellar-intel').trim()
-def workspaceRoot = requireValue('CI_STELLAR_WORKSPACE_ROOT', env.CI_STELLAR_WORKSPACE_ROOT)
+def gkeyllCiRoot = requireValue('GKEYLL_CI_ROOT', env.GKEYLL_CI_ROOT)
+def workspaceRoot = "${gkeyllCiRoot}/workspaces"
 def credentialsId = requireValue('STELLAR_GITHUB_CREDENTIAL_ID', env.STELLAR_GITHUB_CREDENTIAL_ID)
 
 node(nodeLabel) {
