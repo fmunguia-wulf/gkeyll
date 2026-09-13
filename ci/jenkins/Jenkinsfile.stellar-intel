@@ -114,7 +114,6 @@ node(nodeLabel) {
                 withEnv(["PREFIX=${env.WORKSPACE}/gkylsoft"]) {
                     sh '''#!/bin/bash -l
                         set -euo pipefail
-                        module purge
                         ./machines/mkdeps.stellar-intel.sh
                     '''
                 }
@@ -123,13 +122,20 @@ node(nodeLabel) {
                 withEnv(["PREFIX=${env.WORKSPACE}/gkylsoft"]) {
                     sh '''#!/bin/bash -l
                         set -euo pipefail
-                        module purge
                         ./machines/configure.stellar-intel.sh
                     '''
                 }
             }
             stage('Build unit tests') {
-                sh "make -j${buildJobs()} unit"
+                def jobs = buildJobs()
+                sh """#!/bin/bash -l
+                    set -euo pipefail
+                    # Each Jenkins sh step is a new process, so source the
+                    # same environment used by the Stellar machine scripts.
+                    . machines/module_load.stellar-intel.sh
+                    module list
+                    make -j${jobs} unit
+                """
             }
             stage('Run unit tests (SLURM)') {
                 submitUnitTests()

@@ -1,6 +1,4 @@
-module load intel/2022.2.0
-module load openmpi/intel-2022.0/4.1.8
-module load openblas/0.3.x
+. "$(dirname "$0")/module_load.stellar-intel.sh"
 
 : "${PREFIX:=$HOME/gkylsoft}"
 : "${ARCH_FLAGS:=-march=skylake-avx512}" # The Intel compute nodes are Cascade Lake.

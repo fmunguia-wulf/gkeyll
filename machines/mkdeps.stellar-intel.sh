@@ -1,7 +1,4 @@
-module load intel/2022.2.0
-module load openmpi/intel-2022.0/4.1.8
-module load openblas/0.3.x
-module load anaconda3/2026.7
+. "$(dirname "$0")/module_load.stellar-intel.sh"
 
 : "${PREFIX:=$HOME/gkylsoft}"
 

@@ -21,6 +21,7 @@ implementation files to it:
 ci/jenkins/Jenkinsfile.stellar-intel
 ci/jenkins/slurm-unit-tests.stellar-intel.sh
 ci/jenkins/README.stellar-intel.md
+machines/module_load.stellar-intel.sh
 machines/configure.stellar-intel.sh
 ```
 
@@ -101,10 +102,9 @@ From this `gkeyll/` checkout, validate the same environment the job will use:
 `$GKEYLL_CI_ROOT/gkylsoft`, beside the disposable source checkout.
 
 ```sh
-module purge
 PREFIX="$PWD/../gkylsoft" ./machines/mkdeps.stellar-intel.sh
-module purge
 PREFIX="$PWD/../gkylsoft" ./machines/configure.stellar-intel.sh
+. ./machines/module_load.stellar-intel.sh
 make -j32 unit
 sbatch --wait --qos pppl-short --nodes 1 --ntasks 1 --cpus-per-task 4 \
   --time 00:30:00 --chdir "$PWD" \
@@ -116,6 +116,12 @@ For PPPL/CIMES, add `--account <your-account>` to the `sbatch` command. This
 must complete successfully before introducing Jenkins. `CI_WORKSPACE` is the
 shared checkout path that the batch payload uses after it starts on a compute
 node; Jenkins supplies the same variable when it submits this job.
+
+The machine configuration scripts run in child shells, so their environment
+does not remain active for the later `make` command. Source
+`machines/module_load.stellar-intel.sh` before `make`; it is also sourced by the
+machine scripts, Jenkins build stage, and Slurm payload. This keeps all
+Stellar Intel module versions in one file.
 
 ## 3. Install and run Jenkins privately
 
@@ -233,6 +239,7 @@ set:
 
 | Name | Required value |
 | --- | --- |
+| `GKEYLL_CI_ROOT` | Output of `printf '/scratch/gpfs/%s/gkeyll_ci' "$USER"`; paste the expanded result, not a literal `$USER` |
 | `STELLAR_GITHUB_CREDENTIAL_ID` | Jenkins credential ID, e.g. `gkeyll-github-read` |
 | `STELLAR_SLURM_QOS` | Your valid CPU QoS, e.g. `pppl-short` |
 | `STELLAR_SLURM_ACCOUNT` | Project account, if required; otherwise omit it |
@@ -242,9 +249,10 @@ set:
 
 Do not set a broad global `PATH` to an interactive shell configuration. The
 pipeline explicitly initializes the Stellar modules for every build and Slurm
-job. The Pipeline derives its workspace root as
-`$GKEYLL_CI_ROOT/workspaces`; do not define a separate workspace-root
-variable under Jenkins' Global properties.
+job. `GKEYLL_CI_ROOT` is the Pipeline's only root setting; it must exactly
+match the value used to set `JENKINS_HOME` when the controller was launched.
+The Pipeline derives its workspace root as `$GKEYLL_CI_ROOT/workspaces`; do
+not define a separate workspace-root variable.
 
 ## 6. Create the one parameterized Pipeline job
 

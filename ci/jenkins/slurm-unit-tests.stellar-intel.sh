@@ -11,11 +11,8 @@ set -euo pipefail
 cd "$CI_WORKSPACE"
 
 # A batch shell does not inherit a user's interactive module selection in a
-# reliable or reproducible way. Keep these in sync with
-# machines/configure.stellar-intel.sh.
-module purge
-module load intel/2022.2.0
-module load openmpi/intel-2022.0/4.1.8
-module load openblas/0.3.x
+# reliable or reproducible way. Source the same environment used to configure
+# and build this checkout.
+. machines/module_load.stellar-intel.sh
 
 make unit-run
