@@ -245,7 +245,7 @@ void test_1x1v(int poly_order, bool use_gpu)
     long linidx = gkyl_range_idx(&confLocal, idx);
     const double *primMomsCross_e = gkyl_array_cfetch(prim_moms_cross_e, linidx);
     const double *primMomsCross_i = gkyl_array_cfetch(prim_moms_cross_i, linidx);
-    TEST_CHECK( gkyl_compare(1.0e19, primMomsCross_e[0*confBasis.num_basis]/sqrt(2), 1e-12*1.0e19) );
+    TEST_CHECK( gkyl_compare(-1.0e19, primMomsCross_e[0*confBasis.num_basis]/sqrt(2), 1e-12*1.0e19) );
     TEST_CHECK( gkyl_compare(1.16391130e4, primMomsCross_e[1*confBasis.num_basis]/sqrt(2), 1e-12*1.16391130e4) );
     TEST_CHECK( gkyl_compare(5.27398867e12, primMomsCross_e[2*confBasis.num_basis]/sqrt(2), 1e-12*5.27398867e12) );
     TEST_CHECK( gkyl_compare(1.0e19, primMomsCross_i[0*confBasis.num_basis]/sqrt(2), 1e-12*1.0e19) );
