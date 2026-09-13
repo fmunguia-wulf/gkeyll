@@ -81,7 +81,7 @@ def submitUnitTests() {
                 "--chdir=${CI_WORKSPACE}"
                 "--export=ALL,CI_WORKSPACE=${CI_WORKSPACE}"
             )
-            if [[ -n "${CI_STELLAR_ACCOUNT}" ]]; then
+            if [[ -n "${CI_STELLAR_ACCOUNT:-}" ]]; then
                 sbatch_args+=("--account=${CI_STELLAR_ACCOUNT}")
             fi
 
