@@ -132,7 +132,7 @@ array_new(enum gkyl_elem_type type, size_t ncomp, size_t size, bool is_alloc_ext
 struct gkyl_array*
 gkyl_array_new(enum gkyl_elem_type type, size_t ncomp, size_t size)
 {
-  return array_new(type, ncomp, size, false, 0);
+  return array_new(type, ncomp, size, false, 0, true);
 }
 
 struct gkyl_array*
