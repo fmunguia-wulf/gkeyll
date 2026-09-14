@@ -8,20 +8,20 @@ in through Duo nor accepts GitHub webhooks.
 The job runs `ci/jenkins/Jenkinsfile.stellar-intel` from a reviewed, trusted
 CI branch during bring-up. It fetches the requested `refs/pull/<number>/head`
 commit, builds Gkeyll and its unit-test executables on the login node, then
-submits `make unit-run` as a one-core CPU Slurm job. Regression, MPI, and GPU
+submits `make unit-run` as a four-CPU Slurm job. Regression, MPI, and GPU
 testing are deliberately not part of this first level.
 
 ## 0. Publish these CI files first
 
 Create the dedicated branch `agent_tools-jenkins-stellar_intel`, review, and
-push the four
-implementation files to it:
+push the Stellar CI implementation files to it:
 
 ```text
 ci/jenkins/Jenkinsfile.stellar-intel
 ci/jenkins/slurm-unit-tests.stellar-intel.sh
 ci/jenkins/README.stellar-intel.md
 machines/module_load.stellar-intel.sh
+machines/mkdeps.stellar-intel.sh
 machines/configure.stellar-intel.sh
 ```
 
@@ -283,18 +283,47 @@ build is expected and does not submit a Slurm job.
 After reaching Jenkins through the SSH tunnel, select **Build with
 Parameters**, enter a pull-request number (for example `1104`), and start the
 build. Jenkins records the exact commit in `ci-pr-commit.txt`, builds unit
-tests on the login node, waits for Slurm, and archives the Slurm output as
-`slurm-<jobid>.out`.
+tests on the login node, and submits the unit-test payload to Slurm.
 
-If a build queues too long or must be stopped, cancel it in Jenkins and run
-`squeue --me`/`scancel <jobid>` if necessary. Automatic Slurm cancellation on
-Jenkins abort is a later hardening stage, not part of Level 1.
+While the Slurm job is pending or running, the Jenkins console prints its
+state from `squeue`. Once it leaves the queue, Jenkins obtains its final state
+and exit code from `sacct`; only `COMPLETED` with exit code `0:0` is a passing
+build. The archived artifacts include:
+
+```text
+ci-pr-commit.txt        exact tested PR commit
+slurm-job-id.txt        submitted Slurm job ID
+slurm-job-status.txt    terminal Slurm state and exit code
+slurm-<jobid>.out       batch-job stdout/stderr
+```
+
+To stop a queued or running build, use **Abort** in Jenkins. The Pipeline
+cancels its recorded Slurm job, waits until it disappears from `squeue`, then
+archives the available artifacts and marks the build aborted. Do not manually
+remove its workspace while the job appears in `squeue`.
+
+If the Jenkins controller itself crashes, its shell trap cannot run. Find the
+job ID in the build workspace or Jenkins console, then check and, if needed,
+cancel it manually:
+
+```sh
+squeue --me
+scancel <jobid>
+```
+
+After Slurm has stopped, it is safe to remove the abandoned workspace. Restart
+Jenkins in the `gkeyll-jenkins` tmux session as described above; its job
+configuration and retained build records live under `$JENKINS_HOME`.
+
+The Pipeline archives artifacts before deleting every completed, failed, or
+aborted build workspace. Jenkins retains the 20 most recent build records and
+their artifacts; older records are discarded automatically.
 
 ## What this does not yet do
 
 - automatic GitHub polling or webhooks;
 - MPI regression, MOAT baseline, or GPU tests;
-- Slurm job-ID polling, state classification, and automatic cancellation.
+- automatic recovery of a Slurm job after a Jenkins-controller crash.
 
 Those are future stages, after this manually-triggered CPU unit-test path is
 reliable.

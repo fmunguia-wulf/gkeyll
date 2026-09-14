@@ -7,6 +7,10 @@
 // move to main without changing this file.
 
 properties([
+    buildDiscarder(logRotator(
+        numToKeepStr: '20',
+        artifactNumToKeepStr: '20'
+    )),
     disableConcurrentBuilds(),
     parameters([
         string(
@@ -65,8 +69,37 @@ def submitUnitTests() {
         sh '''#!/bin/bash -l
             set -euo pipefail
 
+            job_id=''
+
+            write_status() {
+                printf 'job_id=%s\nstate=%s\nexit_code=%s\n' \
+                    "$job_id" "$1" "${2:-}" > slurm-job-status.txt
+            }
+
+            cancel_submitted_job() {
+                trap - INT TERM
+                if [[ -z "$job_id" ]]; then
+                    exit 143
+                fi
+
+                echo "Jenkins interrupted; cancelling Slurm job $job_id"
+                scancel "$job_id" || true
+                while :; do
+                    state="$(squeue --noheader --jobs="$job_id" --format='%T' | head -n 1 || true)"
+                    if [[ -z "$state" ]]; then
+                        break
+                    fi
+                    echo "Waiting for Slurm job $job_id to stop (state: $state)"
+                    sleep 5
+                done
+                write_status 'CANCELLED_BY_JENKINS'
+                exit 143
+            }
+
+            trap cancel_submitted_job INT TERM
+
             sbatch_args=(
-                --wait
+                --parsable
                 "--job-name=gkyl-ci-${BUILD_NUMBER}"
                 --nodes=1
                 # make unit-run is launched once. Four CPUs for its one task
@@ -85,7 +118,54 @@ def submitUnitTests() {
                 sbatch_args+=("--account=${CI_STELLAR_ACCOUNT}")
             fi
 
-            sbatch "${sbatch_args[@]}" ci/jenkins/slurm-unit-tests.stellar-intel.sh
+            submission="$(sbatch "${sbatch_args[@]}" ci/jenkins/slurm-unit-tests.stellar-intel.sh)"
+            job_id="${submission%%;*}"
+            if [[ ! "$job_id" =~ ^[0-9]+(_[0-9]+)?$ ]]; then
+                echo "ERROR: Could not parse Slurm job ID from: $submission" >&2
+                exit 1
+            fi
+            printf '%s\n' "$job_id" > slurm-job-id.txt
+            echo "Submitted Slurm job $job_id"
+
+            previous_state=''
+            while :; do
+                state="$(squeue --noheader --jobs="$job_id" --format='%T' | head -n 1 || true)"
+                if [[ -z "$state" ]]; then
+                    break
+                fi
+                if [[ "$state" != "$previous_state" ]]; then
+                    echo "Slurm job $job_id state: $state"
+                    previous_state="$state"
+                fi
+                sleep 5
+            done
+
+            # Slurm accounting can lag briefly after a job disappears from
+            # squeue. Query the allocation record only (-X) until it appears.
+            record=''
+            for attempt in {1..6}; do
+                record="$(sacct --noheader --parsable2 --allocations --jobs="$job_id" \
+                    --format=State,ExitCode | head -n 1 || true)"
+                if [[ -n "$record" ]]; then
+                    break
+                fi
+                echo "Waiting for Slurm accounting record for job $job_id ($attempt/6)"
+                sleep 5
+            done
+            if [[ -z "$record" ]]; then
+                write_status 'UNKNOWN'
+                echo "ERROR: No Slurm accounting record found for job $job_id" >&2
+                exit 1
+            fi
+
+            final_state="${record%%|*}"
+            exit_code="${record#*|}"
+            write_status "$final_state" "$exit_code"
+            echo "Slurm job $job_id finished: state=$final_state exit_code=$exit_code"
+            if [[ "$final_state" == COMPLETED* && "$exit_code" == '0:0' ]]; then
+                exit 0
+            fi
+            exit 1
         '''
     }
 }
@@ -142,7 +222,8 @@ node(nodeLabel) {
             }
         } finally {
             archiveArtifacts allowEmptyArchive: true,
-                artifacts: 'ci-pr-commit.txt,slurm-*.out,build/**/*.log'
+                artifacts: 'ci-pr-commit.txt,slurm-*.out,slurm-job-id.txt,slurm-job-status.txt,build/**/*.log'
+            deleteDir()
         }
     }
 }
