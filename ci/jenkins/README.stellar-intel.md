@@ -2,8 +2,9 @@
 
 This is the Level-1, CPU-only Gkeyll CI setup for Princeton's Stellar Intel
 cluster. A person authenticates to Stellar with SSH/Duo, then manually starts
-a Jenkins build for a GitHub pull-request number. Jenkins itself neither logs
-in through Duo nor accepts GitHub webhooks.
+a Jenkins build for either a GitHub pull-request number or an explicitly
+selected candidate branch/commit. Jenkins itself neither logs in through Duo
+nor accepts GitHub webhooks.
 
 The job runs `ci/jenkins/Jenkinsfile.stellar-intel` from a reviewed, trusted
 CI branch during bring-up. It fetches the requested `refs/pull/<number>/head`
@@ -182,7 +183,7 @@ concurrently and limits each case to 900 seconds:
 cd "$GKEYLL_CI_ROOT/gkeyll"
 sbatch --wait --qos pppl-short --nodes 1 --ntasks 1 --cpus-per-task 8 \
   --time 04:00:00 --chdir "$PWD" \
-  --export=ALL,CI_WORKSPACE="$PWD",CI_BASELINE_DIR="$GKEYLL_CI_ROOT/gkeyll-baseline",CI_BASELINE_PREFIX="$GKEYLL_CI_ROOT/gkeyll-baseline/gkylsoft",CI_PR_PREFIX="$GKEYLL_CI_ROOT/gkeyll/gkylsoft",CI_REGRESSION_JOBS=4,CI_REGRESSION_TEST_TIMEOUT=900 \
+  --export=ALL,CI_WORKSPACE="$PWD",CI_BASELINE_DIR="$GKEYLL_CI_ROOT/gkeyll-baseline",CI_BASELINE_PREFIX="$GKEYLL_CI_ROOT/gkeyll-baseline/gkylsoft",CI_CANDIDATE_PREFIX="$GKEYLL_CI_ROOT/gkeyll/gkylsoft",CI_REGRESSION_JOBS=4,CI_REGRESSION_TEST_TIMEOUT=900 \
   ci/jenkins/slurm-regression-tests.stellar-intel.sh
 ```
 
@@ -345,23 +346,36 @@ at a PR branch or let the requested PR select its own Jenkinsfile. Once this
 pipeline is validated and merged, change this branch specifier to `*/main`.
 
 Leave **This project is parameterized** unchecked. The trusted Pipeline file
-declares and owns its one parameter, `PR_NUMBER`; do not add it manually in
-the Jenkins UI. On a newly created job, click **Build Now** once. That initial
-build will stop immediately because `PR_NUMBER` is empty, but it registers the
-Pipeline-declared parameter with Jenkins. Thereafter Jenkins displays **Build
-with Parameters**, where you enter the pull-request number. The initial empty
-build is expected and does not submit a Slurm job.
+declares and owns its three parameters; do not add them manually in the
+Jenkins UI. On a newly created job, click **Build Now** once. That initial
+build stops immediately because neither candidate selector is set, but it
+registers the Pipeline-declared parameters with Jenkins. Thereafter Jenkins
+displays **Build with Parameters**. The initial empty build is expected and
+does not submit a Slurm job.
+
+The selectors are:
+
+| Parameter | Use |
+| --- | --- |
+| `CANDIDATE_PR` | A positive GitHub PR number. Leave both reference fields empty. Jenkins obtains the PR's current head commit and asks GitHub which base branch that PR targets; that base branch is the baseline. |
+| `CANDIDATE_REF` | A candidate branch name or a full 40-character commit SHA. Set this instead of `CANDIDATE_PR`. |
+| `BASELINE_REF` | A baseline branch name or full 40-character commit SHA. It is required with `CANDIDATE_REF`, and must be empty with `CANDIDATE_PR`. |
+
+Tags are deliberately not accepted. This keeps a run's input unambiguous and
+avoids testing an unexpectedly retargeted tag.
 
 ## 7. Run and inspect a build
 
 After reaching Jenkins through the SSH tunnel, select **Build with
-Parameters**, enter a pull-request number (for example `1104`), and start the
-build. Jenkins records the exact commit in `ci-pr-commit.txt`, immediately
-posts the GitHub commit status
+Parameters** and choose one selector form. For a PR run, set
+`CANDIDATE_PR` (for example `1104`) and leave `CANDIDATE_REF` and
+`BASELINE_REF` empty. For a branch or exact-commit run, set both
+`CANDIDATE_REF` and `BASELINE_REF`. Jenkins records the requested selectors
+and exact checked-out commits, immediately posts the GitHub commit status
 `continuous-integration/jenkins/stellar-intel` as pending, builds unit tests
 and both installs on the login node, then submits separate unit and C
-regression payloads to Slurm. The C job builds accepted outputs from the fixed
-`agent_tools-jenkins-stellar_intel-baseline` baseline and compares all
+regression payloads to Slurm. The C job builds accepted outputs from the
+selected baseline and compares all
 non-ignored C regressions from the candidate against them. Both C suites are
 compiled on the login node before
 the regression allocation is submitted; the allocation executes only the
@@ -373,28 +387,42 @@ reviewed change in numerical output must be added there deliberately; an
 unlisted regression difference fails the build and is reported in the Jenkins
 console and result database.
 
+The final GitHub-status description contains the candidate C
+`passed/acknowledged/unacknowledged` counts, candidate/baseline C compilation
+seconds, and unit/regression Slurm execution seconds. Missing metrics from an
+early failure are shown as `not-recorded`. The full key/value record is always
+printed to the console and archived as `ci-timing-summary.txt`.
+
 At the end of the Pipeline, the same status becomes `success` for a passing
 build, `failure` for a build/test/Slurm failure, or `error` for an aborted
-build or controller-side cleanup problem. It is an informational PR check;
-it is not configured as a required status for merging. The Stellar Jenkins
-URL is private behind SSH/Duo, so GitHub does not receive a build URL.
+build or controller-side cleanup problem. The status is attached to the exact
+candidate commit. A PR run therefore appears on its PR; a direct-ref run
+appears on that commit's GitHub commit page/history and will also appear in a
+PR only if that exact commit later becomes its head. The Stellar Jenkins URL
+is private behind SSH/Duo, so GitHub does not receive a build URL.
 
 Failure to publish either the pending or final GitHub status fails the Jenkins
 build. This prevents a green Jenkins result from silently lacking its GitHub
 report.
 
 While the Slurm job is pending or running, the Jenkins console prints its
-state from `squeue`. Once it leaves the queue, Jenkins obtains its final state
-and exit code from `sacct`; only `COMPLETED` with exit code `0:0` is a passing
-build. The archived artifacts include:
+state from `squeue`. Once it leaves the queue, Jenkins obtains its final state,
+exit code, and `ElapsedRaw` execution time from `sacct`; only `COMPLETED` with
+exit code `0:0` is a passing build. Queue time is not included in that elapsed
+time. The archived artifacts include:
 
 ```text
-ci-pr-commit.txt                    exact tested PR commit
+ci-selection.txt                    requested candidate and baseline selectors
+ci-candidate-commit.txt             exact tested candidate commit
 ci-baseline-commit.txt              exact Stellar Intel baseline commit
+candidate-c-compile-seconds.txt     candidate C-regression compile duration
+baseline-c-compile-seconds.txt      baseline C-regression compile duration
+ci-regression-summary.txt           candidate C pass/acknowledged/failure counts
+ci-timing-summary.txt               aggregate compile and Slurm execution timings
 slurm-unit-job-id.txt               submitted unit-job ID
-slurm-unit-job-status.txt           unit-job terminal state and exit code
+slurm-unit-job-status.txt           unit-job terminal state, exit code, elapsed seconds
 slurm-regression-job-id.txt         submitted regression-job ID
-slurm-regression-job-status.txt     regression-job terminal state and exit code
+slurm-regression-job-status.txt     regression terminal state, exit code, elapsed seconds
 slurm-unit-<jobid>.out              unit-job stdout/stderr
 slurm-regression-<jobid>.out        regression-job stdout/stderr
 `gkylsoft/gkeyll-results/**/regressiondb`  candidate C-regression results
@@ -403,8 +431,8 @@ slurm-regression-<jobid>.out        regression-job stdout/stderr
 To stop a queued or running build, use **Abort** in Jenkins. The submission
 shell cancels its recorded Slurm job and waits until it disappears from
 `squeue`. If Jenkins terminates that shell before its trap completes, the
-Pipeline's finalizer performs the same cancellation and writes
-`slurm-job-status.txt` before artifact archival. Do not manually remove the
+Pipeline's finalizer performs the same cancellation and writes the relevant
+`slurm-*-job-status.txt` before artifact archival. Do not manually remove the
 workspace while the job appears in `squeue`.
 
 If the Jenkins controller itself crashes, its shell trap cannot run. Find the

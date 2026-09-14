@@ -14,10 +14,22 @@ properties([
     disableConcurrentBuilds(),
     parameters([
         string(
-            name: 'PR_NUMBER',
+            name: 'CANDIDATE_PR',
             defaultValue: '',
             trim: true,
-            description: 'Required GitHub pull-request number to build and test.'
+            description: 'GitHub pull-request number. Set exactly one of CANDIDATE_PR or CANDIDATE_REF.'
+        ),
+        string(
+            name: 'CANDIDATE_REF',
+            defaultValue: '',
+            trim: true,
+            description: 'Candidate branch name or full 40-character commit SHA. Requires BASELINE_REF.'
+        ),
+        string(
+            name: 'BASELINE_REF',
+            defaultValue: '',
+            trim: true,
+            description: 'Baseline branch name or full 40-character commit SHA for CANDIDATE_REF runs.'
         )
     ])
 ])
@@ -56,10 +68,28 @@ def regressionTestTimeout() {
     )
 }
 
-def checkoutPullRequest(String credentialsId) {
+def isCommitSha(String value) {
+    return value ==~ /[0-9a-fA-F]{40}/
+}
+
+def validateBranchName(String name, String value) {
+    if (!(value ==~ /[A-Za-z0-9][A-Za-z0-9._/-]*/)
+        || value.contains('..') || value.contains('//')
+        || value.endsWith('/') || value.endsWith('.') || value.endsWith('.lock')) {
+        error("${name} must be a safe branch name or a full 40-character commit SHA, got '${value}'.")
+    }
+    return value
+}
+
+def validateRefSelector(String name, String value) {
+    value = requireValue(name, value)
+    return isCommitSha(value) ? value.toLowerCase() : validateBranchName(name, value)
+}
+
+def checkoutPullRequest(String credentialsId, String prNumber) {
     checkout([
         $class: 'GitSCM',
-        branches: [[name: "refs/remotes/origin/pr/${params.PR_NUMBER}"]],
+        branches: [[name: "refs/remotes/origin/candidate"]],
         doGenerateSubmoduleConfigurations: false,
         extensions: [
             [$class: 'CleanBeforeCheckout'],
@@ -67,16 +97,19 @@ def checkoutPullRequest(String credentialsId) {
         ],
         userRemoteConfigs: [[
             credentialsId: credentialsId,
-            refspec: "+refs/pull/${params.PR_NUMBER}/head:refs/remotes/origin/pr/${params.PR_NUMBER}",
+            refspec: "+refs/pull/${prNumber}/head:refs/remotes/origin/candidate",
             url: 'https://github.com/gkeyllorg/gkeyll.git'
         ]]
     ])
 }
 
-def checkoutRegressionBaseline(String credentialsId) {
+def checkoutRef(String credentialsId, String selector, String localRef) {
+    def refspec = isCommitSha(selector)
+        ? "+${selector}:refs/remotes/origin/${localRef}"
+        : "+refs/heads/${selector}:refs/remotes/origin/${localRef}"
     checkout([
         $class: 'GitSCM',
-        branches: [[name: 'refs/remotes/origin/baseline']],
+        branches: [[name: "refs/remotes/origin/${localRef}"]],
         doGenerateSubmoduleConfigurations: false,
         extensions: [
             [$class: 'CleanBeforeCheckout'],
@@ -84,10 +117,34 @@ def checkoutRegressionBaseline(String credentialsId) {
         ],
         userRemoteConfigs: [[
             credentialsId: credentialsId,
-            refspec: '+refs/heads/agent_tools-jenkins-stellar_intel-baseline:refs/remotes/origin/baseline',
+            refspec: refspec,
             url: 'https://github.com/gkeyllorg/gkeyll.git'
         ]]
     ])
+}
+
+def resolvePullRequestBase(String credentialsId, String prNumber) {
+    def response = ''
+    withCredentials([usernamePassword(
+        credentialsId: credentialsId,
+        usernameVariable: 'GITHUB_STATUS_USERNAME',
+        passwordVariable: 'GITHUB_STATUS_TOKEN'
+    )]) {
+        withEnv(["GITHUB_PR_NUMBER=${prNumber}"]) {
+            response = sh(returnStdout: true, script: '''#!/bin/bash
+                set -euo pipefail
+                curl --fail --silent --show-error \
+                    --retry 2 --connect-timeout 15 --max-time 45 \
+                    --header 'Accept: application/vnd.github+json' \
+                    --header 'X-GitHub-Api-Version: 2022-11-28' \
+                    --header "Authorization: Bearer ${GITHUB_STATUS_TOKEN}" \
+                    "https://api.github.com/repos/gkeyllorg/gkeyll/pulls/${GITHUB_PR_NUMBER}"
+            ''').trim()
+        }
+    }
+    def pull = new groovy.json.JsonSlurperClassic().parseText(response)
+    def baseRef = pull?.base?.ref?.toString()
+    return validateBranchName('GitHub PR base branch', baseRef ?: '')
 }
 
 def publishGitHubCommitStatus(String credentialsId, String commit, String state, String description) {
@@ -161,8 +218,8 @@ def submitSlurmJob(String kind, String payload, String cpus, String timeLimit, L
             job_id=''
 
             write_status() {
-                printf 'job_id=%s\nstate=%s\nexit_code=%s\n' \
-                    "$job_id" "$1" "${2:-}" > "$CI_SLURM_JOB_STATUS_FILE"
+                printf 'job_id=%s\nstate=%s\nexit_code=%s\nelapsed_seconds=%s\n' \
+                    "$job_id" "$1" "${2:-}" "${3:-}" > "$CI_SLURM_JOB_STATUS_FILE"
             }
 
             cancel_submitted_job() {
@@ -230,7 +287,7 @@ def submitSlurmJob(String kind, String payload, String cpus, String timeLimit, L
             record=''
             for attempt in {1..6}; do
                 record="$(sacct --noheader --parsable2 --allocations --jobs="$job_id" \
-                    --format=State,ExitCode | head -n 1 || true)"
+                    --format=State,ExitCode,ElapsedRaw | head -n 1 || true)"
                 if [[ -n "$record" ]]; then
                     break
                 fi
@@ -243,10 +300,9 @@ def submitSlurmJob(String kind, String payload, String cpus, String timeLimit, L
                 exit 1
             fi
 
-            final_state="${record%%|*}"
-            exit_code="${record#*|}"
-            write_status "$final_state" "$exit_code"
-            echo "${CI_SLURM_JOB_KIND} Slurm job $job_id finished: state=$final_state exit_code=$exit_code"
+            IFS='|' read -r final_state exit_code elapsed_seconds <<< "$record"
+            write_status "$final_state" "$exit_code" "$elapsed_seconds"
+            echo "${CI_SLURM_JOB_KIND} Slurm job $job_id finished: state=$final_state exit_code=$exit_code elapsed_seconds=$elapsed_seconds"
             if [[ "$final_state" == COMPLETED* && "$exit_code" == '0:0' ]]; then
                 exit 0
             fi
@@ -275,15 +331,16 @@ def submitRegressionTests() {
         [
             "CI_BASELINE_DIR=${env.WORKSPACE}/_baseline",
             "CI_BASELINE_PREFIX=${env.WORKSPACE}/_baseline/gkylsoft",
-            "CI_PR_PREFIX=${env.WORKSPACE}/gkylsoft",
+            "CI_CANDIDATE_PREFIX=${env.WORKSPACE}/gkylsoft",
             "CI_REGRESSION_JOBS=${jobs}",
             "CI_REGRESSION_TEST_TIMEOUT=${timeout}"
         ]
     )
 }
 
-def configureAndCompileCRegressions(String driver, String sourceDir, String prefix, String moduleFile) {
+def configureAndCompileCRegressions(String label, String driver, String sourceDir, String prefix, String moduleFile) {
     withEnv([
+        "CI_REGRESSION_LABEL=${label}",
         "CI_REGRESSION_DRIVER=${driver}",
         "CI_REGRESSION_SOURCE_DIR=${sourceDir}",
         "CI_REGRESSION_PREFIX=${prefix}",
@@ -295,7 +352,11 @@ def configureAndCompileCRegressions(String driver, String sourceDir, String pref
             "$CI_REGRESSION_DRIVER" runregression configure \
                 --source-dir "$CI_REGRESSION_SOURCE_DIR" \
                 --prefix "$CI_REGRESSION_PREFIX"
+            started="$(date +%s)"
             "$CI_REGRESSION_DRIVER" runregression run -c compile
+            elapsed="$(( $(date +%s) - started ))"
+            printf '%s\n' "$elapsed" > "$CI_REGRESSION_LABEL-c-compile-seconds.txt"
+            echo "$CI_REGRESSION_LABEL C-regression compile time: $elapsed seconds"
         '''
     }
 }
@@ -334,15 +395,100 @@ def finalizeUnfinishedSlurmJob() {
     '''
 }
 
-if (!(params.PR_NUMBER ==~ /[1-9][0-9]*/)) {
-    error("PR_NUMBER must be a positive integer, got '${params.PR_NUMBER}'.")
+def writeCiTimingSummary() {
+    sh '''#!/bin/bash -l
+        set -euo pipefail
+
+        metric() {
+            local file="$1"
+            local key="$2"
+            if [[ -f "$file" ]]; then
+                local value
+                if [[ "$key" == '__file__' ]]; then
+                    value="$(tr -d '[:space:]' < "$file")"
+                else
+                    value="$(sed -n -E "s/^${key}=//p" "$file" | tail -n 1)"
+                fi
+                if [[ -n "$value" ]]; then
+                    printf '%s' "$value"
+                    return
+                fi
+            fi
+            printf 'not-recorded'
+        }
+
+        candidate_compile="$(metric candidate-c-compile-seconds.txt __file__)"
+        baseline_compile="$(metric baseline-c-compile-seconds.txt __file__)"
+        unit_elapsed="$(metric slurm-unit-job-status.txt elapsed_seconds)"
+        regression_elapsed="$(metric slurm-regression-job-status.txt elapsed_seconds)"
+        c_passed="$(metric ci-regression-summary.txt c_regression_passed)"
+        c_acknowledged="$(metric ci-regression-summary.txt c_regression_acknowledged)"
+        c_unacknowledged="$(metric ci-regression-summary.txt c_regression_unacknowledged)"
+
+        compile_total='not-recorded'
+        if [[ "$candidate_compile" =~ ^[0-9]+$ && "$baseline_compile" =~ ^[0-9]+$ ]]; then
+            compile_total="$((candidate_compile + baseline_compile))"
+        fi
+
+        {
+            printf 'candidate_c_compile_seconds=%s\n' "$candidate_compile"
+            printf 'baseline_c_compile_seconds=%s\n' "$baseline_compile"
+            printf 'login_c_compile_seconds=%s\n' "$compile_total"
+            printf 'unit_slurm_elapsed_seconds=%s\n' "$unit_elapsed"
+            printf 'regression_slurm_elapsed_seconds=%s\n' "$regression_elapsed"
+            printf 'c_regression_passed=%s\n' "$c_passed"
+            printf 'c_regression_acknowledged=%s\n' "$c_acknowledged"
+            printf 'c_regression_unacknowledged=%s\n' "$c_unacknowledged"
+        } > ci-timing-summary.txt
+        cat ci-timing-summary.txt
+    '''
+}
+
+def timingMetric(String key) {
+    if (!fileExists('ci-timing-summary.txt')) {
+        return 'n/a'
+    }
+    def match = readFile('ci-timing-summary.txt') =~ "(?m)^${key}=([^\\r\\n]+)$"
+    return match.find() ? match.group(1) : 'n/a'
+}
+
+def timingStatusDescription(String status) {
+    def passed = timingMetric('c_regression_passed')
+    def acknowledged = timingMetric('c_regression_acknowledged')
+    def unacknowledged = timingMetric('c_regression_unacknowledged')
+    def candidateCompile = timingMetric('candidate_c_compile_seconds')
+    def baselineCompile = timingMetric('baseline_c_compile_seconds')
+    def unitElapsed = timingMetric('unit_slurm_elapsed_seconds')
+    def regressionElapsed = timingMetric('regression_slurm_elapsed_seconds')
+    def outcome = status == 'success' ? 'passed' : (status == 'error' ? 'errored' : 'failed')
+    def description = "Stellar CI ${outcome}: C ${passed}/${acknowledged}/${unacknowledged}; comp C/B ${candidateCompile}/${baselineCompile}s; Slurm U/R ${unitElapsed}/${regressionElapsed}s"
+    return description.take(140)
+}
+
+def candidatePr = params.CANDIDATE_PR?.trim()
+def candidateRef = params.CANDIDATE_REF?.trim()
+def requestedBaselineRef = params.BASELINE_REF?.trim()
+if (!!candidatePr == !!candidateRef) {
+    error('Set exactly one of CANDIDATE_PR or CANDIDATE_REF.')
+}
+if (candidatePr && !(candidatePr ==~ /[1-9][0-9]*/)) {
+    error("CANDIDATE_PR must be a positive integer, got '${candidatePr}'.")
+}
+if (candidatePr && requestedBaselineRef) {
+    error('BASELINE_REF must be empty with CANDIDATE_PR; the GitHub PR base branch is used automatically.')
+}
+if (candidateRef) {
+    candidateRef = validateRefSelector('CANDIDATE_REF', candidateRef)
+    requestedBaselineRef = validateRefSelector('BASELINE_REF', requestedBaselineRef)
 }
 
 def nodeLabel = (env.STELLAR_INTEL_NODE_LABEL ?: 'stellar-intel').trim()
 def gkeyllCiRoot = requireValue('GKEYLL_CI_ROOT', env.GKEYLL_CI_ROOT)
 def workspaceRoot = "${gkeyllCiRoot}/workspaces"
 def credentialsId = requireValue('STELLAR_GITHUB_CREDENTIAL_ID', env.STELLAR_GITHUB_CREDENTIAL_ID)
-def prCommit = ''
+def candidateSelector = ''
+def baselineSelector = ''
+def candidateCommit = ''
 def terminalStatus = 'failure'
 def terminalDescription = 'Stellar Intel CPU CI failed.'
 
@@ -351,19 +497,35 @@ node(nodeLabel) {
     // filesystem such as the project's /scratch/gpfs location, never /tmp.
     ws("${workspaceRoot}/${env.JOB_NAME}/${env.BUILD_TAG}") {
         try {
-            stage('Checkout PR') {
+            stage('Resolve candidate and baseline') {
+                if (candidatePr) {
+                    candidateSelector = "PR #${candidatePr}"
+                    baselineSelector = resolvePullRequestBase(credentialsId, candidatePr)
+                } else {
+                    candidateSelector = candidateRef
+                    baselineSelector = requestedBaselineRef
+                }
+                echo "Candidate selector: ${candidateSelector}"
+                echo "Baseline selector: ${baselineSelector}"
+            }
+            stage('Checkout candidate') {
                 deleteDir()
-                checkoutPullRequest(credentialsId)
-                prCommit = sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
-                writeFile file: 'ci-pr-commit.txt', text: "${prCommit}\n"
+                if (candidatePr) {
+                    checkoutPullRequest(credentialsId, candidatePr)
+                } else {
+                    checkoutRef(credentialsId, candidateRef, 'candidate')
+                }
+                candidateCommit = sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
+                writeFile file: 'ci-candidate-commit.txt', text: "${candidateCommit}\n"
+                writeFile file: 'ci-selection.txt', text: "candidate_selector=${candidateSelector}\nbaseline_selector=${baselineSelector}\n"
                 sh 'git status --short'
             }
             stage('Report pending to GitHub') {
                 publishGitHubCommitStatus(
                     credentialsId,
-                    prCommit,
+                    candidateCommit,
                     'pending',
-                    'Stellar Intel CPU CI is running.'
+                    'Stellar Intel candidate CI is running.'
                 )
             }
             stage('Build dependencies') {
@@ -396,7 +558,7 @@ node(nodeLabel) {
             stage('Run unit tests (SLURM)') {
                 submitUnitTests()
             }
-            stage('Install PR for C regression') {
+            stage('Install candidate for C regression') {
                 def jobs = buildJobs()
                 sh """#!/bin/bash -l
                     set -euo pipefail
@@ -404,8 +566,9 @@ node(nodeLabel) {
                     make -j${jobs} install
                 """
             }
-            stage('Compile PR C regressions') {
+            stage('Compile candidate C regressions') {
                 configureAndCompileCRegressions(
+                    'candidate',
                     "${env.WORKSPACE}/gkylsoft/gkeyll/bin/gkeyll",
                     env.WORKSPACE,
                     "${env.WORKSPACE}/gkylsoft",
@@ -415,7 +578,7 @@ node(nodeLabel) {
             stage('Checkout Stellar Intel baseline') {
                 dir('_baseline') {
                     deleteDir()
-                    checkoutRegressionBaseline(credentialsId)
+                    checkoutRef(credentialsId, baselineSelector, 'baseline')
                     sh 'git rev-parse HEAD | tee ../ci-baseline-commit.txt'
                 }
             }
@@ -443,6 +606,7 @@ node(nodeLabel) {
             }
             stage('Compile Stellar Intel baseline C regressions') {
                 configureAndCompileCRegressions(
+                    'baseline',
                     "${env.WORKSPACE}/_baseline/gkylsoft/gkeyll/bin/gkeyll",
                     "${env.WORKSPACE}/_baseline",
                     "${env.WORKSPACE}/_baseline/gkylsoft",
@@ -469,18 +633,26 @@ node(nodeLabel) {
                 throw err
             } finally {
                 try {
+                    writeCiTimingSummary()
+                    terminalDescription = timingStatusDescription(terminalStatus)
+                } catch (err) {
+                    terminalStatus = 'error'
+                    terminalDescription = 'Stellar Intel CPU CI timing summary failed.'
+                    throw err
+                }
+                try {
                     archiveArtifacts allowEmptyArchive: true,
-                        artifacts: 'ci-pr-commit.txt,ci-baseline-commit.txt,slurm-*.out,slurm-*-job-id.txt,slurm-*-job-status.txt,build/**/*.log,gkylsoft/gkeyll-results/**/regressiondb,gkylsoft/gkeyll-results/**/_rr_failures.txt,_baseline/gkylsoft/gkeyll-results/**/regressiondb,_baseline/gkylsoft/gkeyll-results/**/_rr_failures.txt'
+                        artifacts: 'ci-selection.txt,ci-candidate-commit.txt,ci-baseline-commit.txt,*-c-compile-seconds.txt,ci-timing-summary.txt,ci-regression-summary.txt,slurm-*.out,slurm-*-job-id.txt,slurm-*-job-status.txt,build/**/*.log,gkylsoft/gkeyll-results/**/regressiondb,gkylsoft/gkeyll-results/**/_rr_failures.txt,_baseline/gkylsoft/gkeyll-results/**/regressiondb,_baseline/gkylsoft/gkeyll-results/**/_rr_failures.txt'
                 } catch (err) {
                     terminalStatus = 'error'
                     terminalDescription = 'Stellar Intel CPU CI artifact archival failed.'
                     throw err
                 } finally {
                     try {
-                        if (prCommit) {
+                        if (candidateCommit) {
                             publishGitHubCommitStatus(
                                 credentialsId,
-                                prCommit,
+                                candidateCommit,
                                 terminalStatus,
                                 terminalDescription
                             )

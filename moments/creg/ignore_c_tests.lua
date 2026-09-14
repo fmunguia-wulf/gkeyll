@@ -44,6 +44,13 @@ return {
       "rt_gr_multifluid_brio_wu",
       "rt_gr_blackhole_spinning",
       "rt_gr_blackhole_static",
+      "rt_vacuum_einstein_conformal_schwarzschild",
+      "rt_vacuum_einstein_gowdywave",
+      "rt_gr_perturbed_density",
+      "rt_vacuum_einstein_schwarzschild",
+      "rt_vacuum_einstein_kerr",
+      "rt_vacuum_einstein_conformal_gowdywave",
+      "rt_vacuum_einstein_conformal_linearwave",
    },
    gpu = {
    },

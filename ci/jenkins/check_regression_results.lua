@@ -2,15 +2,16 @@
 --
 -- Jenkins helper: evaluate regression results written by
 -- 'gkeyll runregression run ... check' and fail (os.exit(1)) if any test
--- did not pass, unless it's listed in the per-PR acknowledgment file.
+-- did not pass, unless it's listed in the candidate acknowledgment file.
 --
--- Usage: gkeyll ci/jenkins/check_regression_results.lua <resultsDir> [ackFile]
+-- Usage: gkeyll ci/jenkins/check_regression_results.lua <resultsDir> [ackFile] [summaryFile]
 --   <resultsDir>  the gkeyll-results/ directory written by 'runregression
 --                 configure' (i.e. <prefix>/gkeyll-results).
 --   [ackFile]     optional path to a text file listing "<layer>/<name>"
 --                 entries (one per line, '#' comments allowed) whose diff is
---                 expected/acknowledged for this PR and should not fail the
+--                 expected/acknowledged for this candidate and should not fail the
 --                 build. See ci/jenkins/expected_regression_diffs.txt.
+--   [summaryFile] optional machine-readable pass/acknowledged/failure counts.
 --
 --    _______     ___
 -- + 6 @ |||| # P ||| +
@@ -24,14 +25,15 @@ local statusToString = {
    [-4] = "compile_fail", [-3] = "timeout", [-2] = "create", [-1] = "skip",
    [0] = "fail", [1] = "pass",
 }
--- Statuses that block a PR build unless explicitly acknowledged.
+-- Statuses that block a candidate build unless explicitly acknowledged.
 local BAD_STATUSES = { [0] = true, [-3] = true, [-4] = true }
 
 local resultsDir = GKYL_COMMANDS_L[1]
 local ackFile = GKYL_COMMANDS_L[2]
+local summaryFile = GKYL_COMMANDS_L[3]
 
 if not resultsDir then
-   print("Usage: gkeyll check_regression_results.lua <resultsDir> [ackFile]")
+   print("Usage: gkeyll check_regression_results.lua <resultsDir> [ackFile] [summaryFile]")
    os.exit(1)
 end
 
@@ -85,6 +87,18 @@ end
 print(string.format(
    "Regression results: %d passed, %d acknowledged diff(s), %d unacknowledged failure(s)",
    npass, #ackedHits, #unacked))
+
+if summaryFile then
+   local summary, message = io.open(summaryFile, "w")
+   if not summary then
+      print(string.format("ERROR: cannot write regression summary %s: %s", summaryFile, message))
+      os.exit(1)
+   end
+   summary:write(string.format(
+      "c_regression_passed=%d\nc_regression_acknowledged=%d\nc_regression_unacknowledged=%d\n",
+      npass, #ackedHits, #unacked))
+   summary:close()
+end
 
 if #ackedHits > 0 then
    print(string.format("Acknowledged (per %s):", tostring(ackFile)))
