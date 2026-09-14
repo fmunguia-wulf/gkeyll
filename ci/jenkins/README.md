@@ -303,26 +303,27 @@ when set):
 6. `make -j3 regression` — builds (does not execute) all regression tests,
    matching today's `.github/workflows/mac_build.yml` scope. This is a cheap
    compile-only smoke check across the full regression-test corpus; it
-   doesn't overlap with step 8 below, which actually runs a curated subset.
-7. `make -j3 gkeyll-install` — installs the built tree into
+   doesn't overlap with step 8 below, which actually runs the eligible C
+   regression suite.
+7. `make -j3 install` — installs the built tree into
    `$WORKSPACE/gkylsoft/gkeyll`, which the regression-test runner (step 8)
    needs: `gkeyll` is both the interpreter it runs as, and its C tests are
    compiled on the fly using the installed `share/Makefile`.
-8. **PR builds only** — actually runs the MOAT ("Mother Of All Tests")
-   curated regression-test subset (34 tests across `moments`/`vlasov`/
-   `gyrokinetic`/`pkpm`) via `gkeyll runregression`, and fails the build on
-   any unacknowledged failure or diff:
+8. **PR builds only** — actually runs all non-ignored C regression tests
+   across `moments`/`vlasov`/`gyrokinetic`/`pkpm` via `gkeyll runregression`,
+   and fails the build on any unacknowledged failure or diff:
    1. Builds the PR's target branch (`main`, normally) from scratch in a
       side workspace (`$WORKSPACE/_main_baseline`) and runs
-      `gkeyll runregression run --moat create` there, producing a baseline
+      `gkeyll runregression run --c-only create` there, producing a baseline
       generated on this same node/build — never a stale or
       cross-machine-generated one (the default comparison tolerance is
       `1e-12`, tight enough that results aren't guaranteed to reproduce
       bit-for-bit across different machines/toolchains/BLAS builds).
    2. Configures `runregression` for the PR's own install, moves that
-      baseline's accepted outputs into the PR's own `gkeyll-results/` tree,
-      and runs `gkeyll runregression run --moat check` there, executing the
-      34 tests and diffing their output against it.
+      baseline's C accepted outputs into the PR's own `gkeyll-results/` tree,
+      and runs `gkeyll runregression run --c-only check` there, executing all
+      non-ignored C tests and diffing their output against it. The solver
+      `creg/ignore_c_tests.lua` files define the exclusions.
    3. Runs `ci/jenkins/check_regression_results.lua` against the resulting
       per-layer `regressiondb` files, which fails the build if any test
       didn't pass **unless** it's listed in
@@ -339,7 +340,7 @@ when set):
 
 ### Acknowledging an expected regression diff
 
-If a PR intentionally changes a MOAT test's output (e.g. a physics or
+If a PR intentionally changes a C regression test's output (e.g. a physics or
 algorithm change), the build's `check_regression_results.lua` step still
 fails until you tell it that's expected: add a
 `<layer>/<test-name>` line to `ci/jenkins/expected_regression_diffs.txt`
