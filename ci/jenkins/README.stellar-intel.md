@@ -297,10 +297,12 @@ slurm-job-status.txt    terminal Slurm state and exit code
 slurm-<jobid>.out       batch-job stdout/stderr
 ```
 
-To stop a queued or running build, use **Abort** in Jenkins. The Pipeline
-cancels its recorded Slurm job, waits until it disappears from `squeue`, then
-archives the available artifacts and marks the build aborted. Do not manually
-remove its workspace while the job appears in `squeue`.
+To stop a queued or running build, use **Abort** in Jenkins. The submission
+shell cancels its recorded Slurm job and waits until it disappears from
+`squeue`. If Jenkins terminates that shell before its trap completes, the
+Pipeline's finalizer performs the same cancellation and writes
+`slurm-job-status.txt` before artifact archival. Do not manually remove the
+workspace while the job appears in `squeue`.
 
 If the Jenkins controller itself crashes, its shell trap cannot run. Find the
 job ID in the build workspace or Jenkins console, then check and, if needed,

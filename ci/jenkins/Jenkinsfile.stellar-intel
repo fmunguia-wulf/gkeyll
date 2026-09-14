@@ -170,6 +170,38 @@ def submitUnitTests() {
     }
 }
 
+def finalizeUnfinishedSlurmJob() {
+    // Jenkins may terminate a durable-task process tree before its shell trap
+    // completes. Run this from the Pipeline finally block as a second chance
+    // to cancel a submitted job and preserve an abort-status artifact.
+    sh '''#!/bin/bash -l
+        set -euo pipefail
+
+        if [[ ! -s slurm-job-id.txt || -e slurm-job-status.txt ]]; then
+            exit 0
+        fi
+
+        job_id="$(<slurm-job-id.txt)"
+        if [[ ! "$job_id" =~ ^[0-9]+(_[0-9]+)?$ ]]; then
+            printf 'job_id=%s\nstate=UNKNOWN\nexit_code=\n' "$job_id" > slurm-job-status.txt
+            echo "WARNING: Cannot cancel malformed Slurm job ID '$job_id'" >&2
+            exit 0
+        fi
+
+        echo "Pipeline finalizer: cancelling unfinished Slurm job $job_id"
+        scancel "$job_id" || true
+        while :; do
+            state="$(squeue --noheader --jobs="$job_id" --format='%T' | head -n 1 || true)"
+            if [[ -z "$state" ]]; then
+                break
+            fi
+            echo "Pipeline finalizer: waiting for job $job_id to stop (state: $state)"
+            sleep 5
+        done
+        printf 'job_id=%s\nstate=CANCELLED_BY_JENKINS\nexit_code=\n' "$job_id" > slurm-job-status.txt
+    '''
+}
+
 if (!(params.PR_NUMBER ==~ /[1-9][0-9]*/)) {
     error("PR_NUMBER must be a positive integer, got '${params.PR_NUMBER}'.")
 }
@@ -221,9 +253,16 @@ node(nodeLabel) {
                 submitUnitTests()
             }
         } finally {
-            archiveArtifacts allowEmptyArchive: true,
-                artifacts: 'ci-pr-commit.txt,slurm-*.out,slurm-job-id.txt,slurm-job-status.txt,build/**/*.log'
-            deleteDir()
+            try {
+                finalizeUnfinishedSlurmJob()
+            } finally {
+                try {
+                    archiveArtifacts allowEmptyArchive: true,
+                        artifacts: 'ci-pr-commit.txt,slurm-*.out,slurm-job-id.txt,slurm-job-status.txt,build/**/*.log'
+                } finally {
+                    deleteDir()
+                }
+            }
         }
     }
 }
