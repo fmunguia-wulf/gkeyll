@@ -9,8 +9,8 @@ The job runs `ci/jenkins/Jenkinsfile.stellar-intel` from a reviewed, trusted
 CI branch during bring-up. It fetches the requested `refs/pull/<number>/head`
 commit, builds Gkeyll on the login node, then submits unit tests and all
 supported C regression tests as separate CPU Slurm jobs. The C regressions use
-a same-session `agent_tools-jenkins` baseline. Lua regression, MPI, and GPU
-testing are deliberately not part of this setup.
+a same-session `agent_tools-jenkins-stellar_intel-baseline` baseline. Lua
+regression, MPI, and GPU testing are deliberately not part of this setup.
 
 ## 0. Publish these CI files first
 
@@ -32,6 +32,15 @@ It is the trusted orchestration branch; do not point the job at an unreviewed
 PR branch. After the pipeline has been validated and the change is merged,
 switch its SCM branch specifier to `*/main`. No pipeline-code change is needed
 at that point.
+
+Create the fixed regression baseline from the same reviewed commit, then push
+it. Keep this branch unchanged while candidate work is being compared against
+it:
+
+```sh
+git branch agent_tools-jenkins-stellar_intel-baseline HEAD
+git push -u origin agent_tools-jenkins-stellar_intel-baseline
+```
 
 ## 1. Choose the CI root and Slurm settings
 
@@ -135,12 +144,12 @@ Stellar Intel module versions in one file.
 ### Validate the all-C regression comparison by hand
 
 The regression job compares the current checkout with the fixed
-`agent_tools-jenkins` baseline. Build and install that baseline beside the PR
-checkout, using its own dependency prefix:
+`agent_tools-jenkins-stellar_intel-baseline` baseline. Build and install that
+baseline beside the candidate checkout, using its own dependency prefix:
 
 ```sh
 cd "$GKEYLL_CI_ROOT"
-git clone --branch agent_tools-jenkins --single-branch \
+git clone --branch agent_tools-jenkins-stellar_intel-baseline --single-branch \
   https://github.com/gkeyllorg/gkeyll.git gkeyll-baseline
 cd gkeyll-baseline
 PREFIX="$PWD/gkylsoft" ./machines/mkdeps.stellar-intel.sh
@@ -148,17 +157,14 @@ PREFIX="$PWD/gkylsoft" ./machines/configure.stellar-intel.sh
 . ../gkeyll/machines/module_load.stellar-intel.sh
 make -j32 install
 
-# Use the current checkout's runner: agent_tools-jenkins predates the
-# compile/execute-only interface, but this still compiles baseline sources
-# against the baseline install prefix.
-"$GKEYLL_CI_ROOT/gkeyll/gkylsoft/gkeyll/bin/gkeyll" runregression configure \
+"$PWD/gkylsoft/gkeyll/bin/gkeyll" runregression configure \
   --source-dir "$PWD" --prefix "$PWD/gkylsoft"
-"$GKEYLL_CI_ROOT/gkeyll/gkylsoft/gkeyll/bin/gkeyll" runregression run -c compile
+"$PWD/gkylsoft/gkeyll/bin/gkeyll" runregression run -c compile
 ```
 
-Return to the PR checkout, install it if the earlier unit-test validation did
-not already do so, then configure and compile its C regressions on the login
-node. This honors each layer's `ignore_c_tests.lua`:
+Return to the candidate checkout, install it if the earlier unit-test
+validation did not already do so, then configure and compile its C regressions
+on the login node. This honors each layer's `ignore_c_tests.lua`:
 
 ```sh
 cd "$GKEYLL_CI_ROOT/gkeyll"
@@ -180,7 +186,7 @@ sbatch --wait --qos pppl-short --nodes 1 --ntasks 1 --cpus-per-task 8 \
   ci/jenkins/slurm-regression-tests.stellar-intel.sh
 ```
 
-The baseline's `creg-accepted` output is moved into the PR results tree and
+The baseline's `creg-accepted` output is moved into the candidate results tree and
 is therefore disposable. Do not use a persistent accepted-output cache for
 this workflow.
 
@@ -355,8 +361,9 @@ posts the GitHub commit status
 `continuous-integration/jenkins/stellar-intel` as pending, builds unit tests
 and both installs on the login node, then submits separate unit and C
 regression payloads to Slurm. The C job builds accepted outputs from the fixed
-`agent_tools-jenkins` baseline and compares all non-ignored C regressions
-from the PR against them. Both C suites are compiled on the login node before
+`agent_tools-jenkins-stellar_intel-baseline` baseline and compares all
+non-ignored C regressions from the candidate against them. Both C suites are
+compiled on the login node before
 the regression allocation is submitted; the allocation executes only the
 precompiled tests.
 
@@ -383,14 +390,14 @@ build. The archived artifacts include:
 
 ```text
 ci-pr-commit.txt                    exact tested PR commit
-ci-baseline-commit.txt              exact agent_tools-jenkins baseline commit
+ci-baseline-commit.txt              exact Stellar Intel baseline commit
 slurm-unit-job-id.txt               submitted unit-job ID
 slurm-unit-job-status.txt           unit-job terminal state and exit code
 slurm-regression-job-id.txt         submitted regression-job ID
 slurm-regression-job-status.txt     regression-job terminal state and exit code
 slurm-unit-<jobid>.out              unit-job stdout/stderr
 slurm-regression-<jobid>.out        regression-job stdout/stderr
-`gkylsoft/gkeyll-results/**/regressiondb`  PR C-regression results
+`gkylsoft/gkeyll-results/**/regressiondb`  candidate C-regression results
 ```
 
 To stop a queued or running build, use **Abort** in Jenkins. The submission

@@ -18,16 +18,13 @@ cd "$CI_WORKSPACE"
 . machines/module_load.stellar-intel.sh
 
 baseline_gkeyll="$CI_BASELINE_PREFIX/gkeyll/bin/gkeyll"
-pr_gkeyll="$CI_PR_PREFIX/gkeyll/bin/gkeyll"
+candidate_gkeyll="$CI_PR_PREFIX/gkeyll/bin/gkeyll"
 
 test -x "$baseline_gkeyll"
-test -x "$pr_gkeyll"
+test -x "$candidate_gkeyll"
 
-# The PR-side runner provides the compile/execute-only interface. It drives
-# baseline tests through their own source directory and install prefix, so the
-# tested baseline executable and libraries still come from agent_tools-jenkins.
 cd "$CI_BASELINE_DIR"
-"$pr_gkeyll" runregression run -c --execute-only create \
+"$baseline_gkeyll" runregression run -c --execute-only create \
   --jobs "$CI_REGRESSION_JOBS" \
   --timeout "$CI_REGRESSION_TEST_TIMEOUT"
 
@@ -43,9 +40,9 @@ for layer in moments vlasov gyrokinetic pkpm; do
   fi
 done
 
-"$pr_gkeyll" runregression run -c --execute-only check \
+"$candidate_gkeyll" runregression run -c --execute-only check \
   --jobs "$CI_REGRESSION_JOBS" \
   --timeout "$CI_REGRESSION_TEST_TIMEOUT"
-"$pr_gkeyll" ci/jenkins/check_regression_results.lua \
+"$candidate_gkeyll" ci/jenkins/check_regression_results.lua \
   "$CI_PR_PREFIX/gkeyll-results" \
   ci/jenkins/expected_regression_diffs.txt

@@ -84,7 +84,7 @@ def checkoutRegressionBaseline(String credentialsId) {
         ],
         userRemoteConfigs: [[
             credentialsId: credentialsId,
-            refspec: '+refs/heads/agent_tools-jenkins:refs/remotes/origin/baseline',
+            refspec: '+refs/heads/agent_tools-jenkins-stellar_intel-baseline:refs/remotes/origin/baseline',
             url: 'https://github.com/gkeyllorg/gkeyll.git'
         ]]
     ])
@@ -412,14 +412,14 @@ node(nodeLabel) {
                     'machines/module_load.stellar-intel.sh'
                 )
             }
-            stage('Checkout agent_tools-jenkins baseline') {
+            stage('Checkout Stellar Intel baseline') {
                 dir('_baseline') {
                     deleteDir()
                     checkoutRegressionBaseline(credentialsId)
                     sh 'git rev-parse HEAD | tee ../ci-baseline-commit.txt'
                 }
             }
-            stage('Build agent_tools-jenkins baseline') {
+            stage('Build Stellar Intel baseline') {
                 withEnv(["PREFIX=${env.WORKSPACE}/_baseline/gkylsoft"]) {
                     dir('_baseline') {
                         sh '''#!/bin/bash -l
@@ -431,7 +431,7 @@ node(nodeLabel) {
                     }
                 }
             }
-            stage('Install agent_tools-jenkins baseline') {
+            stage('Install Stellar Intel baseline') {
                 def jobs = buildJobs()
                 dir('_baseline') {
                     sh """#!/bin/bash -l
@@ -441,13 +441,9 @@ node(nodeLabel) {
                     """
                 }
             }
-            stage('Compile agent_tools-jenkins C regressions') {
-                // The baseline branch predates the compile/execute-only
-                // interface. Use the PR-side runner only as the driver; its
-                // source tree, installed Makefile, libraries, and generated
-                // baseline outputs are all selected by these baseline paths.
+            stage('Compile Stellar Intel baseline C regressions') {
                 configureAndCompileCRegressions(
-                    "${env.WORKSPACE}/gkylsoft/gkeyll/bin/gkeyll",
+                    "${env.WORKSPACE}/_baseline/gkylsoft/gkeyll/bin/gkeyll",
                     "${env.WORKSPACE}/_baseline",
                     "${env.WORKSPACE}/_baseline/gkylsoft",
                     'machines/module_load.stellar-intel.sh'
