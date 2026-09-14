@@ -32,10 +32,28 @@ def requireValue(String name, String value) {
 
 def buildJobs() {
     def value = (env.STELLAR_BUILD_JOBS ?: '3').trim()
+    return positiveInteger('STELLAR_BUILD_JOBS', value)
+}
+
+def positiveInteger(String name, String value) {
     if (!(value ==~ /[1-9][0-9]*/)) {
-        error("STELLAR_BUILD_JOBS must be a positive integer, got '${value}'.")
+        error("${name} must be a positive integer, got '${value}'.")
     }
     return value
+}
+
+def regressionJobs() {
+    return positiveInteger(
+        'STELLAR_REGRESSION_JOBS',
+        (env.STELLAR_REGRESSION_JOBS ?: '4').trim()
+    )
+}
+
+def regressionTestTimeout() {
+    return positiveInteger(
+        'STELLAR_REGRESSION_TEST_TIMEOUT',
+        (env.STELLAR_REGRESSION_TEST_TIMEOUT ?: '900').trim()
+    )
 }
 
 def checkoutPullRequest(String credentialsId) {
@@ -50,6 +68,23 @@ def checkoutPullRequest(String credentialsId) {
         userRemoteConfigs: [[
             credentialsId: credentialsId,
             refspec: "+refs/pull/${params.PR_NUMBER}/head:refs/remotes/origin/pr/${params.PR_NUMBER}",
+            url: 'https://github.com/gkeyllorg/gkeyll.git'
+        ]]
+    ])
+}
+
+def checkoutRegressionBaseline(String credentialsId) {
+    checkout([
+        $class: 'GitSCM',
+        branches: [[name: 'refs/remotes/origin/baseline']],
+        doGenerateSubmoduleConfigurations: false,
+        extensions: [
+            [$class: 'CleanBeforeCheckout'],
+            [$class: 'CloneOption', depth: 1, honorRefspec: true, noTags: true, shallow: true]
+        ],
+        userRemoteConfigs: [[
+            credentialsId: credentialsId,
+            refspec: '+refs/heads/agent_tools-jenkins:refs/remotes/origin/baseline',
             url: 'https://github.com/gkeyllorg/gkeyll.git'
         ]]
     ])
@@ -94,16 +129,31 @@ def publishGitHubCommitStatus(String credentialsId, String commit, String state,
     }
 }
 
-def submitUnitTests() {
+def submitSlurmJob(String kind, String payload, String cpus, String timeLimit, List<String> extraExports = []) {
     def qos = requireValue('STELLAR_SLURM_QOS', env.STELLAR_SLURM_QOS)
-    def timeLimit = (env.STELLAR_SLURM_TIME ?: '00:30:00').trim()
     def account = env.STELLAR_SLURM_ACCOUNT?.trim()
+    def idFile = "slurm-${kind}-job-id.txt"
+    def statusFile = "slurm-${kind}-job-status.txt"
+    def outputFile = "slurm-${kind}-%j.out"
+    def exports = [
+        "CI_WORKSPACE=${env.WORKSPACE}",
+        "CI_SLURM_JOB_KIND=${kind}",
+        "CI_SLURM_JOB_ID_FILE=${idFile}",
+        "CI_SLURM_JOB_STATUS_FILE=${statusFile}"
+    ] + extraExports
 
     withEnv([
         "CI_WORKSPACE=${env.WORKSPACE}",
+        "CI_SLURM_JOB_KIND=${kind}",
+        "CI_SLURM_JOB_ID_FILE=${idFile}",
+        "CI_SLURM_JOB_STATUS_FILE=${statusFile}",
         "CI_STELLAR_QOS=${qos}",
         "CI_STELLAR_TIME=${timeLimit}",
-        "CI_STELLAR_ACCOUNT=${account ?: ''}"
+        "CI_STELLAR_ACCOUNT=${account ?: ''}",
+        "CI_STELLAR_CPUS=${cpus}",
+        "CI_SLURM_PAYLOAD=${payload}",
+        "CI_SLURM_EXPORTS=${exports.join(',')}",
+        "CI_SLURM_OUTPUT=${outputFile}"
     ]) {
         sh '''#!/bin/bash -l
             set -euo pipefail
@@ -112,7 +162,7 @@ def submitUnitTests() {
 
             write_status() {
                 printf 'job_id=%s\nstate=%s\nexit_code=%s\n' \
-                    "$job_id" "$1" "${2:-}" > slurm-job-status.txt
+                    "$job_id" "$1" "${2:-}" > "$CI_SLURM_JOB_STATUS_FILE"
             }
 
             cancel_submitted_job() {
@@ -139,32 +189,28 @@ def submitUnitTests() {
 
             sbatch_args=(
                 --parsable
-                "--job-name=gkyl-ci-${BUILD_NUMBER}"
+                "--job-name=gkyl-ci-${CI_SLURM_JOB_KIND}-${BUILD_NUMBER}"
                 --nodes=1
-                # make unit-run is launched once. Four CPUs for its one task
-                # supply the roughly 30 GB needed by the
-                # high-order 3x2v gyrokinetic interpolation unit test on
-                # Stellar (7.5 GB is the per-core default).
                 --ntasks=1
-                --cpus-per-task=4
+                "--cpus-per-task=${CI_STELLAR_CPUS}"
                 "--qos=${CI_STELLAR_QOS}"
                 "--time=${CI_STELLAR_TIME}"
-                "--output=${CI_WORKSPACE}/slurm-%j.out"
+                "--output=${CI_WORKSPACE}/${CI_SLURM_OUTPUT}"
                 "--chdir=${CI_WORKSPACE}"
-                "--export=ALL,CI_WORKSPACE=${CI_WORKSPACE}"
+                "--export=ALL,${CI_SLURM_EXPORTS}"
             )
             if [[ -n "${CI_STELLAR_ACCOUNT:-}" ]]; then
                 sbatch_args+=("--account=${CI_STELLAR_ACCOUNT}")
             fi
 
-            submission="$(sbatch "${sbatch_args[@]}" ci/jenkins/slurm-unit-tests.stellar-intel.sh)"
+            submission="$(sbatch "${sbatch_args[@]}" "$CI_SLURM_PAYLOAD")"
             job_id="${submission%%;*}"
             if [[ ! "$job_id" =~ ^[0-9]+(_[0-9]+)?$ ]]; then
                 echo "ERROR: Could not parse Slurm job ID from: $submission" >&2
                 exit 1
             fi
-            printf '%s\n' "$job_id" > slurm-job-id.txt
-            echo "Submitted Slurm job $job_id"
+            printf '%s\n' "$job_id" > "$CI_SLURM_JOB_ID_FILE"
+            echo "Submitted ${CI_SLURM_JOB_KIND} Slurm job $job_id"
 
             previous_state=''
             while :; do
@@ -173,7 +219,7 @@ def submitUnitTests() {
                     break
                 fi
                 if [[ "$state" != "$previous_state" ]]; then
-                    echo "Slurm job $job_id state: $state"
+                    echo "${CI_SLURM_JOB_KIND} Slurm job $job_id state: $state"
                     previous_state="$state"
                 fi
                 sleep 5
@@ -200,13 +246,40 @@ def submitUnitTests() {
             final_state="${record%%|*}"
             exit_code="${record#*|}"
             write_status "$final_state" "$exit_code"
-            echo "Slurm job $job_id finished: state=$final_state exit_code=$exit_code"
+            echo "${CI_SLURM_JOB_KIND} Slurm job $job_id finished: state=$final_state exit_code=$exit_code"
             if [[ "$final_state" == COMPLETED* && "$exit_code" == '0:0' ]]; then
                 exit 0
             fi
             exit 1
         '''
     }
+}
+
+def submitUnitTests() {
+    submitSlurmJob(
+        'unit',
+        'ci/jenkins/slurm-unit-tests.stellar-intel.sh',
+        '4',
+        (env.STELLAR_SLURM_TIME ?: '00:30:00').trim()
+    )
+}
+
+def submitRegressionTests() {
+    def jobs = regressionJobs()
+    def timeout = regressionTestTimeout()
+    submitSlurmJob(
+        'regression',
+        'ci/jenkins/slurm-regression-tests.stellar-intel.sh',
+        '8',
+        (env.STELLAR_REGRESSION_TIME ?: '04:00:00').trim(),
+        [
+            "CI_BASELINE_DIR=${env.WORKSPACE}/_baseline",
+            "CI_BASELINE_PREFIX=${env.WORKSPACE}/_baseline/gkylsoft",
+            "CI_PR_PREFIX=${env.WORKSPACE}/gkylsoft",
+            "CI_REGRESSION_JOBS=${jobs}",
+            "CI_REGRESSION_TEST_TIMEOUT=${timeout}"
+        ]
+    )
 }
 
 def finalizeUnfinishedSlurmJob() {
@@ -216,28 +289,30 @@ def finalizeUnfinishedSlurmJob() {
     sh '''#!/bin/bash -l
         set -euo pipefail
 
-        if [[ ! -s slurm-job-id.txt || -e slurm-job-status.txt ]]; then
-            exit 0
-        fi
+        for id_file in slurm-*-job-id.txt; do
+            [[ -e "$id_file" ]] || continue
+            status_file="${id_file%-id.txt}-status.txt"
+            [[ -e "$status_file" ]] && continue
 
-        job_id="$(<slurm-job-id.txt)"
-        if [[ ! "$job_id" =~ ^[0-9]+(_[0-9]+)?$ ]]; then
-            printf 'job_id=%s\nstate=UNKNOWN\nexit_code=\n' "$job_id" > slurm-job-status.txt
-            echo "WARNING: Cannot cancel malformed Slurm job ID '$job_id'" >&2
-            exit 0
-        fi
-
-        echo "Pipeline finalizer: cancelling unfinished Slurm job $job_id"
-        scancel "$job_id" || true
-        while :; do
-            state="$(squeue --noheader --jobs="$job_id" --format='%T' | head -n 1 || true)"
-            if [[ -z "$state" ]]; then
-                break
+            job_id="$(<"$id_file")"
+            if [[ ! "$job_id" =~ ^[0-9]+(_[0-9]+)?$ ]]; then
+                printf 'job_id=%s\nstate=UNKNOWN\nexit_code=\n' "$job_id" > "$status_file"
+                echo "WARNING: Cannot cancel malformed Slurm job ID '$job_id'" >&2
+                continue
             fi
-            echo "Pipeline finalizer: waiting for job $job_id to stop (state: $state)"
-            sleep 5
+
+            echo "Pipeline finalizer: cancelling unfinished Slurm job $job_id"
+            scancel "$job_id" || true
+            while :; do
+                state="$(squeue --noheader --jobs="$job_id" --format='%T' | head -n 1 || true)"
+                if [[ -z "$state" ]]; then
+                    break
+                fi
+                echo "Pipeline finalizer: waiting for job $job_id to stop (state: $state)"
+                sleep 5
+            done
+            printf 'job_id=%s\nstate=CANCELLED_BY_JENKINS\nexit_code=\n' "$job_id" > "$status_file"
         done
-        printf 'job_id=%s\nstate=CANCELLED_BY_JENKINS\nexit_code=\n' "$job_id" > slurm-job-status.txt
     '''
 }
 
@@ -303,8 +378,48 @@ node(nodeLabel) {
             stage('Run unit tests (SLURM)') {
                 submitUnitTests()
             }
+            stage('Install PR for C regression') {
+                def jobs = buildJobs()
+                sh """#!/bin/bash -l
+                    set -euo pipefail
+                    . machines/module_load.stellar-intel.sh
+                    make -j${jobs} install
+                """
+            }
+            stage('Checkout agent_tools-jenkins baseline') {
+                dir('_baseline') {
+                    deleteDir()
+                    checkoutRegressionBaseline(credentialsId)
+                    sh 'git rev-parse HEAD | tee ../ci-baseline-commit.txt'
+                }
+            }
+            stage('Build agent_tools-jenkins baseline') {
+                withEnv(["PREFIX=${env.WORKSPACE}/_baseline/gkylsoft"]) {
+                    dir('_baseline') {
+                        sh '''#!/bin/bash -l
+                            set -euo pipefail
+                            . ../machines/module_load.stellar-intel.sh
+                            ./machines/mkdeps.stellar-intel.sh
+                            ./machines/configure.stellar-intel.sh
+                        '''
+                    }
+                }
+            }
+            stage('Install agent_tools-jenkins baseline') {
+                def jobs = buildJobs()
+                dir('_baseline') {
+                    sh """#!/bin/bash -l
+                        set -euo pipefail
+                        . ../machines/module_load.stellar-intel.sh
+                        make -j${jobs} install
+                    """
+                }
+            }
+            stage('Run C regressions (SLURM)') {
+                submitRegressionTests()
+            }
             terminalStatus = 'success'
-            terminalDescription = 'Stellar Intel CPU unit tests passed.'
+            terminalDescription = 'Stellar Intel CPU unit and C regression tests passed.'
         } catch (err) {
             if (currentBuild.currentResult == 'ABORTED' || err.toString().contains('FlowInterruptedException')) {
                 terminalStatus = 'error'
@@ -321,7 +436,7 @@ node(nodeLabel) {
             } finally {
                 try {
                     archiveArtifacts allowEmptyArchive: true,
-                        artifacts: 'ci-pr-commit.txt,slurm-*.out,slurm-job-id.txt,slurm-job-status.txt,build/**/*.log'
+                        artifacts: 'ci-pr-commit.txt,ci-baseline-commit.txt,slurm-*.out,slurm-*-job-id.txt,slurm-*-job-status.txt,build/**/*.log,gkylsoft/gkeyll-results/**/regressiondb,gkylsoft/gkeyll-results/**/_rr_failures.txt,_baseline/gkylsoft/gkeyll-results/**/regressiondb,_baseline/gkylsoft/gkeyll-results/**/_rr_failures.txt'
                 } catch (err) {
                     terminalStatus = 'error'
                     terminalDescription = 'Stellar Intel CPU CI artifact archival failed.'

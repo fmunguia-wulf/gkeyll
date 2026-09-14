@@ -1,7 +1,7 @@
 -- Gkyl ------------------------------------------------------------------------
 --
--- Jenkins helper: evaluate the MOAT regression results written by
--- 'gkeyll runregression run --moat check' and fail (os.exit(1)) if any test
+-- Jenkins helper: evaluate regression results written by
+-- 'gkeyll runregression run ... check' and fail (os.exit(1)) if any test
 -- did not pass, unless it's listed in the per-PR acknowledgment file.
 --
 -- Usage: gkeyll ci/jenkins/check_regression_results.lua <resultsDir> [ackFile]
@@ -83,7 +83,7 @@ for _, layer in ipairs(LAYERS) do
 end
 
 print(string.format(
-   "MOAT results: %d passed, %d acknowledged diff(s), %d unacknowledged failure(s)",
+   "Regression results: %d passed, %d acknowledged diff(s), %d unacknowledged failure(s)",
    npass, #ackedHits, #unacked))
 
 if #ackedHits > 0 then

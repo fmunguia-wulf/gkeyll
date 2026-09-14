@@ -7,9 +7,10 @@ in through Duo nor accepts GitHub webhooks.
 
 The job runs `ci/jenkins/Jenkinsfile.stellar-intel` from a reviewed, trusted
 CI branch during bring-up. It fetches the requested `refs/pull/<number>/head`
-commit, builds Gkeyll and its unit-test executables on the login node, then
-submits `make unit-run` as a four-CPU Slurm job. Regression, MPI, and GPU
-testing are deliberately not part of this first level.
+commit, builds Gkeyll on the login node, then submits unit tests and all
+supported C regression tests as separate CPU Slurm jobs. The C regressions use
+a same-session `agent_tools-jenkins` baseline. Lua regression, MPI, and GPU
+testing are deliberately not part of this setup.
 
 ## 0. Publish these CI files first
 
@@ -19,6 +20,7 @@ push the Stellar CI implementation files to it:
 ```text
 ci/jenkins/Jenkinsfile.stellar-intel
 ci/jenkins/slurm-unit-tests.stellar-intel.sh
+ci/jenkins/slurm-regression-tests.stellar-intel.sh
 ci/jenkins/README.stellar-intel.md
 machines/module_load.stellar-intel.sh
 machines/mkdeps.stellar-intel.sh
@@ -76,6 +78,11 @@ may place requests of 47 cores or fewer in its low-priority serial queue. Do
 not request an entire 96-core node merely to bypass that queue; add a genuinely
 parallel test profile first.
 
+The separate C regression job requests one task with eight CPUs (roughly
+60 GB by Stellar's 7.5 GB-per-core default) and runs four C cases at a time.
+Its default four-hour allocation covers both baseline creation and the PR
+check. Adjust its settings only after measuring the complete first run.
+
 ## 2. Validate the cluster setup by hand
 
 SSH to the Intel side and approve Duo:
@@ -106,6 +113,7 @@ PREFIX="$PWD/../gkylsoft" ./machines/mkdeps.stellar-intel.sh
 PREFIX="$PWD/../gkylsoft" ./machines/configure.stellar-intel.sh
 . ./machines/module_load.stellar-intel.sh
 make -j32 unit
+make -j32 install
 sbatch --wait --qos pppl-short --nodes 1 --ntasks 1 --cpus-per-task 4 \
   --time 00:30:00 --chdir "$PWD" \
   --export=ALL,CI_WORKSPACE="$PWD" \
@@ -122,6 +130,39 @@ does not remain active for the later `make` command. Source
 `machines/module_load.stellar-intel.sh` before `make`; it is also sourced by the
 machine scripts, Jenkins build stage, and Slurm payload. This keeps all
 Stellar Intel module versions in one file.
+
+### Validate the all-C regression comparison by hand
+
+The regression job compares the current checkout with the fixed
+`agent_tools-jenkins` baseline. Build and install that baseline beside the PR
+checkout, using its own dependency prefix:
+
+```sh
+cd "$GKEYLL_CI_ROOT"
+git clone --branch agent_tools-jenkins --single-branch \
+  https://github.com/gkeyllorg/gkeyll.git gkeyll-baseline
+cd gkeyll-baseline
+PREFIX="$PWD/gkylsoft" ./machines/mkdeps.stellar-intel.sh
+PREFIX="$PWD/gkylsoft" ./machines/configure.stellar-intel.sh
+. ../gkeyll/machines/module_load.stellar-intel.sh
+make -j32 install
+```
+
+Return to the PR checkout and submit the same C-only baseline/check workflow
+that Jenkins uses. This honors each layer's `ignore_c_tests.lua`, runs four
+C cases concurrently, and limits each case to 900 seconds:
+
+```sh
+cd "$GKEYLL_CI_ROOT/gkeyll"
+sbatch --wait --qos pppl-short --nodes 1 --ntasks 1 --cpus-per-task 8 \
+  --time 04:00:00 --chdir "$PWD" \
+  --export=ALL,CI_WORKSPACE="$PWD",CI_BASELINE_DIR="$GKEYLL_CI_ROOT/gkeyll-baseline",CI_BASELINE_PREFIX="$GKEYLL_CI_ROOT/gkeyll-baseline/gkylsoft",CI_PR_PREFIX="$GKEYLL_CI_ROOT/gkeyll/gkylsoft",CI_REGRESSION_JOBS=4,CI_REGRESSION_TEST_TIMEOUT=900 \
+  ci/jenkins/slurm-regression-tests.stellar-intel.sh
+```
+
+The baseline's `creg-accepted` output is moved into the PR results tree and
+is therefore disposable. Do not use a persistent accepted-output cache for
+this workflow.
 
 ## 3. Install and run Jenkins privately
 
@@ -244,11 +285,14 @@ set:
 | Name | Required value |
 | --- | --- |
 | `GKEYLL_CI_ROOT` | Output of `printf '/scratch/gpfs/%s/gkeyll_ci' "$USER"`; paste the expanded result, not a literal `$USER` |
-| `STELLAR_GITHUB_CREDENTIAL_ID` | Jenkins credential ID, e.g. `gkeyll-github-read` |
+| `STELLAR_GITHUB_CREDENTIAL_ID` | Jenkins credential ID, e.g. `gkeyll-github-stellar` |
 | `STELLAR_SLURM_QOS` | Your valid CPU QoS, e.g. `pppl-short` |
 | `STELLAR_SLURM_ACCOUNT` | Project account, if required; otherwise omit it |
 | `STELLAR_SLURM_TIME` | Optional time limit; defaults to `00:30:00` |
 | `STELLAR_BUILD_JOBS` | Optional login-node compile parallelism; defaults to `3` |
+| `STELLAR_REGRESSION_TIME` | Optional C-regression allocation limit; defaults to `04:00:00` |
+| `STELLAR_REGRESSION_JOBS` | Optional concurrent C test runs; defaults to `4` |
+| `STELLAR_REGRESSION_TEST_TIMEOUT` | Optional per-C-test limit in seconds; defaults to `900` |
 | `STELLAR_INTEL_NODE_LABEL` | Optional agent label; defaults to `stellar-intel` |
 
 Do not set a broad global `PATH` to an interactive shell configuration. The
@@ -289,7 +333,16 @@ Parameters**, enter a pull-request number (for example `1104`), and start the
 build. Jenkins records the exact commit in `ci-pr-commit.txt`, immediately
 posts the GitHub commit status
 `continuous-integration/jenkins/stellar-intel` as pending, builds unit tests
-on the login node, and submits the unit-test payload to Slurm.
+and both installs on the login node, then submits separate unit and C
+regression payloads to Slurm. The C job builds accepted outputs from the fixed
+`agent_tools-jenkins` baseline and compares all non-ignored C regressions
+from the PR against them.
+
+The final regression check uses the existing
+`ci/jenkins/expected_regression_diffs.txt` acknowledgement policy. A real,
+reviewed change in numerical output must be added there deliberately; an
+unlisted regression difference fails the build and is reported in the Jenkins
+console and result database.
 
 At the end of the Pipeline, the same status becomes `success` for a passing
 build, `failure` for a build/test/Slurm failure, or `error` for an aborted
@@ -307,10 +360,15 @@ and exit code from `sacct`; only `COMPLETED` with exit code `0:0` is a passing
 build. The archived artifacts include:
 
 ```text
-ci-pr-commit.txt        exact tested PR commit
-slurm-job-id.txt        submitted Slurm job ID
-slurm-job-status.txt    terminal Slurm state and exit code
-slurm-<jobid>.out       batch-job stdout/stderr
+ci-pr-commit.txt                    exact tested PR commit
+ci-baseline-commit.txt              exact agent_tools-jenkins baseline commit
+slurm-unit-job-id.txt               submitted unit-job ID
+slurm-unit-job-status.txt           unit-job terminal state and exit code
+slurm-regression-job-id.txt         submitted regression-job ID
+slurm-regression-job-status.txt     regression-job terminal state and exit code
+slurm-unit-<jobid>.out              unit-job stdout/stderr
+slurm-regression-<jobid>.out        regression-job stdout/stderr
+`gkylsoft/gkeyll-results/**/regressiondb`  PR C-regression results
 ```
 
 To stop a queued or running build, use **Abort** in Jenkins. The submission
@@ -340,8 +398,8 @@ their artifacts; older records are discarded automatically.
 ## What this does not yet do
 
 - automatic GitHub polling or webhooks;
-- MPI regression, MOAT baseline, or GPU tests;
+- Lua regression, MPI regression, MOAT-only regression, or GPU tests;
 - automatic recovery of a Slurm job after a Jenkins-controller crash.
 
-Those are future stages, after this manually-triggered CPU unit-test path is
-reliable.
+Those are future stages, after this manually-triggered CPU unit-and-C-
+regression path is reliable.
