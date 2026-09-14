@@ -282,6 +282,24 @@ def submitRegressionTests() {
     )
 }
 
+def configureAndCompileCRegressions(String driver, String sourceDir, String prefix, String moduleFile) {
+    withEnv([
+        "CI_REGRESSION_DRIVER=${driver}",
+        "CI_REGRESSION_SOURCE_DIR=${sourceDir}",
+        "CI_REGRESSION_PREFIX=${prefix}",
+        "CI_REGRESSION_MODULE_FILE=${moduleFile}"
+    ]) {
+        sh '''#!/bin/bash -l
+            set -euo pipefail
+            . "$CI_REGRESSION_MODULE_FILE"
+            "$CI_REGRESSION_DRIVER" runregression configure \
+                --source-dir "$CI_REGRESSION_SOURCE_DIR" \
+                --prefix "$CI_REGRESSION_PREFIX"
+            "$CI_REGRESSION_DRIVER" runregression run -c compile
+        '''
+    }
+}
+
 def finalizeUnfinishedSlurmJob() {
     // Jenkins may terminate a durable-task process tree before its shell trap
     // completes. Run this from the Pipeline finally block as a second chance
@@ -386,6 +404,14 @@ node(nodeLabel) {
                     make -j${jobs} install
                 """
             }
+            stage('Compile PR C regressions') {
+                configureAndCompileCRegressions(
+                    "${env.WORKSPACE}/gkylsoft/gkeyll/bin/gkeyll",
+                    env.WORKSPACE,
+                    "${env.WORKSPACE}/gkylsoft",
+                    'machines/module_load.stellar-intel.sh'
+                )
+            }
             stage('Checkout agent_tools-jenkins baseline') {
                 dir('_baseline') {
                     deleteDir()
@@ -414,6 +440,18 @@ node(nodeLabel) {
                         make -j${jobs} install
                     """
                 }
+            }
+            stage('Compile agent_tools-jenkins C regressions') {
+                // The baseline branch predates the compile/execute-only
+                // interface. Use the PR-side runner only as the driver; its
+                // source tree, installed Makefile, libraries, and generated
+                // baseline outputs are all selected by these baseline paths.
+                configureAndCompileCRegressions(
+                    "${env.WORKSPACE}/gkylsoft/gkeyll/bin/gkeyll",
+                    "${env.WORKSPACE}/_baseline",
+                    "${env.WORKSPACE}/_baseline/gkylsoft",
+                    'machines/module_load.stellar-intel.sh'
+                )
             }
             stage('Run C regressions (SLURM)') {
                 submitRegressionTests()

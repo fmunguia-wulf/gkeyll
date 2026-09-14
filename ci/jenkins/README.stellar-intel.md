@@ -80,8 +80,9 @@ parallel test profile first.
 
 The separate C regression job requests one task with eight CPUs (roughly
 60 GB by Stellar's 7.5 GB-per-core default) and runs four C cases at a time.
-Its default four-hour allocation covers both baseline creation and the PR
-check. Adjust its settings only after measuring the complete first run.
+Its default four-hour allocation covers baseline creation and the PR check.
+C executables are compiled before Slurm submission on the login node. Adjust
+its settings only after measuring the complete first run.
 
 ## 2. Validate the cluster setup by hand
 
@@ -146,11 +147,30 @@ PREFIX="$PWD/gkylsoft" ./machines/mkdeps.stellar-intel.sh
 PREFIX="$PWD/gkylsoft" ./machines/configure.stellar-intel.sh
 . ../gkeyll/machines/module_load.stellar-intel.sh
 make -j32 install
+
+# Use the current checkout's runner: agent_tools-jenkins predates the
+# compile/execute-only interface, but this still compiles baseline sources
+# against the baseline install prefix.
+"$GKEYLL_CI_ROOT/gkeyll/gkylsoft/gkeyll/bin/gkeyll" runregression configure \
+  --source-dir "$PWD" --prefix "$PWD/gkylsoft"
+"$GKEYLL_CI_ROOT/gkeyll/gkylsoft/gkeyll/bin/gkeyll" runregression run -c compile
 ```
 
-Return to the PR checkout and submit the same C-only baseline/check workflow
-that Jenkins uses. This honors each layer's `ignore_c_tests.lua`, runs four
-C cases concurrently, and limits each case to 900 seconds:
+Return to the PR checkout, install it if the earlier unit-test validation did
+not already do so, then configure and compile its C regressions on the login
+node. This honors each layer's `ignore_c_tests.lua`:
+
+```sh
+cd "$GKEYLL_CI_ROOT/gkeyll"
+. machines/module_load.stellar-intel.sh
+make -j32 install
+"$PWD/gkylsoft/gkeyll/bin/gkeyll" runregression configure \
+  --source-dir "$PWD" --prefix "$PWD/gkylsoft"
+"$PWD/gkylsoft/gkeyll/bin/gkeyll" runregression run -c compile
+```
+
+Then submit the execution-only baseline/check workflow. It runs four C cases
+concurrently and limits each case to 900 seconds:
 
 ```sh
 cd "$GKEYLL_CI_ROOT/gkeyll"
@@ -204,7 +224,7 @@ it keeps the controller available after SSH disconnects without installing a
 system service. Stop it after a test session if it is not needed.
 
 ```sh
-tmux new -s gkeyll-jenkins
+tmux new -s gkeyll_ci
 
 export GKEYLL_CI_ROOT=/scratch/gpfs/$USER/gkeyll_ci
 export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-21.0.12.1.1-1.1.el8.x86_64
@@ -223,9 +243,9 @@ java -Djava.io.tmpdir="$TMPDIR" -jar "$GKEYLL_CI_ROOT/jenkins.war" \
 In another Stellar shell, use these commands to manage that controller:
 
 ```sh
-tmux attach -t gkeyll-jenkins   # return to the Jenkins console
-tmux ls                         # verify the session exists
-tmux kill-session -t gkeyll-jenkins  # stop Jenkins after testing
+tmux attach -t gkeyll_ci   # return to the Jenkins console
+tmux ls                    # verify the session exists
+tmux kill-session -t gkeyll_ci # stop Jenkins after testing
 ```
 
 The controller must run as the same Unix account that owns the Slurm
@@ -336,7 +356,9 @@ posts the GitHub commit status
 and both installs on the login node, then submits separate unit and C
 regression payloads to Slurm. The C job builds accepted outputs from the fixed
 `agent_tools-jenkins` baseline and compares all non-ignored C regressions
-from the PR against them.
+from the PR against them. Both C suites are compiled on the login node before
+the regression allocation is submitted; the allocation executes only the
+precompiled tests.
 
 The final regression check uses the existing
 `ci/jenkins/expected_regression_diffs.txt` acknowledgement policy. A real,
@@ -388,7 +410,7 @@ scancel <jobid>
 ```
 
 After Slurm has stopped, it is safe to remove the abandoned workspace. Restart
-Jenkins in the `gkeyll-jenkins` tmux session as described above; its job
+Jenkins in the `gkeyll_ci` tmux session as described above; its job
 configuration and retained build records live under `$JENKINS_HOME`.
 
 The Pipeline archives artifacts before deleting every completed, failed, or

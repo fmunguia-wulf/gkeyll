@@ -1,9 +1,10 @@
 #!/bin/bash -l
 # All-C regression payload for ci/jenkins/Jenkinsfile.stellar-intel.
 #
-# Jenkins builds and installs the PR and trusted baseline on the login node.
-# This payload only creates the baseline's C outputs, checks the PR against
-# them, and turns SQLite-recorded failures into a Slurm/Jenkins failure.
+# Jenkins builds, installs, and compiles the PR and trusted baseline on the
+# login node. This payload only executes their precompiled C tests, creates
+# the baseline's outputs, checks the PR against them, and turns SQLite-recorded
+# failures into a Slurm/Jenkins failure.
 set -euo pipefail
 
 : "${CI_WORKSPACE:?CI_WORKSPACE must name the shared Jenkins workspace}"
@@ -22,19 +23,15 @@ pr_gkeyll="$CI_PR_PREFIX/gkeyll/bin/gkeyll"
 test -x "$baseline_gkeyll"
 test -x "$pr_gkeyll"
 
+# The PR-side runner provides the compile/execute-only interface. It drives
+# baseline tests through their own source directory and install prefix, so the
+# tested baseline executable and libraries still come from agent_tools-jenkins.
 cd "$CI_BASELINE_DIR"
-"$baseline_gkeyll" runregression configure \
-  --source-dir "$CI_BASELINE_DIR" \
-  --prefix "$CI_BASELINE_PREFIX"
-"$baseline_gkeyll" runregression run -c create \
+"$pr_gkeyll" runregression run -c --execute-only create \
   --jobs "$CI_REGRESSION_JOBS" \
   --timeout "$CI_REGRESSION_TEST_TIMEOUT"
 
 cd "$CI_WORKSPACE"
-"$pr_gkeyll" runregression configure \
-  --source-dir "$CI_WORKSPACE" \
-  --prefix "$CI_PR_PREFIX"
-
 # Use only C accepted output from the fixed baseline. Do not carry Lua
 # baselines into this CPU C-regression job.
 for layer in moments vlasov gyrokinetic pkpm; do
@@ -46,7 +43,7 @@ for layer in moments vlasov gyrokinetic pkpm; do
   fi
 done
 
-"$pr_gkeyll" runregression run -c check \
+"$pr_gkeyll" runregression run -c --execute-only check \
   --jobs "$CI_REGRESSION_JOBS" \
   --timeout "$CI_REGRESSION_TEST_TIMEOUT"
 "$pr_gkeyll" ci/jenkins/check_regression_results.lua \

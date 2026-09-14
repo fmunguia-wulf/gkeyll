@@ -983,7 +983,7 @@ end
 
 -- prepareCRun(test, timeoutSecs, mode, skipCompile) → table
 -- Creates the scratch dir, compiles the C test (unless skipCompile), creates
--- the layer source symlink so tests can find data files by relative path, 
+-- the layer source symlink so tests can find data files by relative path,
 -- and builds the run command.
 -- Returns {compileFailed=true, ...} on compile failure (no cmd field).
 -- Returns {compileFailed=false, cmd, runDir, test, compileLog, compileSecs} on success.
@@ -991,6 +991,7 @@ local function prepareCRun(test, timeoutSecs, mode, skipCompile)
    local testname = stripext(basename(test.src))
    local runDir   = configVals.results_dir .. "/" .. test.layer
       .. "/creg-runs/" .. testname
+   local binPath  = runDir .. "/" .. testname
 
    mkdir(runDir)
    os.execute(string.format("rm -f '%s'/*.gkyl 2>/dev/null", runDir))
@@ -1016,6 +1017,21 @@ local function prepareCRun(test, timeoutSecs, mode, skipCompile)
          }
       end
       verboseLog(compileLog)
+   else
+      local attr = lfs.attributes(binPath)
+      if not (attr and attr.mode == "file"
+         and string.sub(attr.permissions, 3, 3) == "x") then
+         return {
+            compileFailed = true,
+            runDir        = runDir,
+            test          = test,
+            compileLog    = string.format(
+               "Precompiled executable not found or not executable: '%s'.\n"
+               .. "Run 'gkeyll runregression run -c compile' first.\n",
+               binPath),
+            compileSecs   = 0,
+         }
+      end
    end
 
    -- Symlink the layer source dir so tests can find data files by relative path.
@@ -1035,7 +1051,6 @@ local function prepareCRun(test, timeoutSecs, mode, skipCompile)
       end
    end
 
-   local binPath  = runDir .. "/" .. testname
    local gpuFlag  = (mode == "gpu") and " -g" or ""
    local innerCmd = string.format("cd '%s' && '%s'%s 2>&1", runDir, binPath, gpuFlag)
    local cmd      = wrapWithTimeout(innerCmd, timeoutSecs or 0, runDir)
@@ -1048,6 +1063,56 @@ local function prepareCRun(test, timeoutSecs, mode, skipCompile)
       compileLog    = compileLog,
       compileSecs   = compileSecs,
    }
+end
+
+-- Compile selected C regression tests without running them. Executables remain
+-- in their normal creg-runs directories for a later --execute-only invocation.
+-- Returns true only when every selected test compiled successfully.
+local function compile_c_regressions(cTests)
+   local nfailed = 0
+   log("Compiling C regression tests ...\n")
+
+   for _, test in ipairs(cTests) do
+      local prep = prepareCRun(test, 0, nil, false)
+      if prep.compileFailed then
+         nfailed = nfailed + 1
+         log(string.format("Compiler output for %s:\n%s", test.name, prep.compileLog))
+         if not string.match(prep.compileLog, "\n$") then log("\n") end
+      else
+         log(string.format("... %s compiled.\n", test.name))
+      end
+   end
+
+   if nfailed > 0 then
+      log(string.format("C regression compilation failed for %d test(s).\n", nfailed))
+      return false
+   end
+   log(string.format("Compiled %d C regression test(s).\n", #cTests))
+   return true
+end
+
+-- Verify a complete prior compile before executing a C-only suite. This makes
+-- a missing shared-workspace executable a direct failure rather than a partial
+-- regression run with confusing database results.
+local function validate_precompiled_c_regressions(cTests)
+   local missing = {}
+   for _, test in ipairs(cTests) do
+      local testname = stripext(basename(test.src))
+      local binPath = configVals.results_dir .. "/" .. test.layer
+         .. "/creg-runs/" .. testname .. "/" .. testname
+      local attr = lfs.attributes(binPath)
+      if not (attr and attr.mode == "file"
+         and string.sub(attr.permissions, 3, 3) == "x") then
+         table.insert(missing, test.name)
+      end
+   end
+   if #missing > 0 then
+      log("ERROR: --execute-only requires precompiled C regression executables.\n")
+      for _, name in ipairs(missing) do log("  " .. name .. "\n") end
+      log("Run 'gkeyll runregression run -c compile' in this results tree first.\n")
+      return false
+   end
+   return true
 end
 
 -- executeBatch(items) → list of {runtm, runlog, timedOut}
@@ -1709,6 +1774,21 @@ local function run_action(args, name)
    loadConfigure(args)
 
    local luaTests, cTests = list_tests(detectedLayer, args)
+   if args.compile then
+      if not args.c_only or args.lua_only then
+         log("ERROR: 'run compile' requires --c-only.\n")
+         os.exit(1)
+      end
+      if not compile_c_regressions(cTests) then os.exit(1) end
+      return
+   end
+   if args.execute_only then
+      if not args.c_only or args.lua_only then
+         log("ERROR: --execute-only requires --c-only.\n")
+         os.exit(1)
+      end
+      if not validate_precompiled_c_regressions(cTests) then os.exit(1) end
+   end
    local gpuTol = args.gpu_tol or 1e-7
 
    -- Per-test timeout in seconds (0 = unlimited).
@@ -1892,10 +1972,10 @@ local function run_action(args, name)
             layerCounts[test.layer].total = layerCounts[test.layer].total + 1
             local doGpu = shouldDoGpu(test, "c")
 
-            -- CPU run: compile + run (no -g flag = CPU mode by default).
+            -- CPU run (compile unless --execute-only; no -g flag by default).
             -- When doGpu is true, keep the binary for the subsequent GPU re-run.
             local runtm, runlog, runDir, timedOut, compileFailed =
-               runCTest(test, timeoutSecs, nil, false, doGpu)
+               runCTest(test, timeoutSecs, nil, args.execute_only, doGpu)
 
             if compileFailed then
                insertRegressionData(
@@ -1955,8 +2035,8 @@ local function run_action(args, name)
       -- PARALLEL PATH: up to jobCount tests run concurrently per batch.
       --
       -- Phase 1 (C only): compile all C tests serially — fast, and avoids
-      --   Makefile conflicts.  Compile failures are recorded immediately
-      --   and excluded from the run batch.
+      --   Makefile conflicts. With --execute-only, validate the prior
+      --   compilation instead. Compile failures are excluded from the batch.
       -- Phase 2a (Lua): build prep list; handle mpiSkip tests inline.
       --   Run in batches of jobCount via executeBatch.
       -- Phase 2b (C): run compiled-OK tests in batches via executeBatch.
@@ -2049,13 +2129,13 @@ local function run_action(args, name)
             runDir, testname))
       end
 
-      -- Phase 1: compile all C tests serially.
+      -- Phase 1: compile all C tests serially, unless --execute-only.
       local cPreps = {}
       if not args.lua_only then
          for _, test in ipairs(cTests) do
             layerCounts[test.layer].total = layerCounts[test.layer].total + 1
             local doGpu = shouldDoGpu(test, "c")
-            local prep  = prepareCRun(test, timeoutSecs, nil, false)
+            local prep  = prepareCRun(test, timeoutSecs, nil, args.execute_only)
             prep.doGpu  = doGpu
             table.insert(cPreps, prep)
             if prep.compileFailed then
@@ -2191,13 +2271,15 @@ Results are stored in per-layer SQLite databases under gkeyll-results/.
 Typical workflow:
   1. Build and install: make install -j4
   2. Configure: gkeyll runregression configure --source-dir /absolute/path/to/gkeyll/
-  3. Create baselines: gkeyll runregression run create --timeout 120
-  4. Check results:    gkeyll runregression run check  --timeout 120
-  5. Layer-specific:   gkeyll runregression run moments check
+  3. Compile C tests:  gkeyll runregression run -c compile
+  4. Create baselines: gkeyll runregression run create --timeout 120
+  5. Check results:    gkeyll runregression run check  --timeout 120
+  6. Layer-specific:   gkeyll runregression run moments check
 
 C regression tests are compiled on-the-fly using the installed
-share/Makefile (PREFIX/gkeyll/share/Makefile). No separate 'make regression'
-step is needed.
+share/Makefile (PREFIX/gkeyll/share/Makefile). Use `run -c compile` followed
+by `run -c --execute-only create` or `check` to compile and execute on
+different machines that share the regression-results directory.
 ]]
 
 parser:flag("-v --verbose", "Print verbose messages as tests are run")
@@ -2244,7 +2326,7 @@ c_list:flag("-l --lua-only", "Only list Lua regression tests (skip C tests)")
 --   gkeyll runregression run check          -> all layers, check
 --   gkeyll runregression run moments check  -> moments layer only, check
 local c_run = parser:command("run",
-   "Run regression tests (check or create).\n"
+   "Run regression tests (compile, check, or create).\n"
    .. "Prefix with a layer name to restrict: 'run moments check', 'run vlasov create'.\n"
    .. "Without check/create, tests run but results are not saved or compared.")
    :require_command(false)
@@ -2260,6 +2342,9 @@ c_run:flag("-m --moat", "Only run MOAT (Mother Of All Tests) regression tests\n"
    .. "A condensed suite of the most comprehensive regression tests.")
 c_run:flag("-c --c-only",   "Only run C regression tests (skip Lua tests)")
 c_run:flag("-l --lua-only", "Only run Lua regression tests (skip C tests)")
+c_run:flag("-e --execute-only",
+   "For C tests, execute previously compiled binaries without recompiling.\n"
+   .. "Requires --c-only and a prior 'run -c compile' in the same results tree.")
 c_run:option("-t --timeout",
    "Per-test timeout in seconds (0 = unlimited).\n"
    .. "Timed-out tests are added to ignoretests.lua automatically.")
@@ -2284,6 +2369,9 @@ c_run:command("check",
 c_run:command("create",
    "Run tests and save output as accepted baselines.\n"
    .. "On GPU builds, create always runs in CPU mode so baselines are deterministic.")
+c_run:command("compile",
+   "Compile selected C regression tests without running them.\n"
+   .. "Requires --c-only; retains executables for --execute-only.")
 
 -- 'listunit' command ----------------------------------------------------------
 parser:command("listunit", "List all unit tests")
