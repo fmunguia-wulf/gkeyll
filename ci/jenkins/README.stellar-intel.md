@@ -219,13 +219,17 @@ are normally part of Jenkins' suggested-plugin installation.
 
 ## 4. Create the GitHub credential
 
-Create a GitHub fine-grained token with read-only access to the Gkeyll
-repository (and pull requests/contents as required by Git). In Jenkins add it
-as a Username-with-password credential, using the GitHub username and token,
-and give it an ID such as `gkeyll-github-read`.
+Create a GitHub fine-grained token restricted to the `gkeyllorg/gkeyll`
+repository. Grant `Contents: Read`, `Pull requests: Read`, and `Commit
+statuses: Read and write`. In Jenkins add it as a Username-with-password
+credential, using the GitHub username and token, and give it an ID such as
+`gkeyll-github-stellar`. The Pipeline uses this one credential both to fetch
+the PR and to publish its commit status.
 
-This credential only fetches source. Do not put Duo secrets, a personal SSH
-key, or unrelated credentials in the Jenkins account.
+The token never receives repository-content write permission, and the
+Pipeline binds it only for Git checkout and short, trusted GitHub API calls;
+it is not present while a command from the PR checkout runs. Do not put Duo
+secrets, a personal SSH key, or unrelated credentials in the Jenkins account.
 
 ## 5. Configure the Jenkins node and global environment
 
@@ -282,8 +286,20 @@ build is expected and does not submit a Slurm job.
 
 After reaching Jenkins through the SSH tunnel, select **Build with
 Parameters**, enter a pull-request number (for example `1104`), and start the
-build. Jenkins records the exact commit in `ci-pr-commit.txt`, builds unit
-tests on the login node, and submits the unit-test payload to Slurm.
+build. Jenkins records the exact commit in `ci-pr-commit.txt`, immediately
+posts the GitHub commit status
+`continuous-integration/jenkins/stellar-intel` as pending, builds unit tests
+on the login node, and submits the unit-test payload to Slurm.
+
+At the end of the Pipeline, the same status becomes `success` for a passing
+build, `failure` for a build/test/Slurm failure, or `error` for an aborted
+build or controller-side cleanup problem. It is an informational PR check;
+it is not configured as a required status for merging. The Stellar Jenkins
+URL is private behind SSH/Duo, so GitHub does not receive a build URL.
+
+Failure to publish either the pending or final GitHub status fails the Jenkins
+build. This prevents a green Jenkins result from silently lacking its GitHub
+report.
 
 While the Slurm job is pending or running, the Jenkins console prints its
 state from `squeue`. Once it leaves the queue, Jenkins obtains its final state

@@ -55,6 +55,44 @@ def checkoutPullRequest(String credentialsId) {
     ])
 }
 
+def publishGitHubCommitStatus(String credentialsId, String commit, String state, String description) {
+    if (!(commit ==~ /[0-9a-f]{40}/)) {
+        error("Cannot publish a GitHub status for invalid commit SHA '${commit}'.")
+    }
+    if (!['pending', 'success', 'failure', 'error'].contains(state)) {
+        error("Invalid GitHub commit-status state '${state}'.")
+    }
+
+    // Bind the token only for this trusted API request, never while a shell
+    // command from the PR checkout is running.
+    withCredentials([usernamePassword(
+        credentialsId: credentialsId,
+        usernameVariable: 'GITHUB_STATUS_USERNAME',
+        passwordVariable: 'GITHUB_STATUS_TOKEN'
+    )]) {
+        withEnv([
+            "GITHUB_STATUS_COMMIT=${commit}",
+            "GITHUB_STATUS_STATE=${state}",
+            "GITHUB_STATUS_DESCRIPTION=${description}"
+        ]) {
+            sh '''#!/bin/bash
+                set -euo pipefail
+
+                curl --fail --silent --show-error \
+                    --retry 2 --connect-timeout 15 --max-time 45 \
+                    --request POST \
+                    --header 'Accept: application/vnd.github+json' \
+                    --header 'X-GitHub-Api-Version: 2022-11-28' \
+                    --header "Authorization: Bearer ${GITHUB_STATUS_TOKEN}" \
+                    --header 'Content-Type: application/json' \
+                    --data "{\"state\":\"${GITHUB_STATUS_STATE}\",\"context\":\"continuous-integration/jenkins/stellar-intel\",\"description\":\"${GITHUB_STATUS_DESCRIPTION}\"}" \
+                    --output /dev/null --write-out 'GitHub Stellar status: %{http_code}\\n' \
+                    "https://api.github.com/repos/gkeyllorg/gkeyll/statuses/${GITHUB_STATUS_COMMIT}"
+            '''
+        }
+    }
+}
+
 def submitUnitTests() {
     def qos = requireValue('STELLAR_SLURM_QOS', env.STELLAR_SLURM_QOS)
     def timeLimit = (env.STELLAR_SLURM_TIME ?: '00:30:00').trim()
@@ -210,6 +248,9 @@ def nodeLabel = (env.STELLAR_INTEL_NODE_LABEL ?: 'stellar-intel').trim()
 def gkeyllCiRoot = requireValue('GKEYLL_CI_ROOT', env.GKEYLL_CI_ROOT)
 def workspaceRoot = "${gkeyllCiRoot}/workspaces"
 def credentialsId = requireValue('STELLAR_GITHUB_CREDENTIAL_ID', env.STELLAR_GITHUB_CREDENTIAL_ID)
+def prCommit = ''
+def terminalStatus = 'failure'
+def terminalDescription = 'Stellar Intel CPU CI failed.'
 
 node(nodeLabel) {
     // Stellar compute nodes must see this path. Configure the root on a shared
@@ -219,8 +260,17 @@ node(nodeLabel) {
             stage('Checkout PR') {
                 deleteDir()
                 checkoutPullRequest(credentialsId)
-                sh 'git rev-parse HEAD | tee ci-pr-commit.txt'
+                prCommit = sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
+                writeFile file: 'ci-pr-commit.txt', text: "${prCommit}\n"
                 sh 'git status --short'
+            }
+            stage('Report pending to GitHub') {
+                publishGitHubCommitStatus(
+                    credentialsId,
+                    prCommit,
+                    'pending',
+                    'Stellar Intel CPU CI is running.'
+                )
             }
             stage('Build dependencies') {
                 withEnv(["PREFIX=${env.WORKSPACE}/gkylsoft"]) {
@@ -252,15 +302,42 @@ node(nodeLabel) {
             stage('Run unit tests (SLURM)') {
                 submitUnitTests()
             }
+            terminalStatus = 'success'
+            terminalDescription = 'Stellar Intel CPU unit tests passed.'
+        } catch (err) {
+            if (currentBuild.currentResult == 'ABORTED' || err.toString().contains('FlowInterruptedException')) {
+                terminalStatus = 'error'
+                terminalDescription = 'Stellar Intel CPU CI was aborted.'
+            }
+            throw err
         } finally {
             try {
                 finalizeUnfinishedSlurmJob()
+            } catch (err) {
+                terminalStatus = 'error'
+                terminalDescription = 'Stellar Intel CPU CI cleanup failed.'
+                throw err
             } finally {
                 try {
                     archiveArtifacts allowEmptyArchive: true,
                         artifacts: 'ci-pr-commit.txt,slurm-*.out,slurm-job-id.txt,slurm-job-status.txt,build/**/*.log'
+                } catch (err) {
+                    terminalStatus = 'error'
+                    terminalDescription = 'Stellar Intel CPU CI artifact archival failed.'
+                    throw err
                 } finally {
-                    deleteDir()
+                    try {
+                        if (prCommit) {
+                            publishGitHubCommitStatus(
+                                credentialsId,
+                                prCommit,
+                                terminalStatus,
+                                terminalDescription
+                            )
+                        }
+                    } finally {
+                        deleteDir()
+                    }
                 }
             }
         }
