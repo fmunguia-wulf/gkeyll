@@ -78,6 +78,7 @@ def publishGitHubCommitStatus(String credentialsId, String commit, String state,
             sh '''#!/bin/bash
                 set -euo pipefail
 
+                payload="$(printf '{"state":"%s","context":"continuous-integration/jenkins/stellar-intel","description":"%s"}' "${GITHUB_STATUS_STATE}" "${GITHUB_STATUS_DESCRIPTION}")"
                 curl --fail --silent --show-error \
                     --retry 2 --connect-timeout 15 --max-time 45 \
                     --request POST \
@@ -85,7 +86,7 @@ def publishGitHubCommitStatus(String credentialsId, String commit, String state,
                     --header 'X-GitHub-Api-Version: 2022-11-28' \
                     --header "Authorization: Bearer ${GITHUB_STATUS_TOKEN}" \
                     --header 'Content-Type: application/json' \
-                    --data "{\"state\":\"${GITHUB_STATUS_STATE}\",\"context\":\"continuous-integration/jenkins/stellar-intel\",\"description\":\"${GITHUB_STATUS_DESCRIPTION}\"}" \
+                    --data "$payload" \
                     --output /dev/null --write-out 'GitHub Stellar status: %{http_code}\\n' \
                     "https://api.github.com/repos/gkeyllorg/gkeyll/statuses/${GITHUB_STATUS_COMMIT}"
             '''
