@@ -406,8 +406,9 @@ ci/jenkins/jenkins-stellar-intel.sh run \
 ```
 
 The default command prints a Jenkins queue ID and returns so the SSH terminal
-is immediately available. Use that ID while it remains queued, or use the
-assigned build number after it starts:
+is immediately available. `follow --queue` resolves a queue item that has
+already started through the retained Jenkins build metadata; use the assigned
+build number directly when it is known:
 
 ```sh
 ci/jenkins/jenkins-stellar-intel.sh follow --queue 42

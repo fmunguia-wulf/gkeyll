@@ -126,7 +126,7 @@ prepare_auth() {
 }
 
 curl_auth() {
-    curl --fail --silent --show-error --config "$CURL_CONFIG" "$@"
+    curl --fail --silent --show-error --globoff --config "$CURL_CONFIG" "$@"
 }
 
 download_cli() {
@@ -145,8 +145,9 @@ require_positive_integer() {
 }
 
 queue_state() {
-    local queue_id="$1"
-    curl_auth "$JENKINS_URL/queue/item/$queue_id/api/json" | python3 -c '
+    local queue_id="$1" payload
+    payload="$(curl_auth "$JENKINS_URL/queue/item/$queue_id/api/json")" || return 1
+    python3 -c '
 import json
 import sys
 item = json.load(sys.stdin)
@@ -155,25 +156,51 @@ number = executable.get("number", "")
 cancelled = "true" if item.get("cancelled", False) else "false"
 why = " ".join((item.get("why") or "").split())
 print(f"{number}\t{cancelled}\t{why}")
-'
+' <<< "$payload"
+}
+
+build_for_queue() {
+    local queue_id="$1" payload
+    payload="$(curl_auth "$JENKINS_URL/job/$JENKINS_JOB/api/json?tree=builds[number,queueId]")" || return 1
+    python3 -c '
+import json
+import sys
+
+queue_id = int(sys.argv[1])
+for build in json.load(sys.stdin).get("builds", []):
+    if build.get("queueId") == queue_id:
+        print(build["number"])
+        break
+' "$queue_id" <<< "$payload"
 }
 
 build_state() {
-    local build_number="$1"
-    curl_auth "$JENKINS_URL/job/$JENKINS_JOB/$build_number/api/json" | python3 -c '
+    local build_number="$1" payload
+    payload="$(curl_auth "$JENKINS_URL/job/$JENKINS_JOB/$build_number/api/json")" || return 1
+    python3 -c '
 import json
 import sys
 build = json.load(sys.stdin)
 print("true" if build.get("building", False) else "false")
 print(build.get("result") or "")
-'
+' <<< "$payload"
 }
 
 wait_for_build_number() {
-    local queue_id="$1" state number cancelled why previous=''
+    local queue_id="$1" state number cancelled why previous='' attempt
     while :; do
         if ! state="$(queue_state "$queue_id")"; then
-            die "Queue item $queue_id is unavailable. Jenkins may have discarded it; use follow --build BUILD_NUMBER instead."
+            # Jenkins normally removes a queue item as soon as it starts its
+            # build. Build records retain queueId, so recover the assignment
+            # from the job rather than requiring the caller to discover it.
+            for attempt in {1..6}; do
+                if number="$(build_for_queue "$queue_id")" && [[ -n "$number" ]]; then
+                    RESOLVED_BUILD_NUMBER="$number"
+                    return 0
+                fi
+                sleep 2
+            done
+            die "Queue item $queue_id is unavailable and no matching Jenkins build was found"
         fi
         IFS=$'\t' read -r number cancelled why <<< "$state"
         [[ "$cancelled" == false ]] || die "Queue item $queue_id was cancelled"
