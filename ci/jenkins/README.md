@@ -1,9 +1,9 @@
 # Jenkins CI for Gkeyll
 
-For the separate, manually triggered CPU-only pipeline on Princeton's Stellar
-Intel cluster, see [README.stellar-intel.md](README.stellar-intel.md). It uses
-`Jenkinsfile.stellar-intel`, not the multibranch `Jenkinsfile` described
-below.
+For separate, manually triggered cluster pipelines, see
+[Stellar Intel](README.stellar-intel.md) and
+[Perlmutter GPU](README.perlmutter-gpu.md). They use dedicated trusted
+Jenkinsfiles rather than the multibranch `Jenkinsfile` described below.
 
 This sets up Jenkins (following the pattern used by
 [SUNDIALS](https://github.com/llnl/sundials/tree/main/test/jenkins), adapted
