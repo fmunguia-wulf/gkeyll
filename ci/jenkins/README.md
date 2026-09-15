@@ -18,8 +18,14 @@ branches.
 
 ## Unified local command
 
-From a Gkeyll checkout, use `./ci/jenkins/gkeyll-ci.sh` to select a platform
-client without remembering its individual script name:
+The script `gkeyll-ci.sh` provides a CLI to run, query and terminate CI. See
+
+```sh
+./ci/jenkins/gkeyll-ci.sh -h
+./ci/jenkins/gkeyll-ci.sh --help
+```
+
+It can be used with any of the machines listed above, for example:
 
 ```sh
 ./ci/jenkins/gkeyll-ci.sh personal run --pr 1128 --follow
