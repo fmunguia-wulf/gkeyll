@@ -48,7 +48,10 @@ ci/jenkins/jenkins-team-workstation.sh scan
 ci/jenkins/jenkins-team-workstation.sh run --pr 1234 --follow
 ci/jenkins/jenkins-team-workstation.sh run \
   --candidate-ref feature/new-solver --baseline-ref main
+ci/jenkins/jenkins-team-workstation.sh follow --queue 42
+ci/jenkins/jenkins-team-workstation.sh status --queue 42
 ci/jenkins/jenkins-team-workstation.sh active
+ci/jenkins/jenkins-team-workstation.sh abort --build 42
 ```
 
 `JENKINS_URL` defaults to loopback. Override `JENKINS_JOB` to select another
@@ -58,6 +61,14 @@ index; periodic scans remain the normal trigger. `--follow` streams the
 Jenkins console through the final result; it downloads the controller-matched
 Jenkins CLI JAR on first use and requires Java 21 or newer through `JAVA_HOME`
 or `PATH`.
+
+`follow` and `status` accept either a Jenkins queue ID or build number. A queue
+item is removed when Jenkins starts its build; the client recovers the assigned
+build from its retained `queueId` record.
+
+Use `abort --queue ID` to cancel work that Jenkins has not started, or
+`abort --build NUMBER` to stop a running build. Cancellation leaves its
+console log and archived artifacts available in Jenkins.
 
 Automatic and selected runs build isolated candidate/baseline prefixes, run
 unit and C regression checks, archive diagnostics, and fail on unacknowledged

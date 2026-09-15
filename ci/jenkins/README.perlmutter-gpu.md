@@ -130,6 +130,8 @@ ci/jenkins/jenkins-perlmutter-gpu.sh run --candidate-ref feature --baseline-ref 
 ci/jenkins/jenkins-perlmutter-gpu.sh follow --queue <id>
 ```
 
-Use Jenkins **Abort** to cancel a build. The pipeline cancels a submitted Slurm
+Use `jenkins-perlmutter-gpu.sh abort --queue ID` or
+`jenkins-perlmutter-gpu.sh abort --build NUMBER` to cancel a build; Jenkins
+**Abort** is an equivalent UI action. The pipeline cancels a submitted Slurm
 job, records its final state, archives Slurm output and regression databases,
 publishes the final GitHub status, and removes its isolated workspace.

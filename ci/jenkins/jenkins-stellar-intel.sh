@@ -44,6 +44,8 @@ Commands:
   follow --build NUMBER                      Stream a known Jenkins build.
   status --queue ID                          Show a queued build's current state.
   status --build NUMBER                      Show a known build's current state.
+  abort --queue ID                           Cancel a queued Jenkins build.
+  abort --build NUMBER                       Abort a running Jenkins build.
   active                                     List this job's queued and running work.
   recent [--limit NUMBER]                    List retained builds (default: 10).
 
@@ -441,7 +443,15 @@ status_command() {
         --queue)
             require_positive_integer 'queue ID' "$2"
             local state number cancelled why
-            state="$(queue_state "$2")" || die "Queue item $2 is unavailable"
+            if ! state="$(queue_state "$2")"; then
+                # Jenkins removes a queue item once it assigns a build. Recover
+                # that build from its retained queueId, as follow --queue does.
+                number="$(build_for_queue "$2")" || die "Queue item $2 is unavailable"
+                [[ -n "$number" ]] || die "Queue item $2 is unavailable"
+                echo "Queue item $2 is build #$number"
+                status_command --build "$number"
+                return
+            fi
             IFS=$'\t' read -r number cancelled why <<< "$state"
             if [[ -n "$number" ]]; then
                 echo "Queue item $2 is build #$number"
@@ -465,6 +475,27 @@ status_command() {
             fi
             ;;
         *) die 'usage: status --queue ID | status --build NUMBER' ;;
+    esac
+}
+
+abort_command() {
+    [[ $# -eq 2 ]] || die 'usage: abort --queue ID | abort --build NUMBER'
+    start_controller
+    prepare_auth
+    case "$1" in
+        --queue)
+            require_positive_integer 'queue ID' "$2"
+            curl_auth --output /dev/null --request POST --data-urlencode "id=$2" \
+                "$JENKINS_URL/queue/cancelItem"
+            echo "Requested cancellation of queue item $2"
+            ;;
+        --build)
+            require_positive_integer 'build number' "$2"
+            curl_auth --output /dev/null --request POST \
+                "$JENKINS_URL/job/$JENKINS_JOB/$2/stop"
+            echo "Requested cancellation of $JENKINS_JOB #$2"
+            ;;
+        *) die 'usage: abort --queue ID | abort --build NUMBER' ;;
     esac
 }
 
@@ -510,6 +541,7 @@ main() {
         run) shift; run_command "$@" ;;
         follow) shift; follow_command "$@" ;;
         status) shift; status_command "$@" ;;
+        abort) shift; abort_command "$@" ;;
         active) shift; active_command "$@" ;;
         recent) shift; recent_command "$@" ;;
         -h|--help|help) usage ;;

@@ -414,6 +414,7 @@ build number directly when it is known:
 ci/jenkins/jenkins-stellar-intel.sh follow --queue 42
 ci/jenkins/jenkins-stellar-intel.sh follow --build 187
 ci/jenkins/jenkins-stellar-intel.sh status --build 187
+ci/jenkins/jenkins-stellar-intel.sh abort --build 187
 
 # Recover build and queue identifiers after reconnecting.
 ci/jenkins/jenkins-stellar-intel.sh active
@@ -516,7 +517,8 @@ slurm-regression-<jobid>.out        regression-job stdout/stderr
 `gkylsoft/gkeyll-results/**/regressiondb`  candidate C-regression results
 ```
 
-To stop a queued or running build, use **Abort** in Jenkins. The submission
+To stop a queued or running build, use `abort --queue ID` or `abort --build
+NUMBER`; Jenkins **Abort** is an equivalent UI action. The submission
 shell cancels its recorded Slurm job and waits until it disappears from
 `squeue`. If Jenkins terminates that shell before its trap completes, the
 Pipeline's finalizer performs the same cancellation and writes the relevant

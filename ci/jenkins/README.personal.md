@@ -67,8 +67,11 @@ export JENKINS_CLI_AUTH_FILE="$HOME/.config/gkeyll/jenkins-cli.auth"
 ci/jenkins/jenkins-personal.sh run --pr 1234 --follow
 ci/jenkins/jenkins-personal.sh run \
   --candidate-ref feature/new-solver --baseline-ref main
+ci/jenkins/jenkins-personal.sh follow --queue 42
+ci/jenkins/jenkins-personal.sh status --queue 42
 ci/jenkins/jenkins-personal.sh active
 ci/jenkins/jenkins-personal.sh recent --limit 5
+ci/jenkins/jenkins-personal.sh abort --build 42
 ```
 
 `JENKINS_URL` defaults to `http://127.0.0.1:8080`; `JENKINS_JOB` defaults to
@@ -78,6 +81,14 @@ ci/jenkins/jenkins-personal.sh recent --limit 5
 Jenkins console through the final result. It downloads the controller-matched
 Jenkins CLI JAR on first use and requires Java 21 or newer through `JAVA_HOME`
 or `PATH`. Use the Jenkins UI as an equivalent alternative.
+
+`follow` and `status` accept either a Jenkins queue ID or build number. A queue
+item is removed when Jenkins starts its build; the client recovers the assigned
+build from its retained `queueId` record.
+
+Use `abort --queue ID` to cancel work that Jenkins has not started, or
+`abort --build NUMBER` to stop a running build. Cancellation leaves its
+console log and archived artifacts available in Jenkins.
 
 Each run builds the candidate and its baseline in isolated workspace prefixes,
 runs unit tests, compiles regressions, compares non-ignored C regressions, and
