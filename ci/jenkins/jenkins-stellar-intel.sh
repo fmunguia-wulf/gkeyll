@@ -129,6 +129,10 @@ curl_auth() {
     curl --fail --silent --show-error --globoff --config "$CURL_CONFIG" "$@"
 }
 
+curl_auth_quiet() {
+    curl --fail --silent --globoff --config "$CURL_CONFIG" "$@"
+}
+
 download_cli() {
     if [[ ! -s "$CLI_JAR" ]]; then
         local temporary_jar
@@ -146,7 +150,10 @@ require_positive_integer() {
 
 queue_state() {
     local queue_id="$1" payload
-    payload="$(curl_auth "$JENKINS_URL/queue/item/$queue_id/api/json")" || return 1
+    # Jenkins discards a queue item after assigning its build. That expected
+    # transition is handled by build_for_queue below, so do not print curl's
+    # 404 before attempting the recovery path.
+    payload="$(curl_auth_quiet "$JENKINS_URL/queue/item/$queue_id/api/json")" || return 1
     python3 -c '
 import json
 import sys
@@ -226,7 +233,7 @@ follow_build() {
     # -f follows console output without propagating a client interruption to
     # the Jenkins build. The controller and Slurm work remain independent of
     # the SSH terminal.
-    if ! "$JAVA_HOME/bin/java" -jar "$CLI_JAR" -s "$JENKINS_URL" \
+    if ! "$JAVA_HOME/bin/java" -jar "$CLI_JAR" -s "$JENKINS_URL" -http \
         -auth "@$JENKINS_CLI_AUTH_FILE" console "$JENKINS_JOB" "$build_number" -f; then
         echo "Console follower ended before Jenkins reported a terminal result; checking build status." >&2
     fi

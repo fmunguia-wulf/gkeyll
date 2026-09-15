@@ -430,6 +430,7 @@ launcher should be used for ordinary runs:
 ```sh
 java -jar "$GKEYLL_CI_ROOT/jenkins-cli.jar" \
   -s http://127.0.0.1:8080 \
+  -http \
   -auth @"$JENKINS_HOME/jenkins-cli.auth" \
   console gkeyll-ci-stellar-intel 187 -f
 ```
