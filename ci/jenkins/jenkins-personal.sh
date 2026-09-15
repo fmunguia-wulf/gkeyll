@@ -40,9 +40,31 @@ prepare_auth() {
 }
 curl_auth() { curl --fail --silent --show-error --globoff --config "$CURL_CONFIG" "$@"; }
 positive() { [[ "$2" =~ ^[1-9][0-9]*$ ]] || die "$1 must be a positive integer"; }
-state() { curl_auth "${JENKINS_URL}$(job_path)/$1/api/json" | python3 -c 'import json,sys; x=json.load(sys.stdin); print("BUILDING" if x["building"] else (x.get("result") or "UNKNOWN"))'; }
-status() { positive 'build number' "$1"; local s; s="$(state "$1")"; echo "Build #$1: $s"; [[ "$s" == SUCCESS ]]; }
-follow() { positive 'build number' "$1"; while :; do local s; s="$(state "$1")"; [[ "$s" == BUILDING ]] || { echo "Build #$1: $s"; [[ "$s" == SUCCESS ]]; return; }; sleep 5; done; }
+state() {
+    local payload
+    payload="$(curl_auth "${JENKINS_URL}$(job_path)/$1/api/json")" || return 75
+    python3 -c 'import json,sys; x=json.load(sys.stdin); print("BUILDING" if x["building"] else (x.get("result") or "UNKNOWN"))' <<< "$payload"
+}
+status() {
+    positive 'build number' "$1"
+    local s
+    s="$(state "$1")" || die "Build #$1 is not available yet. Retry shortly."
+    echo "Build #$1: $s"
+    [[ "$s" == SUCCESS ]]
+}
+follow() {
+    positive 'build number' "$1"
+    while :; do
+        local s
+        if ! s="$(state "$1")"; then
+            echo "Build #$1 is not available yet; retrying." >&2
+            sleep 2
+            continue
+        fi
+        [[ "$s" == BUILDING ]] || { echo "Build #$1: $s"; [[ "$s" == SUCCESS ]]; return; }
+        sleep 5
+    done
+}
 submit() {
     local pr="$1" candidate="$2" baseline="$3" headers queue
     headers="$(mktemp "${TMPDIR:-/tmp}/gkeyll-jenkins-headers.XXXXXX")"
