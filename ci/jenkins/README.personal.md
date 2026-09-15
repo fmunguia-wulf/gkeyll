@@ -74,8 +74,10 @@ ci/jenkins/jenkins-personal.sh recent --limit 5
 `JENKINS_URL` defaults to `http://127.0.0.1:8080`; `JENKINS_JOB` defaults to
 `gkeyll-ci-personal`. The `run` command accepts either `--pr NUMBER`, or both
 `--candidate-ref REF` and `--baseline-ref REF`. Branch names and full
-40-character commit SHAs are accepted; tags are not. `--follow` waits for the
-queued build to complete. Use the Jenkins UI as an equivalent alternative.
+40-character commit SHAs are accepted; tags are not. `--follow` streams the
+Jenkins console through the final result. It downloads the controller-matched
+Jenkins CLI JAR on first use and requires Java 21 or newer through `JAVA_HOME`
+or `PATH`. Use the Jenkins UI as an equivalent alternative.
 
 Each run builds the candidate and its baseline in isolated workspace prefixes,
 runs unit tests, compiles regressions, compares non-ignored C regressions, and

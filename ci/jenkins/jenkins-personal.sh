@@ -6,6 +6,7 @@ set -euo pipefail
 JENKINS_URL="${JENKINS_URL:-http://127.0.0.1:8080}"
 JENKINS_JOB="${JENKINS_JOB:-gkeyll-ci-personal}"
 JENKINS_CLI_AUTH_FILE="${JENKINS_CLI_AUTH_FILE:-}"
+JENKINS_CLI_JAR="${JENKINS_CLI_JAR:-${TMPDIR:-/tmp}/gkeyll-jenkins-cli.jar}"
 CURL_CONFIG=''
 QUEUE_ID=''
 
@@ -40,6 +41,23 @@ prepare_auth() {
 }
 curl_auth() { curl --fail --silent --show-error --globoff --config "$CURL_CONFIG" "$@"; }
 positive() { [[ "$2" =~ ^[1-9][0-9]*$ ]] || die "$1 must be a positive integer"; }
+java_command() {
+    if [[ -n "${JAVA_HOME:-}" && -x "$JAVA_HOME/bin/java" ]]; then
+        printf '%s' "$JAVA_HOME/bin/java"
+    else
+        command -v java || die 'Set JAVA_HOME or put Java 21 or newer on PATH to stream the Jenkins console'
+    fi
+}
+download_cli() {
+    if [[ ! -s "$JENKINS_CLI_JAR" ]]; then
+        local directory temporary
+        directory="$(dirname "$JENKINS_CLI_JAR")"
+        mkdir -p "$directory"
+        temporary="$(mktemp "$directory/gkeyll-jenkins-cli.XXXXXX")"
+        curl --fail --silent --show-error --output "$temporary" "$JENKINS_URL/jnlpJars/jenkins-cli.jar"
+        mv "$temporary" "$JENKINS_CLI_JAR"
+    fi
+}
 state() {
     local payload
     payload="$(curl_auth "${JENKINS_URL}$(job_path)/$1/api/json")" || return 75
@@ -54,6 +72,17 @@ status() {
 }
 follow() {
     positive 'build number' "$1"
+    local java
+    java="$(java_command)"
+    download_cli
+    echo "Following $JENKINS_JOB #$1"
+    echo "Build URL: ${JENKINS_URL}$(job_path)/$1/"
+    trap "echo 'Stopped following build #$1'; exit 130" INT TERM HUP
+    if ! "$java" -jar "$JENKINS_CLI_JAR" -s "$JENKINS_URL" -http \
+        -auth "@$JENKINS_CLI_AUTH_FILE" console "$JENKINS_JOB" "$1" -f; then
+        echo 'Console follower ended before Jenkins reported a terminal result; checking build status.' >&2
+    fi
+    trap - INT TERM HUP
     while :; do
         local s
         if ! s="$(state "$1")"; then
