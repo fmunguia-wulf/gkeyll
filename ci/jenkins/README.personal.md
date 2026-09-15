@@ -28,9 +28,12 @@ and Python with NumPy. In Jenkins global environment variables set:
 | `PERSONAL_REGRESSION_JOBS` | Optional C-regression parallelism; default `1`. |
 
 Create a Pipeline job named `gkeyll-ci-personal`. Choose **Pipeline script from
-SCM**, use the repository's trusted `main` branch, and set Script Path to
-`ci/jenkins/jenkinsfile.personal`. Do not let a selected PR supply the Pipeline
-script. Run it once without parameters so Jenkins registers the parameters.
+SCM**, initially use the branch containing `jenkinsfile.personal` and its
+supporting personal-CI files, and set Script Path to
+`ci/jenkins/jenkinsfile.personal`. This lets the Jenkins setup be validated
+before it is merged. Once that branch is reviewed and merged, change the job's
+SCM branch to `main`. Do not let a selected PR supply the Pipeline script. Run
+it once without parameters so Jenkins registers the parameters.
 
 The job publishes `continuous-integration/jenkins/personal` to the exact tested
 candidate commit. It first posts `pending`, then posts `success`, `failure`, or
