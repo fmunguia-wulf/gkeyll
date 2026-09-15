@@ -57,7 +57,9 @@ ci/jenkins/jenkins-team-workstation.sh abort --build 42
 `JENKINS_URL` defaults to loopback. Override `JENKINS_JOB` to select another
 trusted child and `JENKINS_ROOT_JOB` to select another multibranch root. The
 client never starts Jenkins or tmux. `scan` requests an immediate multibranch
-index; periodic scans remain the normal trigger. `--follow` streams the
+index, waits for it to finish, then reports discovered `main` and eligible PR
+child jobs plus builds newly scheduled by that scan; periodic scans remain the
+normal trigger. `--follow` streams the
 Jenkins console through the final result; it downloads the controller-matched
 Jenkins CLI JAR on first use and requires Java 21 or newer through `JAVA_HOME`
 or `PATH`.

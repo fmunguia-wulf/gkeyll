@@ -17,14 +17,14 @@ Platforms:
   team           Local team-workstation Jenkins CI.
 
 Commands:
+  scan           Discover branches and report scheduled builds (team only).
+  start          Start the Jenkins controller (stellar_cpu, perlmutter_gpu).
   run            Queue a pull-request or candidate/baseline comparison build.
-  follow         Wait for and stream a queued or known build.
-  status         Show the state of a queued or known build.
-  abort          Cancel a queued or running build.
   active         List queued and running work.
   recent         List retained builds.
-  start          Start the Jenkins controller (stellar_cpu, perlmutter_gpu).
-  scan           Request multibranch indexing (team only).
+  status         Show the state of a queued or known build.
+  follow         Wait for and stream a queued or known build.
+  abort          Cancel a queued or running build.
 
 Examples:
   gkeyll-ci.sh personal run --pr 1128 --follow

@@ -40,14 +40,14 @@ Commands:
   run --pr NUMBER [--follow]                 Queue a GitHub pull-request build.
   run --candidate-ref REF --baseline-ref REF [--follow]
                                              Queue a branch or commit comparison.
-  follow --queue ID                          Wait for and stream a queued build.
-  follow --build NUMBER                      Stream a known Jenkins build.
-  status --queue ID                          Show a queued build's current state.
-  status --build NUMBER                      Show a known build's current state.
-  abort --queue ID                           Cancel a queued Jenkins build.
-  abort --build NUMBER                       Abort a running Jenkins build.
   active                                     List this job's queued and running work.
   recent [--limit NUMBER]                    List retained builds (default: 10).
+  status --queue ID                          Show a queued build's current state.
+  status --build NUMBER                      Show a known build's current state.
+  follow --queue ID                          Wait for and stream a queued build.
+  follow --build NUMBER                      Stream a known Jenkins build.
+  abort --queue ID                           Cancel a queued Jenkins build.
+  abort --build NUMBER                       Abort a running Jenkins build.
 
 The run command returns after Jenkins accepts the request. --follow streams
 the build console and returns its final Jenkins result. Press Ctrl-C to stop

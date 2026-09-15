@@ -13,18 +13,18 @@ usage() { cat <<'EOF'
 Usage: jenkins-team-workstation.sh <command> [flags]
 
 Commands:
-  scan                                      Request immediate multibranch indexing.
+  scan                                      Discover branches and report scheduled builds.
   run --pr NUMBER [--follow]                Queue a GitHub pull-request build.
   run --candidate-ref REF --baseline-ref REF [--follow]
                                             Queue a branch or commit comparison.
-  follow --queue ID                         Wait for and stream a queued build.
-  follow --build NUMBER                     Stream a known Jenkins build.
-  status --queue ID                         Show a queued build's current state.
-  status --build NUMBER                     Show a known build's current state.
-  abort --queue ID                          Cancel a queued Jenkins build.
-  abort --build NUMBER                      Abort a running Jenkins build.
   active                                    List this job's queued and running work.
   recent [--limit NUMBER]                   List retained builds (default: 10).
+  status --queue ID                         Show a queued build's current state.
+  status --build NUMBER                     Show a known build's current state.
+  follow --queue ID                         Wait for and stream a queued build.
+  follow --build NUMBER                     Stream a known Jenkins build.
+  abort --queue ID                          Cancel a queued Jenkins build.
+  abort --build NUMBER                      Abort a running Jenkins build.
 
 The run command returns after Jenkins accepts the request. --follow streams
 the build console and returns its final Jenkins result. Press Ctrl-C to stop
@@ -89,6 +89,135 @@ for item in json.load(sys.stdin).get("items",[]):
 ' "$JENKINS_JOB" <<< "$payload"; }
 active() { local builds queues output; builds="$(job_builds)"; queues="$(queue_items)"; output="$(format_builds 100 true "$builds")"; output+=$'\n'"$(format_queue_items "$queues")"; [[ -n "${output//$'\n'/}" ]] && printf '%s\n' "$output" || echo "No queued or running builds for $JENKINS_JOB"; }
 recent() { local n="${1:-10}" output; positive '--limit' "$n"; output="$(format_builds "$n" false "$(job_builds)")"; [[ -n "$output" ]] && printf '%s\n' "$output" || echo "No retained builds for $JENKINS_JOB"; }
-scan() { curl_auth --output /dev/null --request POST "${JENKINS_URL}$(path_for "$JENKINS_ROOT_JOB")/build?delay=0"; echo "Requested multibranch scan for $JENKINS_ROOT_JOB"; }
+
+scan_jobs() {
+ local payload
+ payload="$(curl_auth "${JENKINS_URL}$(path_for "$JENKINS_ROOT_JOB")/api/json?tree=jobs[name,displayName,url]")" || return 1
+ python3 -c '
+import json, re, sys
+for job in json.load(sys.stdin).get("jobs", []):
+ name = job.get("name", "")
+ if name == "main" or re.fullmatch(r"PR-[1-9][0-9]*", name):
+  print("\t".join((name, job.get("displayName") or name, job.get("url") or "")))
+' <<< "$payload"
+}
+
+scan_builds() {
+ local jobs_file="$1" output_file="$2" name display url payload
+ : > "$output_file"
+ while IFS=$'\t' read -r name display url; do
+  [[ -n "$name" ]] || continue
+  payload="$(curl_auth "${JENKINS_URL}$(path_for "$JENKINS_ROOT_JOB/$name")/api/json?tree=builds[number,queueId,building,result,url]")" || return 1
+  python3 -c '
+import json, sys
+name, display, url = sys.argv[1:]
+for build in json.load(sys.stdin).get("builds", []):
+ queue_id = build.get("queueId")
+ if queue_id is not None:
+  print("\t".join((name, display, url, str(queue_id), str(build.get("number", "")),
+                  "true" if build.get("building", False) else "false",
+                  build.get("result") or "", build.get("url") or "")))
+' "$name" "$display" "$url" <<< "$payload" >> "$output_file"
+ done < "$jobs_file"
+}
+
+scan_computation() {
+ local payload
+ payload="$(curl_auth "${JENKINS_URL}$(path_for "$JENKINS_ROOT_JOB")/api/json?tree=computation[building,result,timestamp,url]")" || return 1
+ python3 -c '
+import json, sys
+computation = json.load(sys.stdin).get("computation") or {}
+print("\t".join(("true" if computation.get("building", False) else "false",
+                 computation.get("result") or "", str(computation.get("timestamp") or ""),
+                 computation.get("url") or "")))
+' <<< "$payload"
+}
+
+request_scan() {
+ local headers queue_url
+ headers="$(mktemp "${TMPDIR:-/tmp}/gkeyll-jenkins-headers.XXXXXX")"
+ if ! curl_auth --dump-header "$headers" --output /dev/null --request POST \
+  "${JENKINS_URL}$(path_for "$JENKINS_ROOT_JOB")/build?delay=0"; then
+  rm -f "$headers"
+  return 1
+ fi
+ queue_url="$(awk 'BEGIN{IGNORECASE=1} /^Location:/{sub(/^[^:]*: /,"");sub(/\r$/,"");print;exit}' "$headers")"
+ rm -f "$headers"
+ [[ "$queue_url" =~ /queue/item/([1-9][0-9]*)/ ]] || return 1
+ printf '%s\n' "${BASH_REMATCH[1]}"
+}
+
+wait_for_scan() {
+ local previous_timestamp="$1" queue_id="$2" attempt state building result timestamp url
+ for attempt in {1..150}; do
+  state="$(scan_computation)" || return 1
+  IFS=$'\t' read -r building result timestamp url <<< "$state"
+  if [[ -n "$timestamp" && "$timestamp" != "$previous_timestamp" && "$building" == false ]]; then
+   [[ "$result" != FAILURE && "$result" != ABORTED ]] || return 2
+   return 0
+  fi
+  sleep 2
+ done
+ return 3
+}
+
+report_scan() {
+ local before_file="$1" jobs_file="$2" after_file="$3"
+ python3 -c '
+import pathlib, re, sys
+before_file, jobs_file, after_file, root, base_url = sys.argv[1:]
+before = set()
+for line in pathlib.Path(before_file).read_text().splitlines():
+ fields = line.split("\t")
+ if len(fields) >= 4:
+  before.add((fields[0], fields[3]))
+for line in pathlib.Path(jobs_file).read_text().splitlines():
+ name, display, _ = line.split("\t", 2)
+ if name == "main":
+  print("Found main (Jenkins job main)")
+ else:
+  print("Found PR #{} (Jenkins job {})".format(name[3:], name))
+scheduled = []
+for line in pathlib.Path(after_file).read_text().splitlines():
+ fields = line.split("\t")
+ if len(fields) >= 4 and (fields[0], fields[3]) not in before:
+  scheduled.append(fields)
+if not scheduled:
+ print("No builds scheduled by this scan.")
+for fields in sorted(scheduled, key=lambda item: (item[0], int(item[3]))):
+ name, _, _, queue_id = fields[:4]
+ print("Queued {}/{} as queue item {}".format(root, name, queue_id))
+ print("Queue URL: {}/queue/item/{}/".format(base_url.rstrip("/"), queue_id))
+' "$before_file" "$jobs_file" "$after_file" "$JENKINS_ROOT_JOB" "$JENKINS_URL"
+}
+
+scan() {
+ local temporary before_jobs before_builds after_jobs after_builds previous_state previous_timestamp queue_id
+ temporary="$(mktemp -d "${TMPDIR:-/tmp}/gkeyll-jenkins-scan.XXXXXX")"
+ before_jobs="$temporary/before-jobs"
+ before_builds="$temporary/before-builds"
+ after_jobs="$temporary/after-jobs"
+ after_builds="$temporary/after-builds"
+ scan_jobs > "$before_jobs" || { rm -rf "$temporary"; die "Could not read multibranch jobs for $JENKINS_ROOT_JOB"; }
+ scan_builds "$before_jobs" "$before_builds" || { rm -rf "$temporary"; die "Could not snapshot builds for $JENKINS_ROOT_JOB"; }
+ previous_state="$(scan_computation)" || { rm -rf "$temporary"; die "Could not inspect multibranch indexing for $JENKINS_ROOT_JOB"; }
+ IFS=$'\t' read -r _ _ previous_timestamp _ <<< "$previous_state"
+ queue_id="$(request_scan)" || { rm -rf "$temporary"; die "Jenkins rejected the multibranch scan request for $JENKINS_ROOT_JOB"; }
+ if wait_for_scan "$previous_timestamp" "$queue_id"; then
+  :
+ else
+  local status=$?
+  rm -rf "$temporary"
+  case "$status" in
+   2) die "Multibranch scan queue item $queue_id failed for $JENKINS_ROOT_JOB" ;;
+   3) die "Multibranch scan queue item $queue_id did not finish within five minutes for $JENKINS_ROOT_JOB" ;;
+   *) die "Could not monitor multibranch scan queue item $queue_id for $JENKINS_ROOT_JOB" ;;
+  esac
+ fi
+ scan_jobs > "$after_jobs" || { rm -rf "$temporary"; die "Could not read discovered jobs for $JENKINS_ROOT_JOB"; }
+ scan_builds "$after_jobs" "$after_builds" || { rm -rf "$temporary"; die "Could not read discovered builds for $JENKINS_ROOT_JOB"; }
+ report_scan "$before_builds" "$after_jobs" "$after_builds"
+ rm -rf "$temporary"
+}
 main() { (($#))||{ usage;exit 2;};case "$1" in -h|--help|help)usage;return;;esac;prepare;case "$1" in scan)shift;[[ $# == 0 ]]||die 'usage: scan';scan;;run)shift;run "$@";;follow)shift;follow_command "$@";;status)shift;status_command "$@";;abort)shift;abort "$@";;active)shift;[[ $# == 0 ]]||die 'usage: active';active;;recent)shift;[[ $# == 0 || ( $# == 2 && $1 == --limit ) ]]||die 'usage: recent [--limit NUMBER]';recent "${2:-10}";;*)usage >&2;die "unknown command: $1";;esac; }
 main "$@"
