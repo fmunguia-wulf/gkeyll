@@ -432,6 +432,8 @@ returns zero only for `SUCCESS`. It does not move the controller or Pipeline
 into the SSH shell: an SSH disconnect or interrupt stops only the local
 monitor, while Jenkins in tmux and submitted Slurm jobs continue. Attach to
 the controller console for diagnosis with `tmux attach -t gkeyll_ci`.
+Press `Ctrl-C` while following to stop monitoring and return to the SSH shell;
+it does not abort the Jenkins build.
 
 Internally, the follow operation uses the controller-matched Jenkins CLI JAR
 with an API-token credential file; this is useful for direct diagnosis but the

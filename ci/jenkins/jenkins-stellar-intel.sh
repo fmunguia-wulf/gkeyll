@@ -316,6 +316,10 @@ follow_build() {
     echo "Following $JENKINS_JOB #$build_number"
     echo "Build URL: $JENKINS_URL/job/$JENKINS_JOB/$build_number/"
 
+    # The CLI is only a console client. Let an interactive interrupt detach
+    # this client cleanly; Jenkins in tmux and any Slurm jobs keep running.
+    trap 'echo "Stopped following build #'"$build_number"'; exit 130' INT TERM HUP
+
     # -f follows console output without propagating a client interruption to
     # the Jenkins build. The controller and Slurm work remain independent of
     # the SSH terminal.
@@ -323,6 +327,8 @@ follow_build() {
         -auth "@$JENKINS_CLI_AUTH_FILE" console "$JENKINS_JOB" "$build_number" -f; then
         echo "Console follower ended before Jenkins reported a terminal result; checking build status." >&2
     fi
+
+    trap - INT TERM HUP
 
     while :; do
         mapfile -t state < <(build_state "$build_number")
