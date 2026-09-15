@@ -324,7 +324,7 @@ def submitUnitTests() {
         'unit',
         'ci/jenkins/slurm-unit-tests.stellar_cpu.sh',
         '4',
-        (env.STELLAR_CPU_SLURM_TIME ?: '00:30:00').trim()
+        (env.STELLAR_CPU_UNIT_TIME ?: '00:30:00').trim()
     )
 }
 

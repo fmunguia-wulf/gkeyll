@@ -322,7 +322,7 @@ def submitUnitTests() {
     submitSlurmJob(
         'unit',
         'ci/jenkins/slurm-unit-tests.perlmutter_gpu.sh',
-        (env.PERLMUTTER_GPU_SLURM_TIME ?: '00:30:00').trim()
+        (env.PERLMUTTER_GPU_UNIT_TIME ?: '00:30:00').trim()
     )
 }
 

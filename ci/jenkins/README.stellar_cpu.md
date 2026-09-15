@@ -347,8 +347,8 @@ set:
 | `STELLAR_CPU_GITHUB_CREDENTIAL_ID` | Jenkins credential ID, e.g. `gkeyll-github-stellar-cpu` |
 | `STELLAR_CPU_SLURM_QOS` | Your valid CPU QoS, e.g. `pppl-short` |
 | `STELLAR_CPU_SLURM_ACCOUNT` | Project account, if required; otherwise omit it |
-| `STELLAR_CPU_SLURM_TIME` | Optional time limit; defaults to `00:30:00` |
 | `STELLAR_CPU_BUILD_JOBS` | Optional login-node compile parallelism; defaults to `3` |
+| `STELLAR_CPU_UNIT_TIME` | Optional unit-test allocation limit; defaults to `00:30:00` |
 | `STELLAR_CPU_REGRESSION_TIME` | Optional C-regression allocation limit; defaults to `04:00:00` |
 | `STELLAR_CPU_REGRESSION_JOBS` | Optional concurrent C test runs; defaults to `4` |
 | `STELLAR_CPU_REGRESSION_TEST_TIMEOUT` | Optional per-C-test limit in seconds; defaults to `900` |

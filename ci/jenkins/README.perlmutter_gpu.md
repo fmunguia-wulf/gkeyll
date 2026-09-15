@@ -125,9 +125,9 @@ Set these Jenkins global environment variables:
 | `PERLMUTTER_GPU_SLURM_ACCOUNT` | Required NERSC GPU project/account |
 | `PERLMUTTER_GPU_NODE_LABEL` | Optional; defaults to `perlmutter_gpu` |
 | `PERLMUTTER_GPU_SLURM_QOS` | Optional; defaults to `shared` |
-| `PERLMUTTER_GPU_SLURM_TIME` | Optional unit limit; defaults to `00:30:00` |
-| `PERLMUTTER_GPU_REGRESSION_TIME` | Optional regression limit; defaults to `04:00:00` |
 | `PERLMUTTER_GPU_BUILD_JOBS` | Optional login-node build parallelism; defaults to `3` |
+| `PERLMUTTER_GPU_UNIT_TIME` | Optional unit-test allocation limit; defaults to `00:30:00` |
+| `PERLMUTTER_GPU_REGRESSION_TIME` | Optional regression limit; defaults to `04:00:00` |
 | `PERLMUTTER_GPU_REGRESSION_JOBS` | Optional CPU-phase concurrency; defaults to `4` |
 | `PERLMUTTER_GPU_REGRESSION_TEST_TIMEOUT` | Optional per-test limit in seconds; defaults to `900` |
 
