@@ -414,7 +414,17 @@ build number directly when it is known:
 ci/jenkins/jenkins-stellar-intel.sh follow --queue 42
 ci/jenkins/jenkins-stellar-intel.sh follow --build 187
 ci/jenkins/jenkins-stellar-intel.sh status --build 187
+
+# Recover build and queue identifiers after reconnecting.
+ci/jenkins/jenkins-stellar-intel.sh active
+ci/jenkins/jenkins-stellar-intel.sh recent
+ci/jenkins/jenkins-stellar-intel.sh recent --limit 5
 ```
+
+`active` lists queued and running builds for this Jenkins job. `recent` lists
+the most recent 10 retained builds (or the requested positive `--limit`), with
+their queue IDs, selectors, state, time, and Jenkins URL. Both commands include
+builds submitted through the UI as well as the launcher.
 
 `--follow` waits for Jenkins to assign the queue item a build number, streams
 the Pipeline console (including Slurm state), prints its terminal result, and

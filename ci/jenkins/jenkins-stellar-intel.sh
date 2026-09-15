@@ -40,6 +40,8 @@ Usage:
   jenkins-stellar-intel.sh follow --build NUMBER
   jenkins-stellar-intel.sh status --queue ID
   jenkins-stellar-intel.sh status --build NUMBER
+  jenkins-stellar-intel.sh active
+  jenkins-stellar-intel.sh recent [--limit NUMBER]
 
 The run command submits gkeyll-ci-stellar-intel and normally returns as soon
 as Jenkins accepts the request. --follow waits for the queue item to become a
@@ -191,6 +193,90 @@ build = json.load(sys.stdin)
 print("true" if build.get("building", False) else "false")
 print(build.get("result") or "")
 ' <<< "$payload"
+}
+
+job_builds() {
+    curl_auth "$JENKINS_URL/job/$JENKINS_JOB/api/json?tree=builds[number,queueId,building,result,timestamp,url,actions[parameters[name,value]]]"
+}
+
+queue_items() {
+    curl_auth "$JENKINS_URL/queue/api/json?tree=items[id,task[name],why,cancelled,executable[number],actions[parameters[name,value]]]"
+}
+
+format_builds() {
+    local limit="$1" active_only="$2" payload="$3"
+    python3 -c '
+import datetime
+import json
+import sys
+
+limit = int(sys.argv[1])
+active_only = sys.argv[2] == "true"
+
+def selectors(actions):
+    values = {}
+    for action in actions or []:
+        for parameter in action.get("parameters") or []:
+            name = parameter.get("name")
+            if name in ("CANDIDATE_PR", "CANDIDATE_REF", "BASELINE_REF"):
+                values[name] = parameter.get("value") or "-"
+    return "pr={0} candidate={1} baseline={2}".format(
+        values.get("CANDIDATE_PR", "-"),
+        values.get("CANDIDATE_REF", "-"),
+        values.get("BASELINE_REF", "-"))
+
+count = 0
+for build in json.load(sys.stdin).get("builds", []):
+    if active_only and not build.get("building", False):
+        continue
+    if count >= limit:
+        break
+    state = "RUNNING" if build.get("building", False) else (build.get("result") or "UNKNOWN")
+    timestamp = build.get("timestamp")
+    when = "-"
+    if timestamp is not None:
+        when = datetime.datetime.fromtimestamp(
+            timestamp / 1000.0, datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    queue_id = build.get("queueId")
+    print("BUILD #{number} {state} queue={queue} {when} {selectors} url={url}".format(
+        number=build.get("number", "?"), state=state, queue=queue_id if queue_id is not None else "-",
+        when=when, selectors=selectors(build.get("actions")), url=build.get("url", "-")))
+    count += 1
+' "$limit" "$active_only" <<< "$payload"
+}
+
+format_queue_items() {
+    local payload="$1"
+    python3 -c '
+import json
+import sys
+
+job = sys.argv[1]
+
+def selectors(actions):
+    values = {}
+    for action in actions or []:
+        for parameter in action.get("parameters") or []:
+            name = parameter.get("name")
+            if name in ("CANDIDATE_PR", "CANDIDATE_REF", "BASELINE_REF"):
+                values[name] = parameter.get("value") or "-"
+    return "pr={0} candidate={1} baseline={2}".format(
+        values.get("CANDIDATE_PR", "-"),
+        values.get("CANDIDATE_REF", "-"),
+        values.get("BASELINE_REF", "-"))
+
+for item in json.load(sys.stdin).get("items", []):
+    if (item.get("task") or {}).get("name") != job:
+        continue
+    # A started item is displayed as its running build, not twice.
+    if item.get("executable"):
+        continue
+    state = "CANCELLED" if item.get("cancelled", False) else "QUEUED"
+    why = " ".join((item.get("why") or "waiting").split())
+    print("QUEUE {id} {state} reason={why} {selectors}".format(
+        id=item.get("id", "?"), state=state, why=why,
+        selectors=selectors(item.get("actions"))))
+' "$JENKINS_JOB" <<< "$payload"
 }
 
 wait_for_build_number() {
@@ -372,6 +458,40 @@ status_command() {
     esac
 }
 
+active_command() {
+    local builds queues output
+    [[ $# -eq 0 ]] || die 'usage: active'
+    start_controller
+    prepare_auth
+    builds="$(job_builds)"
+    queues="$(queue_items)"
+    output="$(format_builds 100 true "$builds")"
+    output+=$'\n'"$(format_queue_items "$queues")"
+    if [[ -z "${output//$'\n'/}" ]]; then
+        echo "No queued or running builds for $JENKINS_JOB"
+    else
+        printf '%s\n' "$output"
+    fi
+}
+
+recent_command() {
+    local limit=10 builds output
+    if [[ $# -gt 0 ]]; then
+        [[ $# -eq 2 && "$1" == --limit ]] || die 'usage: recent [--limit NUMBER]'
+        limit="$2"
+    fi
+    require_positive_integer '--limit' "$limit"
+    start_controller
+    prepare_auth
+    builds="$(job_builds)"
+    output="$(format_builds "$limit" false "$builds")"
+    if [[ -z "$output" ]]; then
+        echo "No retained builds for $JENKINS_JOB"
+    else
+        printf '%s\n' "$output"
+    fi
+}
+
 main() {
     (($# >= 1)) || { usage; exit 2; }
     case "$1" in
@@ -380,6 +500,8 @@ main() {
         run) shift; run_command "$@" ;;
         follow) shift; follow_command "$@" ;;
         status) shift; status_command "$@" ;;
+        active) shift; active_command "$@" ;;
+        recent) shift; recent_command "$@" ;;
         -h|--help|help) usage ;;
         *) usage >&2; die "unknown command: $1" ;;
     esac
