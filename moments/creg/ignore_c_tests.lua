@@ -51,6 +51,13 @@ return {
       "rt_vacuum_einstein_kerr",
       "rt_vacuum_einstein_conformal_gowdywave",
       "rt_vacuum_einstein_conformal_linearwave",
+      "rt_gr_quadrants_2d",
+      "rt_vacuum_einstein_conformal_brill_lindquist",
+      "rt_gr_strong_blast",
+      "rt_vacuum_einstein_conformal_kerr",
+      "rt_vacuum_einstein_brill_lindquist",
+      "rt_gr_mhd_bhl_spinning_mhd",
+      "rt_euler_rgfm_fedkiw_shock",
    },
    gpu = {
    },

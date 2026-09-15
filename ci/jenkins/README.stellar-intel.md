@@ -20,6 +20,7 @@ push the Stellar CI implementation files to it:
 
 ```text
 ci/jenkins/Jenkinsfile.stellar-intel
+ci/jenkins/jenkins-stellar-intel.sh
 ci/jenkins/slurm-unit-tests.stellar-intel.sh
 ci/jenkins/slurm-regression-tests.stellar-intel.sh
 ci/jenkins/README.stellar-intel.md
@@ -259,7 +260,12 @@ The controller must run as the same Unix account that owns the Slurm
 allocation. It binds only to `127.0.0.1`; do not expose a public port or
 configure a GitHub webhook for this Level-1 setup.
 
-After SSH/Duo authentication from the laptop, open a tunnel. The first port is
+### Optional browser access
+
+The command-line launcher below is the normal way to submit a build. The UI is
+still available for one-time configuration, interactive inspection, or manual
+**Build with Parameters** submissions. After SSH/Duo authentication from the
+laptop, open a tunnel. The first port is
 on the laptop and can be any unused port; the second is Jenkins' listening
 port on Stellar. If Jenkins uses its default remote port 8080 and the Mac's
 local Jenkins already owns local port 8080, use 8081 locally:
@@ -284,6 +290,23 @@ Complete Jenkins initial setup and create an administrator account.
 Install these Jenkins plugins if they are not already present: Pipeline, Git,
 Credentials Binding, and the Git client plugin. The Pipeline and Git plugins
 are normally part of Jenkins' suggested-plugin installation.
+
+### Create a Jenkins API token for the launcher
+
+While signed in to the Jenkins UI as the user who will launch builds, create a
+user API token in that user's security configuration. Store the Jenkins user
+name and token in a file readable only by that Unix user:
+
+```sh
+umask 077
+printf '%s:%s\n' '<jenkins-user>' '<jenkins-api-token>' \
+  > "$JENKINS_HOME/jenkins-cli.auth"
+chmod 600 "$JENKINS_HOME/jenkins-cli.auth"
+```
+
+This token is separate from the GitHub credential below. The launcher uses it
+only against Jenkins at `127.0.0.1`; it neither changes browser login nor
+disables Jenkins CSRF protection.
 
 ## 4. Create the GitHub credential
 
@@ -365,6 +388,57 @@ Tags are deliberately not accepted. This keeps a run's input unambiguous and
 avoids testing an unexpectedly retargeted tag.
 
 ## 7. Run and inspect a build
+
+### Single-session command-line launch
+
+After SSH/Duo authentication, run the launcher from the reviewed CI checkout.
+It defaults `GKEYLL_CI_ROOT` to `/scratch/gpfs/$USER/gkeyll_ci`, starts the
+controller in a detached `gkeyll_ci` tmux session when necessary, and submits
+the existing `gkeyll-ci-stellar-intel` job through its loopback-only API:
+
+```sh
+# Queue a PR build and return after Jenkins accepts it.
+ci/jenkins/jenkins-stellar-intel.sh run --pr 1104
+
+# Queue a direct-ref build and follow it through its final result.
+ci/jenkins/jenkins-stellar-intel.sh run \
+  --candidate-ref feature/new-solver --baseline-ref main --follow
+```
+
+The default command prints a Jenkins queue ID and returns so the SSH terminal
+is immediately available. Use that ID while it remains queued, or use the
+assigned build number after it starts:
+
+```sh
+ci/jenkins/jenkins-stellar-intel.sh follow --queue 42
+ci/jenkins/jenkins-stellar-intel.sh follow --build 187
+ci/jenkins/jenkins-stellar-intel.sh status --build 187
+```
+
+`--follow` waits for Jenkins to assign the queue item a build number, streams
+the Pipeline console (including Slurm state), prints its terminal result, and
+returns zero only for `SUCCESS`. It does not move the controller or Pipeline
+into the SSH shell: an SSH disconnect or interrupt stops only the local
+monitor, while Jenkins in tmux and submitted Slurm jobs continue. Attach to
+the controller console for diagnosis with `tmux attach -t gkeyll_ci`.
+
+Internally, the follow operation uses the controller-matched Jenkins CLI JAR
+with an API-token credential file; this is useful for direct diagnosis but the
+launcher should be used for ordinary runs:
+
+```sh
+java -jar "$GKEYLL_CI_ROOT/jenkins-cli.jar" \
+  -s http://127.0.0.1:8080 \
+  -auth @"$JENKINS_HOME/jenkins-cli.auth" \
+  console gkeyll-ci-stellar-intel 187 -f
+```
+
+The UI remains a fully supported alternative. A UI-triggered build and a
+launcher-triggered build submit the same job and parameters; the existing
+`disableConcurrentBuilds()` setting makes the later request wait in Jenkins'
+queue.
+
+### Browser launch
 
 After reaching Jenkins through the SSH tunnel, select **Build with
 Parameters** and choose one selector form. For a PR run, set
