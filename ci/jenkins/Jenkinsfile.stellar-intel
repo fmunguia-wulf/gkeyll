@@ -73,7 +73,7 @@ def isCommitSha(String value) {
 }
 
 def validateBranchName(String name, String value) {
-    if (!(value ==~ /[A-Za-z0-9][A-Za-z0-9._/-]*/)
+    if (!(value ==~ /[A-Za-z0-9][A-Za-z0-9._\/-]*/)
         || value.contains('..') || value.contains('//')
         || value.endsWith('/') || value.endsWith('.') || value.endsWith('.lock')) {
         error("${name} must be a safe branch name or a full 40-character commit SHA, got '${value}'.")
