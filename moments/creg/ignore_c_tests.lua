@@ -58,6 +58,7 @@ return {
       "rt_vacuum_einstein_brill_lindquist",
       "rt_gr_mhd_bhl_spinning_mhd",
       "rt_euler_rgfm_fedkiw_shock",
+      "rt_vacuum_einstein_linearwave",
    },
    gpu = {
    },
