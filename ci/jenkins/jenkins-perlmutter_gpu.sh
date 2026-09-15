@@ -71,7 +71,10 @@ controller_running() {
 wait_for_controller() {
     local attempt
     for attempt in {1..30}; do
-        if curl --fail --silent --show-error --max-time 5 \
+        # Connection refusals and 503s are expected while Jenkins initializes.
+        # Keep individual retry failures quiet; the final error names the
+        # controller session to inspect if all attempts fail.
+        if curl --fail --silent --max-time 5 \
             --output /dev/null "$JENKINS_URL/login"; then
             return 0
         fi
