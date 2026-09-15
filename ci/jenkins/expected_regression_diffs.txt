@@ -1,7 +1,7 @@
-# Tests whose MOAT regression output is expected to change in the current
+# Tests whose C regression output is expected to change in the current
 # PR (e.g. because of an intentional physics/algorithm change), one
-# "<layer>/<test-name>" per line with a short reason. Jenkins compares the
-# PR's MOAT run against a baseline built fresh from the PR's target branch,
+# "<layer>/<test-name>" per line with a short reason. Jenkins compares all
+# non-ignored C tests against a baseline built fresh from the PR's target branch,
 # so any test listed here is exempted from failing the build; unlisted
 # failures/diffs still fail it. See ci/jenkins/README.md.
 #
