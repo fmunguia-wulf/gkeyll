@@ -318,7 +318,7 @@ follow_build() {
 
     # The CLI is only a console client. Let an interactive interrupt detach
     # this client cleanly; Jenkins in tmux and any Slurm jobs keep running.
-    trap 'echo "Stopped following build #'"$build_number"'; exit 130' INT TERM HUP
+    trap "echo 'Stopped following build #${build_number}'; exit 130" INT TERM HUP
 
     # -f follows console output without propagating a client interruption to
     # the Jenkins build. The controller and Slurm work remain independent of
