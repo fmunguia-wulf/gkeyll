@@ -1,22 +1,24 @@
 #!/usr/bin/env bash
 #
-# Start and use the private, loopback-only Jenkins controller on Perlmutter GPU.
+# Start and use the private, loopback-only Jenkins controller on Stellar CPU.
 # This is intentionally a controller launcher, not a replacement for the
 # Jenkins UI: both clients submit the same parameterized Pipeline job.
 
 set -euo pipefail
 
 readonly SCRIPT_PATH="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/$(basename -- "${BASH_SOURCE[0]}")"
-CI_ROOT="${GKEYLL_CI_ROOT:-}"
+readonly DEFAULT_JAVA_HOME=/usr/lib/jvm/java-21-openjdk-21.0.12.1.1-1.1.el8.x86_64
+
+CI_ROOT="${GKEYLL_CI_ROOT:-/scratch/gpfs/${USER:?USER must be set}/gkeyll_ci}"
 JENKINS_HOME="${JENKINS_HOME:-$CI_ROOT/jenkins_home}"
 JENKINS_WEBROOT="${JENKINS_WEBROOT:-$CI_ROOT/jenkins_webroot}"
 JENKINS_TMPDIR="${TMPDIR:-$CI_ROOT/tmp}"
 JENKINS_PORT="${JENKINS_PORT:-8080}"
 JENKINS_URL="${JENKINS_URL:-http://127.0.0.1:$JENKINS_PORT}"
-JENKINS_JOB="${JENKINS_JOB:-gkeyll-ci-perlmutter-gpu}"
+JENKINS_JOB="${JENKINS_JOB:-gkeyll-ci-stellar_cpu}"
 JENKINS_SESSION="${JENKINS_SESSION:-gkeyll_ci}"
 JENKINS_CLI_AUTH_FILE="${JENKINS_CLI_AUTH_FILE:-$JENKINS_HOME/jenkins-cli.auth}"
-JAVA_HOME="${JAVA_HOME:-}"
+JAVA_HOME="${JAVA_HOME:-$DEFAULT_JAVA_HOME}"
 CLI_JAR="$CI_ROOT/jenkins-cli.jar"
 
 CURL_CONFIG=''
@@ -31,7 +33,7 @@ die() {
 usage() {
     cat <<'EOF'
 Usage:
-  jenkins-perlmutter-gpu.sh <command> [flags]
+  jenkins-stellar_cpu.sh <command> [flags]
 
 Commands:
   start                                      Start Jenkins in detached tmux.
@@ -51,15 +53,13 @@ The run command returns after Jenkins accepts the request. --follow streams
 the build console and returns its final Jenkins result. Press Ctrl-C to stop
 following without aborting the Jenkins build.
 
-GKEYLL_CI_ROOT must name shared Perlmutter storage. JAVA_HOME must name a Java
-21 or newer installation. The Jenkins API credential file defaults to
-$JENKINS_HOME/jenkins-cli.auth and must contain
+GKEYLL_CI_ROOT defaults to /scratch/gpfs/$USER/gkeyll_ci. The Jenkins API
+credential file defaults to $JENKINS_HOME/jenkins-cli.auth and must contain
 one line in the form: jenkins-user:api-token
 EOF
 }
 
 prepare_paths() {
-    [[ -n "$CI_ROOT" ]] || die 'Set GKEYLL_CI_ROOT to the shared Perlmutter CI root'
     mkdir -p "$JENKINS_HOME" "$JENKINS_WEBROOT" "$JENKINS_TMPDIR" \
         "$CI_ROOT/logs" "$CI_ROOT/workspaces"
 }
@@ -82,7 +82,7 @@ wait_for_controller() {
 
 start_controller() {
     prepare_paths
-    [[ -n "$JAVA_HOME" && -x "$JAVA_HOME/bin/java" ]] || die "Set JAVA_HOME to a Java 21 or newer installation"
+    [[ -x "$JAVA_HOME/bin/java" ]] || die "Java 21 was not found at $JAVA_HOME/bin/java"
     [[ -f "$CI_ROOT/jenkins.war" ]] || die "Jenkins WAR is missing: $CI_ROOT/jenkins.war"
 
     if controller_running; then
@@ -97,7 +97,7 @@ start_controller() {
 
 run_controller() {
     prepare_paths
-    [[ -n "$JAVA_HOME" && -x "$JAVA_HOME/bin/java" ]] || die "Set JAVA_HOME to a Java 21 or newer installation"
+    [[ -x "$JAVA_HOME/bin/java" ]] || die "Java 21 was not found at $JAVA_HOME/bin/java"
     [[ -f "$CI_ROOT/jenkins.war" ]] || die "Jenkins WAR is missing: $CI_ROOT/jenkins.war"
 
     export JENKINS_HOME JENKINS_WEBROOT

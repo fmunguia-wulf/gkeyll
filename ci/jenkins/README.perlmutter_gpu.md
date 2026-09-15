@@ -11,17 +11,26 @@ For C regressions, the baseline `create` run deliberately forces CPU mode;
 the candidate `check` run executes CPU and GPU variants for GPU-capable
 layers, compares them with the CPU baseline, and records GPU results.
 
+## Naming migration
+
+This GPU lane supersedes the former `perlmutter-gpu` Jenkins identity. Create
+or reconfigure the job as `gkeyll-ci-perlmutter_gpu`, use the
+`continuous-integration/jenkins/perlmutter_gpu` GitHub status, and replace its
+node label and global `PERLMUTTER_*` settings with the `perlmutter_gpu` and
+`PERLMUTTER_GPU_*` values documented below. Retire the old job only after the
+new job has completed a successful build.
+
 ## CI files
 
 Keep these files on a reviewed trusted branch, initially named
 `agent_tools-jenkins-perlmutter_gpu`:
 
 ```text
-ci/jenkins/Jenkinsfile.perlmutter-gpu
-ci/jenkins/jenkins-perlmutter-gpu.sh
-ci/jenkins/slurm-unit-tests.perlmutter-gpu.sh
-ci/jenkins/slurm-regression-tests.perlmutter-gpu.sh
-ci/jenkins/README.perlmutter-gpu.md
+ci/jenkins/Jenkinsfile.perlmutter_gpu
+ci/jenkins/jenkins-perlmutter_gpu.sh
+ci/jenkins/slurm-unit-tests.perlmutter_gpu.sh
+ci/jenkins/slurm-regression-tests.perlmutter_gpu.sh
+ci/jenkins/README.perlmutter_gpu.md
 machines/module_load.perlmutter-gpu.sh
 machines/mkdeps.perlmutter.gpu.sh
 machines/configure.perlmutter.gpu.sh
@@ -80,13 +89,13 @@ Run the GPU unit payload with a valid project account:
 sbatch --wait --account <project> --qos shared --constraint gpu \
   --nodes 1 --ntasks 1 --cpus-per-task 32 --gpus-per-task 1 \
   --time 00:30:00 --chdir "$PWD" --export=ALL,CI_WORKSPACE="$PWD" \
-  ci/jenkins/slurm-unit-tests.perlmutter-gpu.sh
+  ci/jenkins/slurm-unit-tests.perlmutter_gpu.sh
 ```
 
 Before enabling Jenkins, also create a checked-out baseline, build and install
 it with its own prefix, run `runregression configure` plus
 `runregression run -c compile` in both trees, then submit
-`slurm-regression-tests.perlmutter-gpu.sh` with `CI_BASELINE_DIR`,
+`slurm-regression-tests.perlmutter_gpu.sh` with `CI_BASELINE_DIR`,
 `CI_BASELINE_PREFIX`, `CI_CANDIDATE_PREFIX`, `CI_REGRESSION_JOBS=4`, and
 `CI_REGRESSION_TEST_TIMEOUT=900`. The Jenkins pipeline supplies these
 variables automatically.
@@ -99,39 +108,39 @@ as permitted by local NERSC policy. Configure its workspace root under
 Credentials Binding, and GitHub plugins. Add a GitHub credential with
 repository read access and commit-status write access.
 
-Create a Pipeline job named `gkeyll-ci-perlmutter-gpu`:
+Create a Pipeline job named `gkeyll-ci-perlmutter_gpu`:
 
 - Definition: Pipeline script from SCM.
 - Repository: `https://github.com/gkeyllorg/gkeyll.git`.
 - Branch: `*/agent_tools-jenkins-perlmutter_gpu` during bring-up.
-- Script path: `ci/jenkins/Jenkinsfile.perlmutter-gpu`.
-- Node label: `perlmutter-gpu` (or set the matching override below).
+- Script path: `ci/jenkins/Jenkinsfile.perlmutter_gpu`.
+- Node label: `perlmutter_gpu` (or set the matching override below).
 
 Set these Jenkins global environment variables:
 
 | Variable | Value |
 | --- | --- |
 | `GKEYLL_CI_ROOT` | Absolute shared CI root |
-| `PERLMUTTER_GITHUB_CREDENTIAL_ID` | GitHub credential ID |
-| `PERLMUTTER_SLURM_ACCOUNT` | Required NERSC GPU project/account |
-| `PERLMUTTER_GPU_NODE_LABEL` | Optional; defaults to `perlmutter-gpu` |
-| `PERLMUTTER_SLURM_QOS` | Optional; defaults to `shared` |
-| `PERLMUTTER_SLURM_TIME` | Optional unit limit; defaults to `00:30:00` |
-| `PERLMUTTER_REGRESSION_TIME` | Optional regression limit; defaults to `04:00:00` |
-| `PERLMUTTER_BUILD_JOBS` | Optional login-node build parallelism; defaults to `3` |
-| `PERLMUTTER_REGRESSION_JOBS` | Optional CPU-phase concurrency; defaults to `4` |
-| `PERLMUTTER_REGRESSION_TEST_TIMEOUT` | Optional per-test limit in seconds; defaults to `900` |
+| `PERLMUTTER_GPU_GITHUB_CREDENTIAL_ID` | GitHub credential ID |
+| `PERLMUTTER_GPU_SLURM_ACCOUNT` | Required NERSC GPU project/account |
+| `PERLMUTTER_GPU_NODE_LABEL` | Optional; defaults to `perlmutter_gpu` |
+| `PERLMUTTER_GPU_SLURM_QOS` | Optional; defaults to `shared` |
+| `PERLMUTTER_GPU_SLURM_TIME` | Optional unit limit; defaults to `00:30:00` |
+| `PERLMUTTER_GPU_REGRESSION_TIME` | Optional regression limit; defaults to `04:00:00` |
+| `PERLMUTTER_GPU_BUILD_JOBS` | Optional login-node build parallelism; defaults to `3` |
+| `PERLMUTTER_GPU_REGRESSION_JOBS` | Optional CPU-phase concurrency; defaults to `4` |
+| `PERLMUTTER_GPU_REGRESSION_TEST_TIMEOUT` | Optional per-test limit in seconds; defaults to `900` |
 
 The provided launcher uses the loopback Jenkins API:
 
 ```sh
-ci/jenkins/jenkins-perlmutter-gpu.sh run --pr 1234
-ci/jenkins/jenkins-perlmutter-gpu.sh run --candidate-ref feature --baseline-ref main
-ci/jenkins/jenkins-perlmutter-gpu.sh follow --queue <id>
+ci/jenkins/jenkins-perlmutter_gpu.sh run --pr 1234
+ci/jenkins/jenkins-perlmutter_gpu.sh run --candidate-ref feature --baseline-ref main
+ci/jenkins/jenkins-perlmutter_gpu.sh follow --queue <id>
 ```
 
-Use `jenkins-perlmutter-gpu.sh abort --queue ID` or
-`jenkins-perlmutter-gpu.sh abort --build NUMBER` to cancel a build; Jenkins
+Use `jenkins-perlmutter_gpu.sh abort --queue ID` or
+`jenkins-perlmutter_gpu.sh abort --build NUMBER` to cancel a build; Jenkins
 **Abort** is an equivalent UI action. The pipeline cancels a submitted Slurm
 job, records its final state, archives Slurm output and regression databases,
 publishes the final GitHub status, and removes its isolated workspace.

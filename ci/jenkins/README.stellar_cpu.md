@@ -1,29 +1,38 @@
-# Manual Jenkins CI on Princeton Stellar Intel
+# Manual Jenkins CI on Princeton Stellar CPU
 
-This is the Level-1, CPU-only Gkeyll CI setup for Princeton's Stellar Intel
+This is the Level-1, CPU-only Gkeyll CI setup for Princeton's Stellar CPU
 cluster. A person authenticates to Stellar with SSH/Duo, then manually starts
 a Jenkins build for either a GitHub pull-request number or an explicitly
 selected candidate branch/commit. Jenkins itself neither logs in through Duo
 nor accepts GitHub webhooks.
 
-The job runs `ci/jenkins/Jenkinsfile.stellar-intel` from a reviewed, trusted
+The job runs `ci/jenkins/Jenkinsfile.stellar_cpu` from a reviewed, trusted
 CI branch during bring-up. It fetches the requested `refs/pull/<number>/head`
 commit, builds Gkeyll on the login node, then submits unit tests and all
 supported C regression tests as separate CPU Slurm jobs. The C regressions use
-a same-session `agent_tools-jenkins-stellar_intel-baseline` baseline. Lua
+a same-session `agent_tools-jenkins-stellar_cpu-baseline` baseline. Lua
 regression, MPI, and GPU testing are deliberately not part of this setup.
+
+## Naming migration
+
+This CPU lane supersedes the former `stellar-intel` Jenkins identity. Create
+or reconfigure the job as `gkeyll-ci-stellar_cpu`, use the
+`continuous-integration/jenkins/stellar_cpu` GitHub status, and replace its
+node label and global `STELLAR_*` settings with the `stellar_cpu` and
+`STELLAR_CPU_*` values documented below. Retire the old job only after the new
+job has completed a successful build.
 
 ## 0. Publish these CI files first
 
-Create the dedicated branch `agent_tools-jenkins-stellar_intel`, review, and
+Create the dedicated branch `agent_tools-jenkins-stellar_cpu`, review, and
 push the Stellar CI implementation files to it:
 
 ```text
-ci/jenkins/Jenkinsfile.stellar-intel
-ci/jenkins/jenkins-stellar-intel.sh
-ci/jenkins/slurm-unit-tests.stellar-intel.sh
-ci/jenkins/slurm-regression-tests.stellar-intel.sh
-ci/jenkins/README.stellar-intel.md
+ci/jenkins/Jenkinsfile.stellar_cpu
+ci/jenkins/jenkins-stellar_cpu.sh
+ci/jenkins/slurm-unit-tests.stellar_cpu.sh
+ci/jenkins/slurm-regression-tests.stellar_cpu.sh
+ci/jenkins/README.stellar_cpu.md
 machines/module_load.stellar-intel.sh
 machines/mkdeps.stellar-intel.sh
 machines/configure.stellar-intel.sh
@@ -40,8 +49,8 @@ it. Keep this branch unchanged while candidate work is being compared against
 it:
 
 ```sh
-git branch agent_tools-jenkins-stellar_intel-baseline HEAD
-git push -u origin agent_tools-jenkins-stellar_intel-baseline
+git branch agent_tools-jenkins-stellar_cpu-baseline HEAD
+git push -u origin agent_tools-jenkins-stellar_cpu-baseline
 ```
 
 ## 1. Choose the CI root and Slurm settings
@@ -76,7 +85,7 @@ qos
 sshare
 ```
 
-`STELLAR_SLURM_QOS` is required. `STELLAR_SLURM_ACCOUNT` is optional for PU
+`STELLAR_CPU_SLURM_QOS` is required. `STELLAR_CPU_SLURM_ACCOUNT` is optional for PU
 users but required for PPPL/CIMES users when their project policy requires
 `--account`.
 
@@ -111,7 +120,7 @@ Stellar pipeline files; do not use an unrelated checkout that might lack the
 export GKEYLL_CI_ROOT=/scratch/gpfs/$USER/gkeyll_ci
 mkdir "$GKEYLL_CI_ROOT"
 cd "$GKEYLL_CI_ROOT"
-git clone --branch agent_tools-jenkins-stellar_intel --single-branch \
+git clone --branch agent_tools-jenkins-stellar_cpu --single-branch \
   https://github.com/gkeyllorg/gkeyll.git gkeyll
 cd gkeyll
 ```
@@ -129,7 +138,7 @@ make -j32 install
 sbatch --wait --qos pppl-short --nodes 1 --ntasks 1 --cpus-per-task 4 \
   --time 00:30:00 --chdir "$PWD" \
   --export=ALL,CI_WORKSPACE="$PWD" \
-  ci/jenkins/slurm-unit-tests.stellar-intel.sh
+  ci/jenkins/slurm-unit-tests.stellar_cpu.sh
 ```
 
 For PPPL/CIMES, add `--account <your-account>` to the `sbatch` command. This
@@ -141,17 +150,17 @@ The machine configuration scripts run in child shells, so their environment
 does not remain active for the later `make` command. Source
 `machines/module_load.stellar-intel.sh` before `make`; it is also sourced by the
 machine scripts, Jenkins build stage, and Slurm payload. This keeps all
-Stellar Intel module versions in one file.
+Stellar CPU module versions in one file.
 
 ### Validate the all-C regression comparison by hand
 
 The regression job compares the current checkout with the fixed
-`agent_tools-jenkins-stellar_intel-baseline` baseline. Build and install that
+`agent_tools-jenkins-stellar_cpu-baseline` baseline. Build and install that
 baseline beside the candidate checkout, using its own dependency prefix:
 
 ```sh
 cd "$GKEYLL_CI_ROOT"
-git clone --branch agent_tools-jenkins-stellar_intel-baseline --single-branch \
+git clone --branch agent_tools-jenkins-stellar_cpu-baseline --single-branch \
   https://github.com/gkeyllorg/gkeyll.git gkeyll-baseline
 cd gkeyll-baseline
 PREFIX="$PWD/gkylsoft" ./machines/mkdeps.stellar-intel.sh
@@ -185,7 +194,7 @@ cd "$GKEYLL_CI_ROOT/gkeyll"
 sbatch --wait --qos pppl-short --nodes 1 --ntasks 1 --cpus-per-task 8 \
   --time 04:00:00 --chdir "$PWD" \
   --export=ALL,CI_WORKSPACE="$PWD",CI_BASELINE_DIR="$GKEYLL_CI_ROOT/gkeyll-baseline",CI_BASELINE_PREFIX="$GKEYLL_CI_ROOT/gkeyll-baseline/gkylsoft",CI_CANDIDATE_PREFIX="$GKEYLL_CI_ROOT/gkeyll/gkylsoft",CI_REGRESSION_JOBS=4,CI_REGRESSION_TEST_TIMEOUT=900 \
-  ci/jenkins/slurm-regression-tests.stellar-intel.sh
+  ci/jenkins/slurm-regression-tests.stellar_cpu.sh
 ```
 
 The baseline's `creg-accepted` output is moved into the candidate results tree and
@@ -194,7 +203,7 @@ this workflow.
 
 ## 3. Install and run Jenkins privately
 
-Stellar Intel is Red Hat Enterprise Linux 8.10. Because this is an
+Stellar CPU is Red Hat Enterprise Linux 8.10. Because this is an
 unprivileged personal setup, use the Jenkins WAR directly rather than a
 system RPM/service. This procedure requires no root access: do not use
 `sudo`, `dnf`, `rpm`, or `systemctl`. The login node's default Java is Java
@@ -314,7 +323,7 @@ Create a GitHub fine-grained token restricted to the `gkeyllorg/gkeyll`
 repository. Grant `Contents: Read`, `Pull requests: Read`, and `Commit
 statuses: Read and write`. In Jenkins add it as a Username-with-password
 credential, using the GitHub username and token, and give it an ID such as
-`gkeyll-github-stellar`. The Pipeline uses this one credential both to fetch
+`gkeyll-github-stellar-cpu`. The Pipeline uses this one credential both to fetch
 the PR and to publish its commit status.
 
 The token never receives repository-content write permission, and the
@@ -325,8 +334,8 @@ secrets, a personal SSH key, or unrelated credentials in the Jenkins account.
 ## 5. Configure the Jenkins node and global environment
 
 Use the controller's built-in node or a local agent. Give it the label
-`stellar-intel` (or select another label and set
-`STELLAR_INTEL_NODE_LABEL` below). The agent must run on the Stellar Intel
+`stellar_cpu` (or select another label and set
+`STELLAR_CPU_NODE_LABEL` below). The agent must run on the Stellar CPU
 login side and as the same Unix account that can submit Slurm jobs.
 
 In **Manage Jenkins → System → Global properties → Environment variables**,
@@ -335,15 +344,15 @@ set:
 | Name | Required value |
 | --- | --- |
 | `GKEYLL_CI_ROOT` | Output of `printf '/scratch/gpfs/%s/gkeyll_ci' "$USER"`; paste the expanded result, not a literal `$USER` |
-| `STELLAR_GITHUB_CREDENTIAL_ID` | Jenkins credential ID, e.g. `gkeyll-github-stellar` |
-| `STELLAR_SLURM_QOS` | Your valid CPU QoS, e.g. `pppl-short` |
-| `STELLAR_SLURM_ACCOUNT` | Project account, if required; otherwise omit it |
-| `STELLAR_SLURM_TIME` | Optional time limit; defaults to `00:30:00` |
-| `STELLAR_BUILD_JOBS` | Optional login-node compile parallelism; defaults to `3` |
-| `STELLAR_REGRESSION_TIME` | Optional C-regression allocation limit; defaults to `04:00:00` |
-| `STELLAR_REGRESSION_JOBS` | Optional concurrent C test runs; defaults to `4` |
-| `STELLAR_REGRESSION_TEST_TIMEOUT` | Optional per-C-test limit in seconds; defaults to `900` |
-| `STELLAR_INTEL_NODE_LABEL` | Optional agent label; defaults to `stellar-intel` |
+| `STELLAR_CPU_GITHUB_CREDENTIAL_ID` | Jenkins credential ID, e.g. `gkeyll-github-stellar-cpu` |
+| `STELLAR_CPU_SLURM_QOS` | Your valid CPU QoS, e.g. `pppl-short` |
+| `STELLAR_CPU_SLURM_ACCOUNT` | Project account, if required; otherwise omit it |
+| `STELLAR_CPU_SLURM_TIME` | Optional time limit; defaults to `00:30:00` |
+| `STELLAR_CPU_BUILD_JOBS` | Optional login-node compile parallelism; defaults to `3` |
+| `STELLAR_CPU_REGRESSION_TIME` | Optional C-regression allocation limit; defaults to `04:00:00` |
+| `STELLAR_CPU_REGRESSION_JOBS` | Optional concurrent C test runs; defaults to `4` |
+| `STELLAR_CPU_REGRESSION_TEST_TIMEOUT` | Optional per-C-test limit in seconds; defaults to `900` |
+| `STELLAR_CPU_NODE_LABEL` | Optional agent label; defaults to `stellar_cpu` |
 
 Do not set a broad global `PATH` to an interactive shell configuration. The
 pipeline explicitly initializes the Stellar modules for every build and Slurm
@@ -354,15 +363,15 @@ not define a separate workspace-root variable.
 
 ## 6. Create the one parameterized Pipeline job
 
-Create **New Item → Pipeline** named `gkeyll-ci-stellar-intel`.
+Create **New Item → Pipeline** named `gkeyll-ci-stellar_cpu`.
 
 Configure its pipeline definition as **Pipeline script from SCM**:
 
 - SCM: Git
 - Repository: `https://github.com/gkeyllorg/gkeyll.git`
 - Credentials: the read-only GitHub credential
-- Branch specifier: `*/agent_tools-jenkins-stellar_intel`
-- Script path: `ci/jenkins/Jenkinsfile.stellar-intel`
+- Branch specifier: `*/agent_tools-jenkins-stellar_cpu`
+- Script path: `ci/jenkins/Jenkinsfile.stellar_cpu`
 
 The CI-branch selection is intentional during bring-up. Do not point this job
 at a PR branch or let the requested PR select its own Jenkinsfile. Once this
@@ -394,14 +403,14 @@ avoids testing an unexpectedly retargeted tag.
 After SSH/Duo authentication, run the launcher from the reviewed CI checkout.
 It defaults `GKEYLL_CI_ROOT` to `/scratch/gpfs/$USER/gkeyll_ci`, starts the
 controller in a detached `gkeyll_ci` tmux session when necessary, and submits
-the existing `gkeyll-ci-stellar-intel` job through its loopback-only API:
+the existing `gkeyll-ci-stellar_cpu` job through its loopback-only API:
 
 ```sh
 # Queue a PR build and return after Jenkins accepts it.
-ci/jenkins/jenkins-stellar-intel.sh run --pr 1104
+ci/jenkins/jenkins-stellar_cpu.sh run --pr 1104
 
 # Queue a direct-ref build and follow it through its final result.
-ci/jenkins/jenkins-stellar-intel.sh run \
+ci/jenkins/jenkins-stellar_cpu.sh run \
   --candidate-ref feature/new-solver --baseline-ref main --follow
 ```
 
@@ -411,15 +420,15 @@ already started through the retained Jenkins build metadata; use the assigned
 build number directly when it is known:
 
 ```sh
-ci/jenkins/jenkins-stellar-intel.sh follow --queue 42
-ci/jenkins/jenkins-stellar-intel.sh follow --build 187
-ci/jenkins/jenkins-stellar-intel.sh status --build 187
-ci/jenkins/jenkins-stellar-intel.sh abort --build 187
+ci/jenkins/jenkins-stellar_cpu.sh follow --queue 42
+ci/jenkins/jenkins-stellar_cpu.sh follow --build 187
+ci/jenkins/jenkins-stellar_cpu.sh status --build 187
+ci/jenkins/jenkins-stellar_cpu.sh abort --build 187
 
 # Recover build and queue identifiers after reconnecting.
-ci/jenkins/jenkins-stellar-intel.sh active
-ci/jenkins/jenkins-stellar-intel.sh recent
-ci/jenkins/jenkins-stellar-intel.sh recent --limit 5
+ci/jenkins/jenkins-stellar_cpu.sh active
+ci/jenkins/jenkins-stellar_cpu.sh recent
+ci/jenkins/jenkins-stellar_cpu.sh recent --limit 5
 ```
 
 `active` lists queued and running builds for this Jenkins job. `recent` lists
@@ -445,7 +454,7 @@ java -jar "$GKEYLL_CI_ROOT/jenkins-cli.jar" \
   -s http://127.0.0.1:8080 \
   -http \
   -auth @"$JENKINS_HOME/jenkins-cli.auth" \
-  console gkeyll-ci-stellar-intel 187 -f
+  console gkeyll-ci-stellar_cpu 187 -f
 ```
 
 The UI remains a fully supported alternative. A UI-triggered build and a
@@ -461,7 +470,7 @@ Parameters** and choose one selector form. For a PR run, set
 `BASELINE_REF` empty. For a branch or exact-commit run, set both
 `CANDIDATE_REF` and `BASELINE_REF`. Jenkins records the requested selectors
 and exact checked-out commits, immediately posts the GitHub commit status
-`continuous-integration/jenkins/stellar-intel` as pending, builds unit tests
+`continuous-integration/jenkins/stellar_cpu` as pending, builds unit tests
 and both installs on the login node, then submits separate unit and C
 regression payloads to Slurm. The C job builds accepted outputs from the
 selected baseline and compares all
@@ -503,7 +512,7 @@ time. The archived artifacts include:
 ```text
 ci-selection.txt                    requested candidate and baseline selectors
 ci-candidate-commit.txt             exact tested candidate commit
-ci-baseline-commit.txt              exact Stellar Intel baseline commit
+ci-baseline-commit.txt              exact Stellar CPU baseline commit
 candidate-c-compile-seconds.txt     candidate C-regression compile duration
 baseline-c-compile-seconds.txt      baseline C-regression compile duration
 ci-regression-summary.txt           candidate C pass/acknowledged/failure counts
