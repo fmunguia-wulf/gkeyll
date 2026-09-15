@@ -448,7 +448,8 @@ def timingMetric(String key) {
     if (!fileExists('ci-timing-summary.txt')) {
         return 'n/a'
     }
-    def match = readFile('ci-timing-summary.txt') =~ "(?m)^${key}=([^\\r\\n]+)$"
+    def expression = '(?m)^' + java.util.regex.Pattern.quote(key) + '=([^\\r\\n]+)$'
+    def match = readFile('ci-timing-summary.txt') =~ expression
     return match.find() ? match.group(1) : 'n/a'
 }
 
