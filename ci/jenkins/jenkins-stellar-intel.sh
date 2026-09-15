@@ -33,19 +33,23 @@ die() {
 usage() {
     cat <<'EOF'
 Usage:
-  jenkins-stellar-intel.sh start
-  jenkins-stellar-intel.sh run --pr NUMBER [--follow]
-  jenkins-stellar-intel.sh run --candidate-ref REF --baseline-ref REF [--follow]
-  jenkins-stellar-intel.sh follow --queue ID
-  jenkins-stellar-intel.sh follow --build NUMBER
-  jenkins-stellar-intel.sh status --queue ID
-  jenkins-stellar-intel.sh status --build NUMBER
-  jenkins-stellar-intel.sh active
-  jenkins-stellar-intel.sh recent [--limit NUMBER]
+  jenkins-stellar-intel.sh <command> [flags]
 
-The run command submits gkeyll-ci-stellar-intel and normally returns as soon
-as Jenkins accepts the request. --follow waits for the queue item to become a
-build, streams its console, and returns that build's final result.
+Commands:
+  start                                      Start Jenkins in detached tmux.
+  run --pr NUMBER [--follow]                 Queue a GitHub pull-request build.
+  run --candidate-ref REF --baseline-ref REF [--follow]
+                                             Queue a branch or commit comparison.
+  follow --queue ID                          Wait for and stream a queued build.
+  follow --build NUMBER                      Stream a known Jenkins build.
+  status --queue ID                          Show a queued build's current state.
+  status --build NUMBER                      Show a known build's current state.
+  active                                     List this job's queued and running work.
+  recent [--limit NUMBER]                    List retained builds (default: 10).
+
+The run command returns after Jenkins accepts the request. --follow streams
+the build console and returns its final Jenkins result. Press Ctrl-C to stop
+following without aborting the Jenkins build.
 
 GKEYLL_CI_ROOT defaults to /scratch/gpfs/$USER/gkeyll_ci. The Jenkins API
 credential file defaults to $JENKINS_HOME/jenkins-cli.auth and must contain
