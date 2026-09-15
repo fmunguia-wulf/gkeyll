@@ -124,27 +124,35 @@ def checkoutRef(String credentialsId, String selector, String localRef) {
 }
 
 def resolvePullRequestBase(String credentialsId, String prNumber) {
-    def response = ''
+    def baseRef = ''
     withCredentials([usernamePassword(
         credentialsId: credentialsId,
         usernameVariable: 'GITHUB_STATUS_USERNAME',
         passwordVariable: 'GITHUB_STATUS_TOKEN'
     )]) {
         withEnv(["GITHUB_PR_NUMBER=${prNumber}"]) {
-            response = sh(returnStdout: true, script: '''#!/bin/bash
+            baseRef = sh(returnStdout: true, script: '''#!/bin/bash
                 set -euo pipefail
                 curl --fail --silent --show-error \
                     --retry 2 --connect-timeout 15 --max-time 45 \
                     --header 'Accept: application/vnd.github+json' \
                     --header 'X-GitHub-Api-Version: 2022-11-28' \
                     --header "Authorization: Bearer ${GITHUB_STATUS_TOKEN}" \
-                    "https://api.github.com/repos/gkeyllorg/gkeyll/pulls/${GITHUB_PR_NUMBER}"
+                    "https://api.github.com/repos/gkeyllorg/gkeyll/pulls/${GITHUB_PR_NUMBER}" \
+                    | python3 -c '
+import json
+import sys
+
+pull = json.load(sys.stdin)
+base_ref = (pull.get("base") or {}).get("ref") or ""
+if not isinstance(base_ref, str):
+    raise SystemExit("GitHub pull-request base ref is not a string")
+print(base_ref)
+'
             ''').trim()
         }
     }
-    def pull = new groovy.json.JsonSlurperClassic().parseText(response)
-    def baseRef = pull?.base?.ref?.toString()
-    return validateBranchName('GitHub PR base branch', baseRef ?: '')
+    return validateBranchName('GitHub PR base branch', baseRef)
 }
 
 def publishGitHubCommitStatus(String credentialsId, String commit, String state, String description) {
