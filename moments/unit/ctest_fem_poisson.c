@@ -3944,7 +3944,7 @@ void test_2x_bias(int poly_order, const int *cells, struct gkyl_poisson_bc bcs, 
     }
   }
 
-  gkyl_grid_sub_array_write(&grid, &localRange, NULL, rho_ho, "ctest_fem_poisson_2x_rho_1.gkyl");
+  // gkyl_grid_sub_array_write(&grid, &localRange, NULL, rho_ho, "ctest_fem_poisson_2x_rho_1.gkyl");
 
   //  // Specify a bias at a fixed x:
   //  struct gkyl_poisson_bias_plane bias = {
@@ -4003,7 +4003,7 @@ void test_2x_bias(int poly_order, const int *cells, struct gkyl_poisson_bc bcs, 
     }
   }
 
-  gkyl_grid_sub_array_write(&grid, &localRange, NULL, phi_ho, "ctest_fem_poisson_2x_phi_1.gkyl");
+  // gkyl_grid_sub_array_write(&grid, &localRange, NULL, phi_ho, "ctest_fem_poisson_2x_phi_1.gkyl");
 
   gkyl_array_copy(phi_ho, phi);
 

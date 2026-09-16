@@ -67,7 +67,7 @@ void gkgeom_ellip_unit_ho(void)
   gkyl_eval_on_nodes_advance(eon, 0.0, &rzlocal, psiRZ);
   gkyl_eval_on_nodes_release(eon);
 
-  gkyl_grid_sub_array_write(&rzgrid, &rzlocal, 0, psiRZ, "ellip_psi.gkyl");
+  // gkyl_grid_sub_array_write(&rzgrid, &rzlocal, 0, psiRZ, "ellip_psi.gkyl");
 
   gkyl_gkgeom *geo = gkyl_gkgeom_new(&(struct gkyl_gkgeom_inp){// psiRZ and related inputs
                                                                .rzgrid = &rzgrid,
@@ -166,7 +166,7 @@ void gkgeom_cerfon_unit_ho(void)
   gkyl_eval_on_nodes_advance(eon, 0.0, &rzlocal, psiRZ);
   gkyl_eval_on_nodes_release(eon);
 
-  gkyl_grid_sub_array_write(&rzgrid, &rzlocal, 0, psiRZ, "cerfon_psi.gkyl");
+  // gkyl_grid_sub_array_write(&rzgrid, &rzlocal, 0, psiRZ, "cerfon_psi.gkyl");
 
   gkyl_gkgeom *geo = gkyl_gkgeom_new(&(struct gkyl_gkgeom_inp){// psiRZ and related inputs
                                                                .rzgrid = &rzgrid,
@@ -348,7 +348,7 @@ void gkgeom_wham_2l_unit_ho(void)
   gkyl_eval_on_nodes_advance(eon, 0.0, &rzlocal, psiRZ);
   gkyl_eval_on_nodes_release(eon);
 
-  gkyl_grid_sub_array_write(&rzgrid, &rzlocal, 0, psiRZ, "wham_psi.gkyl");
+  // gkyl_grid_sub_array_write(&rzgrid, &rzlocal, 0, psiRZ, "wham_psi.gkyl");
 
   gkyl_gkgeom *geo = gkyl_gkgeom_new(&(struct gkyl_gkgeom_inp){// psiRZ and related inputs
                                                                .rzgrid = &rzgrid,

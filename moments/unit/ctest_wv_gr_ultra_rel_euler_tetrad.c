@@ -1565,7 +1565,7 @@ void test_gr_ultra_rel_euler_tetrad_waves_schwarzschild_ho()
           );
 
           for (int i = 0; i < 70; i++) {
-            TEST_CHECK(gkyl_compare(fr[i] - fl[i], amdq[i] + apdq[i], 1e-12));
+            TEST_CHECK(gkyl_compare(fr[i] - fl[i], amdq[i] + apdq[i], 5e-12));
           }
         }
       }

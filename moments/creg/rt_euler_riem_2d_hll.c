@@ -90,7 +90,7 @@ struct euler_riem_2d_hll_ctx create_ctx(void)
   double p_lr = 0.3; // Lower-right fluid pressure.
 
   // Simulation parameters.
-  int Nx = 200; // Cell count (x-direction).
+  int Nx = 100; // Cell count (x-direction).
   int Ny = 200; // Cell count (y-direction).
   double Lx = 1.0; // Domain size (x-direction).
   double Ly = 1.0; // Domain size (y-direction).

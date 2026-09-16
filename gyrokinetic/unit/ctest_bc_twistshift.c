@@ -357,9 +357,7 @@ void test_bc_twistshift_3x_fig6_wcells(
     }
     struct gkyl_rect_grid grid_ext;
     gkyl_rect_grid_init(&grid_ext, ndim, lower_ext, upper_ext, cells_ext);
-    gkyl_grid_sub_array_write(
-      &grid_ext, &local_ext, mt, distf_ho, "ctest_bc_twistshift_3x_fig6_tar.gkyl"
-    );
+    // gkyl_grid_sub_array_write(&grid_ext, &local_ext, mt, distf_ho, "ctest_bc_twistshift_3x_fig6_tar.gkyl");
   }
 
   if (check_distf) {
@@ -404,9 +402,7 @@ void test_bc_twistshift_3x_fig6_wcells(
     }
     struct gkyl_rect_grid grid_ext;
     gkyl_rect_grid_init(&grid_ext, ndim, lower_ext, upper_ext, cells_ext);
-    gkyl_grid_sub_array_write(
-      &grid_ext, &local_ext, mt, distf_ho, "ctest_bc_twistshift_3x_fig6_tar_shifted.gkyl"
-    );
+    // gkyl_grid_sub_array_write(&grid_ext, &local_ext, mt, distf_ho, "ctest_bc_twistshift_3x_fig6_tar_shifted.gkyl");
   }
 
   if (check_distf) {
@@ -611,9 +607,7 @@ void test_bc_twistshift_3x2v_fig6_wcells(
     }
     struct gkyl_rect_grid grid_ext;
     gkyl_rect_grid_init(&grid_ext, ndim, lower_ext, upper_ext, cells_ext);
-    gkyl_grid_sub_array_write(
-      &grid_ext, &local_ext, mt, distf_ho, "ctest_bc_twistshift_3x2v_fig6_tar.gkyl"
-    );
+    // gkyl_grid_sub_array_write(&grid_ext, &local_ext, mt, distf_ho, "ctest_bc_twistshift_3x2v_fig6_tar.gkyl");
   }
 
   // Compute the integrated moments of the skin cell and the ghost cell.
@@ -748,9 +742,7 @@ void test_bc_twistshift_3x2v_fig6_wcells(
     }
     struct gkyl_rect_grid grid_ext;
     gkyl_rect_grid_init(&grid_ext, ndim, lower_ext, upper_ext, cells_ext);
-    gkyl_grid_sub_array_write(
-      &grid_ext, &local_ext, mt, distf_ho, "ctest_bc_twistshift_3x2v_fig6_tar_shifted.gkyl"
-    );
+    // gkyl_grid_sub_array_write(&grid_ext, &local_ext, mt, distf_ho, "ctest_bc_twistshift_3x2v_fig6_tar_shifted.gkyl");
   }
 
   gkyl_dg_updater_moment_gyrokinetic_advance(mcalc, &ghost_rng, &ghost_rng_conf, distf, marr);
@@ -1020,9 +1012,7 @@ void test_bc_twistshift_3x_fig11_wcells(
     }
     struct gkyl_rect_grid grid_ext;
     gkyl_rect_grid_init(&grid_ext, ndim, lower_ext, upper_ext, cells_ext);
-    gkyl_grid_sub_array_write(
-      &grid_ext, &local_ext, mt, distf_ho, "ctest_bc_twistshift_3x_fig11_tar.gkyl"
-    );
+    // gkyl_grid_sub_array_write(&grid_ext, &local_ext, mt, distf_ho, "ctest_bc_twistshift_3x_fig11_tar.gkyl");
   }
 
   if (check_distf) {
@@ -1728,9 +1718,8 @@ void test_bc_twistshift_3x2v_fig11_wcells(
   struct gkyl_msgpack_data *mt = test_bc_twistshift_array_meta_new(
     (struct test_bc_twistshift_output_meta){.poly_order = poly_order, .basis_type = basis.id}
   );
-  if (write_f) {
-    gkyl_grid_sub_array_write(&grid, &local, mt, distf_ho, "ctest_bc_twistshift_3x2v_fig11_do.gkyl");
-  }
+  // if (write_f)
+  //   gkyl_grid_sub_array_write(&grid, &local, mt, distf_ho, "ctest_bc_twistshift_3x2v_fig11_do.gkyl");
 
   // Create a range only extended in bc_dir.
   struct gkyl_range update_rng;
@@ -1790,9 +1779,7 @@ void test_bc_twistshift_3x2v_fig11_wcells(
     }
     struct gkyl_rect_grid grid_ext;
     gkyl_rect_grid_init(&grid_ext, ndim, lower_ext, upper_ext, cells_ext);
-    gkyl_grid_sub_array_write(
-      &grid_ext, &local_ext, mt, distf_ho, "ctest_bc_twistshift_3x2v_fig11_tar.gkyl"
-    );
+    // gkyl_grid_sub_array_write(&grid_ext, &local_ext, mt, distf_ho, "ctest_bc_twistshift_3x2v_fig11_tar.gkyl");
   }
 
   // Compute the integrated moments of the skin cell and the ghost cell.

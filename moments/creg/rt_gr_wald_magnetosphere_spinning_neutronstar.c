@@ -120,8 +120,8 @@ struct wald_magnetosphere_spinning_ctx create_ctx(void)
   );
 
   // Simulation parameters.
-  int Nx = 256; // Cell count (x-direction).
-  int Ny = 256; // Cell count (y-direction).
+  int Nx = 16; // Cell count (x-direction).
+  int Ny = 16; // Cell count (y-direction).
   double Lx = 10.0; // Domain size (x-direction).
   double Ly = 10.0; // Domain size (y-direction).
   double cfl_frac = 0.95; // CFL coefficient.

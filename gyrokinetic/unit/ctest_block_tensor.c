@@ -71,8 +71,8 @@ void test_cartesian_2x_onecell()
   gkyl_eval_on_nodes_advance(proj, 0.0, &local, dxdz);
   gkyl_eval_on_nodes_advance(proj, 0.0, &local, dzdx);
   gkyl_eval_on_nodes_release(proj);
-  gkyl_grid_sub_array_write(&grid, &local, 0, dxdz, "dxdz.gkyl");
-  gkyl_grid_sub_array_write(&grid, &local, 0, dzdx, "dzdx.gkyl");
+  // gkyl_grid_sub_array_write(&grid, &local, 0, dxdz, "dxdz.gkyl");
+  // gkyl_grid_sub_array_write(&grid, &local, 0, dzdx, "dzdx.gkyl");
 
   struct bc_block_tensor *bt = gkyl_bc_block_tensor_new(&grid, &local, &local_ext, &basis, false);
 
@@ -136,14 +136,14 @@ void test_block_tensor_cartesian_2x_z_ho()
   gkyl_eval_on_nodes *proj2 = gkyl_eval_on_nodes_new(&grid2, &basis, 9, &proj_one, 0);
   gkyl_eval_on_nodes_advance(proj2, 0.0, &local2, dzdx2);
   gkyl_eval_on_nodes_release(proj2);
-  gkyl_grid_sub_array_write(&grid2, &local2, 0, dzdx2, "dzdx2.gkyl");
+  // gkyl_grid_sub_array_write(&grid2, &local2, 0, dzdx2, "dzdx2.gkyl");
 
   // Block 1 tangents
   struct gkyl_array *dxdz1 = gkyl_array_new(GKYL_DOUBLE, 9 * basis.num_basis, local_ext1.volume);
   gkyl_eval_on_nodes *proj1 = gkyl_eval_on_nodes_new(&grid1, &basis, 9, &proj_one, 0);
   gkyl_eval_on_nodes_advance(proj1, 0.0, &local1, dxdz1);
   gkyl_eval_on_nodes_release(proj1);
-  gkyl_grid_sub_array_write(&grid1, &local1, 0, dxdz1, "dxdz1.gkyl");
+  // gkyl_grid_sub_array_write(&grid1, &local1, 0, dxdz1, "dxdz1.gkyl");
 
   struct bc_block_tensor *bt =
     gkyl_bc_block_tensor_new(&grid2, &local2, &local_ext2, &basis, false);
@@ -151,7 +151,7 @@ void test_block_tensor_cartesian_2x_z_ho()
   int edge2 = 0; //lower edge
   int dir = 1; // second direction
   gkyl_bc_block_tensor_advance(bt, dir, edge1, edge2, dxdz1, dzdx2, &local1, &local2);
-  gkyl_grid_sub_array_write(&grid2, &local2, 0, bt->tensor, "tji.gkyl");
+  // gkyl_grid_sub_array_write(&grid2, &local2, 0,bt->tensor, "tji.gkyl");
 
   gkyl_array_release(dxdz1);
   gkyl_array_release(dzdx2);
@@ -188,14 +188,14 @@ void test_block_tensor_cartesian_2x_x_ho()
   gkyl_eval_on_nodes *proj2 = gkyl_eval_on_nodes_new(&grid2, &basis, 9, &proj_one, 0);
   gkyl_eval_on_nodes_advance(proj2, 0.0, &local2, dzdx2);
   gkyl_eval_on_nodes_release(proj2);
-  gkyl_grid_sub_array_write(&grid2, &local2, 0, dzdx2, "dzdx2.gkyl");
+  // gkyl_grid_sub_array_write(&grid2, &local2, 0, dzdx2, "dzdx2.gkyl");
 
   // Block 1 tangents
   struct gkyl_array *dxdz1 = gkyl_array_new(GKYL_DOUBLE, 9 * basis.num_basis, local_ext1.volume);
   gkyl_eval_on_nodes *proj1 = gkyl_eval_on_nodes_new(&grid1, &basis, 9, &proj_one, 0);
   gkyl_eval_on_nodes_advance(proj1, 0.0, &local1, dxdz1);
   gkyl_eval_on_nodes_release(proj1);
-  gkyl_grid_sub_array_write(&grid1, &local1, 0, dxdz1, "dxdz1.gkyl");
+  // gkyl_grid_sub_array_write(&grid1, &local1, 0, dxdz1, "dxdz1.gkyl");
 
   struct bc_block_tensor *bt =
     gkyl_bc_block_tensor_new(&grid2, &local2, &local_ext2, &basis, false);
@@ -203,7 +203,7 @@ void test_block_tensor_cartesian_2x_x_ho()
   int edge2 = 0; //lower edge
   int dir = 0; // first direction
   gkyl_bc_block_tensor_advance(bt, dir, edge1, edge2, dxdz1, dzdx2, &local1, &local2);
-  gkyl_grid_sub_array_write(&grid2, &local2, 0, bt->tensor, "tji.gkyl");
+  // gkyl_grid_sub_array_write(&grid2, &local2, 0, bt->tensor, "tji.gkyl");
 
   gkyl_array_release(dxdz1);
   gkyl_array_release(dzdx2);
@@ -242,14 +242,14 @@ void test_block_tensor_cyl_cart_2x_z_ho()
   gkyl_eval_on_nodes *proj2 = gkyl_eval_on_nodes_new(&grid2, &basis, 9, &proj_one, 0);
   gkyl_eval_on_nodes_advance(proj2, 0.0, &local2, dzdx2);
   gkyl_eval_on_nodes_release(proj2);
-  gkyl_grid_sub_array_write(&grid2, &local2, 0, dzdx2, "dzdx2.gkyl");
+  // gkyl_grid_sub_array_write(&grid2, &local2, 0, dzdx2, "dzdx2.gkyl");
 
   // Block 1 tangents
   struct gkyl_array *dxdz1 = gkyl_array_new(GKYL_DOUBLE, 9 * basis.num_basis, local_ext1.volume);
   gkyl_eval_on_nodes *proj1 = gkyl_eval_on_nodes_new(&grid1, &basis, 9, &proj_cyl, 0);
   gkyl_eval_on_nodes_advance(proj1, 0.0, &local1, dxdz1);
   gkyl_eval_on_nodes_release(proj1);
-  gkyl_grid_sub_array_write(&grid1, &local1, 0, dxdz1, "dxdz1.gkyl");
+  // gkyl_grid_sub_array_write(&grid1, &local1, 0, dxdz1, "dxdz1.gkyl");
 
   struct bc_block_tensor *bt =
     gkyl_bc_block_tensor_new(&grid2, &local2, &local_ext2, &basis, false);
@@ -257,7 +257,7 @@ void test_block_tensor_cyl_cart_2x_z_ho()
   int edge2 = 1; // upper edge
   int dir = 1; // second direction
   gkyl_bc_block_tensor_advance(bt, dir, edge1, edge2, dxdz1, dzdx2, &local1, &local2);
-  gkyl_grid_sub_array_write(&grid2, &local2, 0, bt->tensor, "tji.gkyl");
+  // gkyl_grid_sub_array_write(&grid2, &local2, 0, bt->tensor, "tji.gkyl");
 
   gkyl_array_release(dxdz1);
   gkyl_array_release(dzdx2);
@@ -288,8 +288,8 @@ void test_cartesian_3x_onecell()
   gkyl_eval_on_nodes_advance(proj, 0.0, &local, dxdz);
   gkyl_eval_on_nodes_advance(proj, 0.0, &local, dzdx);
   gkyl_eval_on_nodes_release(proj);
-  gkyl_grid_sub_array_write(&grid, &local, 0, dxdz, "dxdz.gkyl");
-  gkyl_grid_sub_array_write(&grid, &local, 0, dzdx, "dzdx.gkyl");
+  // gkyl_grid_sub_array_write(&grid, &local, 0, dxdz, "dxdz.gkyl");
+  // gkyl_grid_sub_array_write(&grid, &local, 0, dzdx, "dzdx.gkyl");
 
   struct bc_block_tensor *bt = gkyl_bc_block_tensor_new(&grid, &local, &local_ext, &basis, false);
 
@@ -321,7 +321,8 @@ void test_cartesian_3x_onecell()
   gkyl_bc_block_tensor_release(bt);
 }
 
-TEST_LIST = { //{ "test_block_tensor_cartesian_2x_z_ho", test_block_tensor_cartesian_2x_z_ho},
+TEST_LIST = {
+  //{ "test_block_tensor_cartesian_2x_z_ho", test_block_tensor_cartesian_2x_z_ho},
   //{ "test_block_tensor_cartesian_2x_x_ho", test_block_tensor_cartesian_2x_x_ho},
   {"test_block_tensor_cyl_cart_2x_z_ho", test_block_tensor_cyl_cart_2x_z_ho},
   {NULL, NULL}
