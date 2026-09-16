@@ -78,7 +78,7 @@ struct annulus_sodshock_ctx create_ctx(void)
   double nu = 15000.0; // Collision frequency.
 
   // Simulation parameters.
-  int Nr = 128; // Cell count (configuration space: radial direction).
+  int Nr = 8; // Cell count (configuration space: radial direction).
   int Nvr = 12; // Cell count (velocity space: radial direction).
   int Nvtheta = 12; // Cell count (velocity space: angular direction).
   double Lr = 1.0; // Domain size (configuration space: radial direction).

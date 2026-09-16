@@ -84,7 +84,7 @@ struct escreen_ctx create_ctx(void)
   double cfl_frac = 1.0; // CFL coefficient.
 
   double t_end = 10.0; // Final simulation time.
-  int num_frames = 2; // Number of output frames.
+  int num_frames = 1; // Number of output frames.
   int int_diag_calc_num = num_frames * 100;
   double dt_failure_tol = 1.0e-4; // Minimum allowable fraction of initial time-step.
   int num_failures_max = 20; // Maximum allowable number of consecutive small time-steps.
@@ -205,8 +205,7 @@ void evalFieldFunc(double t, const double *GKYL_RESTRICT xn, double *GKYL_RESTRI
 
 void
 
-calc_integrated_diagnostics(
-  struct gkyl_tm_trigger *iot, gkyl_vlasov_app *app, double t_curr, bool force_calc)
+calc_integrated_diagnostics(struct gkyl_tm_trigger* iot, gkyl_vlasov_app* app, double t_curr, bool force_calc)
 {
   if (gkyl_tm_trigger_check_and_bump(iot, t_curr) || force_calc) {
     gkyl_vlasov_app_calc_field_energy(app, t_curr);

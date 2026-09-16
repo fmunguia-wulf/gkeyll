@@ -81,7 +81,8 @@ void write_geometry(
   gkyl_array_release(mc2p_nodal);
 }
 
-struct gkyl_efit_inp inp = { // psiRZ and related inputs
+struct gkyl_efit_inp inp = {
+  // psiRZ and related inputs
   .filepath = "gyrokinetic/data/eqdsk/ltx_miller.geqdsk",
   .rz_poly_order = 2,
   .flux_poly_order = 1,
@@ -141,7 +142,7 @@ void test_ltx_miller_ho()
   };
 
   struct gk_geometry *up = gkyl_gk_geometry_tok_new(&geometry_inp);
-  write_geometry(up, cgrid, cbasis, clocal, "ltx_miller");
+  // write_geometry(up, cgrid, cbasis, clocal, "ltx_miller");
   gkyl_gk_geometry_release(up);
   gkyl_position_map_release(pmap);
 

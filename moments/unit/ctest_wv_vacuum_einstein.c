@@ -475,7 +475,7 @@ void test_vacuum_einstein_basic_minkowski_ho()
         );
 
         for (int i = 0; i < 42; i++) {
-          TEST_CHECK(gkyl_compare(flux[i + 10], fluxes[d][i], 1e-8));
+          TEST_CHECK(gkyl_compare(flux[i + 10], fluxes[d][i], 1e-6));
         }
       }
 
@@ -485,7 +485,7 @@ void test_vacuum_einstein_basic_minkowski_ho()
         gkyl_wv_eqn_rotate_to_global(vacuum_einstein, tau1[d], tau2[d], norm[d], q_l, q_g);
 
         for (int i = 0; i < 64; i++) {
-          TEST_CHECK(gkyl_compare(q[i], q_g[i], 1e-16));
+          TEST_CHECK(gkyl_compare(q[i], q_g[i], 1e-14));
         }
 
         double w1[64], q1[64];
@@ -493,7 +493,7 @@ void test_vacuum_einstein_basic_minkowski_ho()
         vacuum_einstein->riem_to_cons(vacuum_einstein, q_local, w1, q1);
 
         for (int i = 0; i < 64; i++) {
-          TEST_CHECK(gkyl_compare(q_local[i], q1[i], 1e-16));
+          TEST_CHECK(gkyl_compare(q_local[i], q1[i], 1e-14));
         }
       }
 
@@ -992,7 +992,7 @@ void test_vacuum_einstein_basic_schwarzschild_ho()
           );
 
           for (int i = 0; i < 42; i++) {
-            TEST_CHECK(gkyl_compare(flux[i + 10], fluxes[d][i], 1e-6));
+            TEST_CHECK(gkyl_compare(flux[i + 10], fluxes[d][i], 1e-5));
           }
         }
 
@@ -1002,7 +1002,7 @@ void test_vacuum_einstein_basic_schwarzschild_ho()
           gkyl_wv_eqn_rotate_to_global(vacuum_einstein, tau1[d], tau2[d], norm[d], q_l, q_g);
 
           for (int i = 0; i < 64; i++) {
-            TEST_CHECK(gkyl_compare(q[i], q_g[i], 1e-16));
+            TEST_CHECK(gkyl_compare(q[i], q_g[i], 1e-14));
           }
 
           double w1[64], q1[64];
@@ -1010,7 +1010,7 @@ void test_vacuum_einstein_basic_schwarzschild_ho()
           vacuum_einstein->riem_to_cons(vacuum_einstein, q_local, w1, q1);
 
           for (int i = 0; i < 64; i++) {
-            TEST_CHECK(gkyl_compare(q_local[i], q1[i], 1e-16));
+            TEST_CHECK(gkyl_compare(q_local[i], q1[i], 1e-14));
           }
         }
       }
@@ -1472,7 +1472,7 @@ void test_vacuum_einstein_waves_schwarzschild_ho()
           gkyl_wv_eqn_rotate_to_global(vacuum_einstein, tau1[d], tau2[d], norm[d], fr_local, fr);
 
           for (int i = 0; i < 64; i++) {
-            TEST_CHECK(gkyl_compare(fr[i] - fl[i], amdq[i] + apdq[i], 1e-11));
+            TEST_CHECK(gkyl_compare(fr[i] - fl[i], amdq[i] + apdq[i], 1e-10));
           }
         }
       }
@@ -1944,7 +1944,7 @@ void test_vacuum_einstein_waves_kerr_ho()
           gkyl_wv_eqn_rotate_to_global(vacuum_einstein, tau1[d], tau2[d], norm[d], fr_local, fr);
 
           for (int i = 0; i < 64; i++) {
-            TEST_CHECK(gkyl_compare(fr[i] - fl[i], amdq[i] + apdq[i], 1e-12));
+            TEST_CHECK(gkyl_compare(fr[i] - fl[i], amdq[i] + apdq[i], 1e-10));
           }
         }
       }

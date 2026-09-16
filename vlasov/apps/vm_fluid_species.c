@@ -85,7 +85,7 @@ vm_fluid_species_euler_write(gkyl_vlasov_app *app, struct vm_fluid_species *f, d
   snprintf(fileNm_prim, sizeof fileNm_prim, fmt_prim, app->name, f->info.name, frame);
 
   // copy data to single array and then from device to host (if on GPUs) before writing it out
-  gkyl_array_set(f->prim_vars, 1.0, f->u);
+  gkyl_array_set_offset(f->prim_vars, 1.0, f->u, 0);
   gkyl_array_set_offset(f->prim_vars, 1.0, f->p, 3 * app->confBasis.num_basis);
   if (app->use_gpu) {
     gkyl_array_copy(f->prim_vars_host, f->prim_vars);
@@ -592,8 +592,7 @@ static void vm_fluid_species_can_pb_fluid_init(
   // Specialized updater for integrating |grad phi|^2
   f->can_pb_energy_fac = mkarr(app->use_gpu, app->confBasis.num_basis, app->local_ext.volume);
   gkyl_array_shiftc(
-    f->can_pb_energy_fac, pow(sqrt(2.0), app->cdim),
-    0
+    f->can_pb_energy_fac, pow(sqrt(2.0), app->cdim), 0
   ); // Sets can_pb_energy_fac = 1.
   f->calc_can_pb_energy = gkyl_array_integrate_new(
     &app->grid, &app->confBasis, 1, GKYL_ARRAY_INTEGRATE_OP_GRAD_SQ, app->use_gpu
