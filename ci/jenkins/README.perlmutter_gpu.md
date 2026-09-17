@@ -3,7 +3,8 @@
 This private, manually triggered CUDA CI builds candidate and baseline CUDA/NCCL
 installations on the login node, then submits unit and C-regression work to GPU
 nodes. The trusted Pipeline never comes from the candidate PR. CUDA unit tests
-run automatically; GPU-capable C regressions are compared with a CPU baseline.
+run automatically; GPU-capable C regressions are compared with the CUDA/NCCL
+baseline built by the Pipeline.
 A separate manifest-selected C MPI lane uses four GPU ranks for Vlasov,
 gyrokinetic, and PKPM, plus a moments CPU MPI test.
 
