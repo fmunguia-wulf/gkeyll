@@ -77,6 +77,8 @@ to register parameters.
 ./ci/jenkins/gkeyll-ci.sh personal run --pr 1234 --follow
 ./ci/jenkins/gkeyll-ci.sh personal run --candidate-ref feature/new-solver --baseline-ref main
 ./ci/jenkins/gkeyll-ci.sh personal active
+./ci/jenkins/gkeyll-ci.sh personal info --build 42
+./ci/jenkins/gkeyll-ci.sh personal artifact --build 42 --fetch --only ci-regression-summary.txt
 ./ci/jenkins/gkeyll-ci.sh personal abort --build 42
 ```
 

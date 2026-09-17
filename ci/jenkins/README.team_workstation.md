@@ -145,6 +145,8 @@ trusted `main` child:
 ./ci/jenkins/gkeyll-ci.sh team run --pr 1234 --follow
 ./ci/jenkins/gkeyll-ci.sh team run --candidate-ref feature/new-solver --baseline-ref main --follow
 ./ci/jenkins/gkeyll-ci.sh team active
+./ci/jenkins/gkeyll-ci.sh team info --build 42
+./ci/jenkins/gkeyll-ci.sh team artifact --build 42 --fetch --only ci-regression-summary.txt
 ./ci/jenkins/gkeyll-ci.sh team abort --build 42
 ```
 
