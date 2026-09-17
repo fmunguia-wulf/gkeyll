@@ -10,13 +10,14 @@ contributor code.
 
 Install Jenkins LTS and Java 21 or newer with the normal local service
 mechanism (for example `brew install jenkins-lts` and `brew services start
-jenkins-lts` on macOS). Install Pipeline, Git, Credentials Binding, Git client,
-and GitHub Branch Source plugins.
+jenkins-lts` on macOS).
 
 ## Open Jenkins browser
 
 Open the local Jenkins URL, normally `http://127.0.0.1:8080`, complete first
-start setup, and create an administrator account.
+start setup, and create an administrator account. During initial setup, install
+the Pipeline, Git, Credentials Binding, Git client, and GitHub Branch Source
+plugins.
 
 ## Set up Jenkins
 

@@ -239,7 +239,7 @@ def regressionJobs = (env.PERSONAL_REGRESSION_JOBS ?: '1').trim()
 def mpiExec = (env.PERSONAL_MPIEXEC ?: "${env.WORKSPACE}/gkylsoft/openmpi/bin/mpiexec").trim()
 if (!(jobs ==~ /[1-9][0-9]*/) || !(regressionJobs ==~ /[1-9][0-9]*/)) error('PERSONAL_BUILD_JOBS and PERSONAL_REGRESSION_JOBS must be positive integers.')
 
-node(label) {
+def runCi = {
     def commit = ''
     def status = 'failure'
     def description = 'Personal CI failed.'
@@ -253,6 +253,9 @@ node(label) {
             if (candidatePr) checkoutPullRequest(candidatePr); else checkoutRef(candidateRef, 'candidate')
             commit = sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
             writeFile file: 'ci-candidate-commit.txt', text: "${commit}\n"
+            if (env.CI_TRUSTED_CI_COMMIT?.trim()) {
+                writeFile file: 'ci-trusted-ci-commit.txt', text: "${env.CI_TRUSTED_CI_COMMIT.trim()}\n"
+            }
         }
         stage('Report pending') { publishStatus(statusCredentialsId, env.CI_STATUS_CONTEXT ?: 'continuous-integration/jenkins/personal', commit, 'pending', 'Gkeyll CI is running.') }
         stage('Build candidate') { buildTree('candidate', "${env.WORKSPACE}/gkylsoft", mkdeps, configure, jobs) }
@@ -266,9 +269,20 @@ node(label) {
         try {
             writeCiTimingSummary()
         } finally {
-            archiveArtifacts allowEmptyArchive: true, artifacts: 'ci-selection.txt,ci-candidate-commit.txt,ci-baseline-commit.txt,*-seconds.txt,ci-timing-summary.txt,ci-regression-summary.txt,ci-parallel-regression-summary.txt,build/**/*.log,gkylsoft/gkeyll-results/**/regressiondb,gkylsoft/gkeyll-results/**/_rr_failures.txt'
+            archiveArtifacts allowEmptyArchive: true, artifacts: 'ci-selection.txt,ci-trusted-ci-commit.txt,ci-candidate-commit.txt,ci-baseline-commit.txt,*-seconds.txt,ci-timing-summary.txt,ci-regression-summary.txt,ci-parallel-regression-summary.txt,build/**/*.log,gkylsoft/gkeyll-results/**/regressiondb,gkylsoft/gkeyll-results/**/_rr_failures.txt'
         }
         if (commit) publishStatus(statusCredentialsId, env.CI_STATUS_CONTEXT ?: 'continuous-integration/jenkins/personal', commit, status, description)
         deleteDir()
+    }
+}
+
+// The team-workstation inline bootstrap already owns the agent while it
+// checks out this trusted workflow from main. Reusing that allocation avoids
+// a nested node() request, which can deadlock a one-executor workstation.
+if (env.CI_NODE_ALREADY_ALLOCATED == 'true') {
+    runCi()
+} else {
+    node(label) {
+        runCi()
     }
 }
