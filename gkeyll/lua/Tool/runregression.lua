@@ -188,7 +188,8 @@ local layerDBs = {}
 -- Per-layer ignore lists and MOAT lists, keyed by layer name.
 -- Loaded during loadConfigure().
 local ignoreTests = {}  -- ignoreTests[layerName] = {lua={...}, c={...}}
-local moatTests   = {}  -- moatTests[layerName]   = {path, ...}
+local moatTests   = {}  -- moatTests[layerName]   = {lua={...}, c={...}}
+local parallelCTests = {} -- parallelCTests[layerName] = { {name, cuts}, ... }
 
 -- Unique ID and timestamp for this invocation.
 local runID  = uuid()
@@ -266,6 +267,19 @@ local function splitList(listStr)
       table.insert(words, w)
    end
    return words
+end
+
+local function shellQuote(value)
+   return "'" .. tostring(value):gsub("'", "'\\\"'\\\"'") .. "'"
+end
+
+local function parallelRanks(cuts)
+   local ranks = 1
+   for _, cut in ipairs(cuts or {}) do
+      if type(cut) ~= "number" or cut < 1 or cut ~= math.floor(cut) then return nil end
+      ranks = ranks * cut
+   end
+   return ranks
 end
 
 -- Returns the basename of a path (everything after the last '/').
@@ -463,7 +477,7 @@ end
 -- recent test run at any time without disturbing the accepted baseline.
 -- Including the input file (.lua or .c) in the run directory allows the
 -- developer to diff the input if outputs change unexpectedly.
-local function configure(prefix, mpiExec, sourceDir, args)
+local function configure(prefix, mpiExec, mpiArgs, sourceDir, args)
 
    -- Validate prefix directory.
    local prefixAttr = lfs.attributes(prefix)
@@ -480,6 +494,12 @@ local function configure(prefix, mpiExec, sourceDir, args)
 
    -- Create the top-level results directory and per-layer subdirectories.
    local resultsDir = string.format("%s/gkeyll-results", prefix)
+   if args.config_results_subdir and args.config_results_subdir ~= "" then
+      if not string.match(args.config_results_subdir, "^[A-Za-z0-9_.-]+$") then
+         assert(false, "--results-subdir may contain only letters, digits, '.', '_' and '-'.")
+      end
+      resultsDir = resultsDir .. "/" .. args.config_results_subdir
+   end
    mkdir(resultsDir)
 
    for _, layer in ipairs(LAYERS) do
@@ -517,6 +537,7 @@ local function configure(prefix, mpiExec, sourceDir, args)
    local fn = io.open(confFile, "w")
    fn:write("return {\n")
    fn:write(string.format("  mpiExec     = \"%s\",\n", mpiExec))
+   fn:write(string.format("  mpiArgs     = \"%s\",\n", mpiArgs or ""))
    fn:write(string.format("  prefix      = \"%s\",\n", prefix))
    fn:write(string.format("  results_dir = \"%s\",\n", resultsDir))
    fn:write(string.format("  source_dir  = \"%s\",\n", sourceDir))
@@ -566,51 +587,39 @@ local function loadConfigure(args)
       verboseLog = verboseLogger
    end
 
-   -- Load per-layer ignore and MOAT lists.
-   -- ignore_lua_tests.lua (in luareg/): return { tests = {...}, gpu = {...} }
-   -- ignore_c_tests.lua   (in creg/):   return { tests = {...}, gpu = {...} }
-   -- moat.lua (in luareg/): return {"rt_test1", "rt_test2", ...}
-   -- Missing files are silently treated as empty lists.
+   -- Load per-layer test manifests. Missing manifests are treated as empty.
    for _, layer in ipairs(LAYERS) do
       local srcBase    = configVals.source_dir .. "/" .. layer.src
-      local luaIgnFile = srcBase .. "/luareg/ignore_lua_tests.lua"
-      local cIgnFile   = srcBase .. "/creg/ignore_c_tests.lua"
-      local luaMoatFile = srcBase .. "/luareg/moat_lua.lua"
-      local cMoatFile   = srcBase .. "/creg/moat_c.lua"
+      local luaManifestFile = srcBase .. "/luareg/lua_test_manifest.lua"
+      local cManifestFile   = srcBase .. "/creg/c_test_manifest.lua"
 
-      local luaIgn = { tests = {}, gpu = {} }
-      local cIgn   = { tests = {}, gpu = {} }
+      local luaManifest = { ignore = { tests = {}, gpu = {} }, moat = {}, parallel = {} }
+      local cManifest   = { ignore = { tests = {}, gpu = {} }, moat = {}, parallel = {} }
 
-      local gLua = loadfile(luaIgnFile)
+      local gLua = loadfile(luaManifestFile)
       if gLua then
          local ok, loaded = pcall(gLua)
-         if ok and type(loaded) == "table" then luaIgn = loaded end
+         if ok and type(loaded) == "table" then luaManifest = loaded end
       end
 
-      local gC = loadfile(cIgnFile)
+      local gC = loadfile(cManifestFile)
       if gC then
          local ok, loaded = pcall(gC)
-         if ok and type(loaded) == "table" then cIgn = loaded end
+         if ok and type(loaded) == "table" then cManifest = loaded end
       end
+
+      luaManifest.ignore = luaManifest.ignore or {}
+      cManifest.ignore = cManifest.ignore or {}
 
       ignoreTests[layer.name] = {
-         lua     = luaIgn.tests or {},
-         c       = cIgn.tests   or {},
-         gpu_lua = luaIgn.gpu   or {},
-         gpu_c   = cIgn.gpu     or {},
+         lua     = luaManifest.ignore.tests or {},
+         c       = cManifest.ignore.tests   or {},
+         gpu_lua = luaManifest.ignore.gpu   or {},
+         gpu_c   = cManifest.ignore.gpu     or {},
       }
 
-      moatTests[layer.name] = { lua = {}, c = {} }
-      local gLuaMoat = loadfile(luaMoatFile)
-      if gLuaMoat then
-         local ok, t = pcall(gLuaMoat)
-         if ok and type(t) == "table" then moatTests[layer.name].lua = t end
-      end
-      local gCMoat = loadfile(cMoatFile)
-      if gCMoat then
-         local ok, t = pcall(gCMoat)
-         if ok and type(t) == "table" then moatTests[layer.name].c = t end
-      end
+      moatTests[layer.name] = { lua = luaManifest.moat or {}, c = cManifest.moat or {} }
+      parallelCTests[layer.name] = cManifest.parallel or {}
 
       if args.all then
          -- --all bypasses the ignore list for the test types that will actually run.
@@ -704,7 +713,7 @@ local function list_tests(activeLayers, args)
          end
 
          if args.moat then
-            -- Only run the MOAT Lua tests for this layer (basenames from moat_lua.lua).
+            -- Only run the MOAT Lua tests declared in the layer manifest.
             for _, t in ipairs(moatTests[layer.name].lua or {}) do
                local candidate = luaregDir .. "/" .. t .. ".lua"
                if lfs.attributes(candidate) then addLuaTest(candidate) end
@@ -752,7 +761,7 @@ local function list_tests(activeLayers, args)
       local cregSrcDir = configVals.source_dir .. "/" .. layer.src .. "/creg"
       local cDirAttr   = lfs.attributes(cregSrcDir)
       if cDirAttr and cDirAttr.mode == "directory" then
-         local function addCTest(fn)
+         local function addCTest(fn, parallelSpec)
             -- Layer-affinity guard (e.g. from --run-only). When a path (absolute
             -- or relative) contains a 'creg/' directory component, only accept
             -- it if it specifically names this layer's creg directory. This
@@ -767,7 +776,7 @@ local function list_tests(activeLayers, args)
             local testname = stripext(basename(fn))
             -- Skip tests in ignore list (C ignores are stored as basenames without .c).
             local ignC = ignoreTests[layer.name] and ignoreTests[layer.name].c or {}
-            if lume.find(ignC, testname) then
+            if not parallelSpec and lume.find(ignC, testname) then
                if args.run_only then
                   log(string.format(
                      "NOTE: skipping '%s/creg/%s': test is in the ignore list.\n",
@@ -780,11 +789,23 @@ local function list_tests(activeLayers, args)
                layer    = layer.name,
                layer_src = layer.src,   -- source subdir name (e.g. "gyrokinetic")
                name     = layer.name .. "/creg/" .. testname,
+               parallel = parallelSpec,
             })
          end
 
-         if args.moat then
-            -- Only run the MOAT C tests for this layer (basenames from moat_c.lua).
+         if args.parallel then
+            for _, spec in ipairs(parallelCTests[layer.name] or {}) do
+               if type(spec.name) ~= "string" or not parallelRanks(spec.cuts) then
+                  error(string.format("Invalid parallel manifest entry in %s/creg", layer.name))
+               end
+               local candidate = cregSrcDir .. "/" .. spec.name .. ".c"
+               if not lfs.attributes(candidate) then
+                  error(string.format("Parallel test '%s' not found", candidate))
+               end
+               addCTest(candidate, spec)
+            end
+         elseif args.moat then
+            -- Only run the MOAT C tests declared in the layer manifest.
             for _, t in ipairs(moatTests[layer.name].c or {}) do
                local candidate = cregSrcDir .. "/" .. t .. ".c"
                if lfs.attributes(candidate) then addCTest(candidate) end
@@ -1065,6 +1086,46 @@ local function prepareCRun(test, timeoutSecs, mode, skipCompile)
    }
 end
 
+-- Prepare a C regression for one MPI collective. The manifest owns the
+-- decomposition; the configured launcher owns machine-specific placement.
+local function prepareParallelCRun(test, timeoutSecs, skipCompile, useGpu)
+   local prep = prepareCRun(test, timeoutSecs, nil, skipCompile)
+   if prep.compileFailed then return prep end
+
+   local cuts = test.parallel and test.parallel.cuts
+   local ranks = parallelRanks(cuts)
+   if not ranks then
+      prep.compileFailed = true
+      prep.compileLog = "Invalid parallel decomposition in test manifest.\n"
+      return prep
+   end
+   if not configVals.mpiExec or configVals.mpiExec == "" then
+      prep.compileFailed = true
+      prep.compileLog = "No MPI launcher configured; re-run configure with --mpiexec.\n"
+      return prep
+   end
+
+   local cutFlags = {}
+   local flagNames = { "-c", "-d", "-e" }
+   for dim, cut in ipairs(cuts) do
+      table.insert(cutFlags, flagNames[dim] .. " " .. tostring(cut))
+   end
+   local gpuFlag = useGpu and " -g" or ""
+   local mpiArgs = configVals.mpiArgs or ""
+   local launcher = shellQuote(configVals.mpiExec)
+   if mpiArgs ~= "" then launcher = launcher .. " " .. mpiArgs end
+   launcher = launcher .. " -n " .. tostring(ranks)
+   local testname = stripext(basename(test.src))
+   local binPath = prep.runDir .. "/" .. testname
+   local launchCmd = string.format("%s %s -M %s%s", launcher, shellQuote(binPath),
+      table.concat(cutFlags, " "), gpuFlag)
+   local innerCmd = string.format("cd %s && %s 2>&1", shellQuote(prep.runDir), launchCmd)
+   prep.cmd = wrapWithTimeout(innerCmd, timeoutSecs or 0, prep.runDir)
+   prep.launchCmd = launchCmd
+   prep.parallelRanks = ranks
+   return prep
+end
+
 -- Compile selected C regression tests without running them. Executables remain
 -- in their normal creg-runs directories for a later --execute-only invocation.
 -- Returns true only when every selected test compiled successfully.
@@ -1115,7 +1176,7 @@ local function validate_precompiled_c_regressions(cTests)
    return true
 end
 
--- executeBatch(items) → list of {runtm, runlog, timedOut}
+-- executeBatch(items) → list of {runtm, runlog, timedOut, exitCode}
 -- Runs all items concurrently via shell background jobs.  Each item must have
 -- {cmd, runDir}.  The function blocks until every job in the batch finishes.
 --
@@ -1184,6 +1245,7 @@ local function executeBatch(items)
          runtm    = runtm,
          runlog   = runlog,
          timedOut = (exitCode == 124),
+         exitCode = exitCode,
       })
    end
 
@@ -1610,13 +1672,13 @@ local function list_unit_tests(args)
    return luaUnitTests, cxxUnitTests
 end
 
--- ---- Ignore-list updater ----------------------------------------------------
+-- ---- Test-manifest updater --------------------------------------------------
 -- Called after a run with --timeout when some tests exceeded the limit.
 -- Merges timed-out names into the layer's per-suite ignore files and writes
 -- them back so subsequent runs automatically skip those tests.
 --
--- Lua timeouts  → luareg/ignore_lua_tests.lua  (tests / gpu keys)
--- C timeouts    → creg/ignore_c_tests.lua       (tests / gpu keys)
+-- Lua timeouts  → luareg/lua_test_manifest.lua  (ignore.tests / ignore.gpu)
+-- C timeouts    → creg/c_test_manifest.lua       (ignore.tests / ignore.gpu)
 --
 -- Re-reads each file from disk before writing: manual edits made after this
 -- process started are preserved.
@@ -1626,8 +1688,8 @@ local function updateIgnoreTests(layer, newLuaNames, newCNames,
    newGpuCNames   = newGpuCNames   or {}
 
    local srcBase    = configVals.source_dir .. "/" .. layer.src
-   local luaIgnFile = srcBase .. "/luareg/ignore_lua_tests.lua"
-   local cIgnFile   = srcBase .. "/creg/ignore_c_tests.lua"
+   local luaIgnFile = srcBase .. "/luareg/lua_test_manifest.lua"
+   local cIgnFile   = srcBase .. "/creg/c_test_manifest.lua"
 
    -- Adds entries from newList into existingList (no duplicates).
    -- Returns count of entries actually added.
@@ -1645,16 +1707,22 @@ local function updateIgnoreTests(layer, newLuaNames, newCNames,
       return added
    end
 
-   -- Write { tests = {...}, gpu = {...} } to path with a header comment.
-   local function writeIgnoreFile(path, header, tbl)
+   -- Preserve the MOAT and parallel tables while updating ignore entries.
+   local function writeIgnoreFile(path, header, manifest)
       local f = io.open(path, "w")
       f:write(header)
       f:write("return {\n")
-      f:write("   tests = {\n")
-      for _, v in ipairs(tbl.tests) do f:write(string.format("      %q,\n", v)) end
-      f:write("   },\n")
-      f:write("   gpu = {\n")
-      for _, v in ipairs(tbl.gpu)   do f:write(string.format("      %q,\n", v)) end
+      f:write("   ignore = { tests = {\n")
+      for _, v in ipairs(manifest.ignore.tests) do f:write(string.format("      %q,\n", v)) end
+      f:write("   }, gpu = {\n")
+      for _, v in ipairs(manifest.ignore.gpu) do f:write(string.format("      %q,\n", v)) end
+      f:write("   } },\n   moat = {\n")
+      for _, v in ipairs(manifest.moat or {}) do f:write(string.format("      %q,\n", v)) end
+      f:write("   },\n   parallel = {\n")
+      for _, spec in ipairs(manifest.parallel or {}) do
+         f:write(string.format("      { name = %q, cuts = { %s } },\n", spec.name,
+            table.concat(spec.cuts or {}, ", ")))
+      end
       f:write("   },\n")
       f:write("}\n")
       f:close()
@@ -1662,17 +1730,18 @@ local function updateIgnoreTests(layer, newLuaNames, newCNames,
 
    -- ---- Lua ignore file ----
    if #newLuaNames > 0 or #newGpuLuaNames > 0 then
-      local existing = { tests = {}, gpu = {} }
+      local existing = { ignore = { tests = {}, gpu = {} }, moat = {}, parallel = {} }
       local gi = loadfile(luaIgnFile)
       if gi then
          local ok, loaded = pcall(gi)
          if ok and type(loaded) == "table" then existing = loaded end
       end
-      existing.tests = existing.tests or {}
-      existing.gpu   = existing.gpu   or {}
+      existing.ignore = existing.ignore or {}
+      existing.ignore.tests = existing.ignore.tests or {}
+      existing.ignore.gpu   = existing.ignore.gpu   or {}
 
-      local addedTests = mergeList(existing.tests, newLuaNames)
-      local addedGpu   = mergeList(existing.gpu,   newGpuLuaNames)
+      local addedTests = mergeList(existing.ignore.tests, newLuaNames)
+      local addedGpu   = mergeList(existing.ignore.gpu,   newGpuLuaNames)
       if addedTests > 0 or addedGpu > 0 then
          writeIgnoreFile(luaIgnFile,
             "-- Tests skipped by the Lua regression suite.\n"
@@ -1688,17 +1757,18 @@ local function updateIgnoreTests(layer, newLuaNames, newCNames,
 
    -- ---- C ignore file ----
    if #newCNames > 0 or #newGpuCNames > 0 then
-      local existing = { tests = {}, gpu = {} }
+      local existing = { ignore = { tests = {}, gpu = {} }, moat = {}, parallel = {} }
       local gi = loadfile(cIgnFile)
       if gi then
          local ok, loaded = pcall(gi)
          if ok and type(loaded) == "table" then existing = loaded end
       end
-      existing.tests = existing.tests or {}
-      existing.gpu   = existing.gpu   or {}
+      existing.ignore = existing.ignore or {}
+      existing.ignore.tests = existing.ignore.tests or {}
+      existing.ignore.gpu   = existing.ignore.gpu   or {}
 
-      local addedTests = mergeList(existing.tests, newCNames)
-      local addedGpu   = mergeList(existing.gpu,   newGpuCNames)
+      local addedTests = mergeList(existing.ignore.tests, newCNames)
+      local addedGpu   = mergeList(existing.ignore.gpu,   newGpuCNames)
       if addedTests > 0 or addedGpu > 0 then
          writeIgnoreFile(cIgnFile,
             "-- Tests skipped by the C regression suite.\n"
@@ -1741,6 +1811,7 @@ local function config_action(args, name)
 
    local mpiexec = args.config_mpiexec
       or (os.getenv("HOME") .. "/gkylsoft/openmpi/bin/mpiexec")
+   local mpiargs = args.config_mpi_args or ""
    local sourceDir = args.config_source_dir
    if not sourceDir then
       log("ERROR: --source-dir is required.\n"
@@ -1749,18 +1820,47 @@ local function config_action(args, name)
       os.exit(1)
    end
 
-   configure(prefix, mpiexec, sourceDir, args)
+   configure(prefix, mpiexec, mpiargs, sourceDir, args)
 end
 
 -- 'list' command: print all regression tests that would be run.
 local function list_action(args, name)
    loadConfigure(args)
+   if args.parallel then args.c_only = true end
    local luaTests, cTests = list_tests(detectedLayer, args)
    if not args.c_only then
       for _, t in ipairs(luaTests) do print("[lua] " .. t.name) end
    end
    if not args.lua_only then
-      for _, t in ipairs(cTests)   do print("[c]   " .. t.name) end
+      for _, t in ipairs(cTests) do
+         if t.parallel then
+            print(string.format("[c]   %s  ranks=%d cuts={%s}", t.name,
+               parallelRanks(t.parallel.cuts), table.concat(t.parallel.cuts, ",")))
+         else
+            print("[c]   " .. t.name)
+         end
+      end
+   end
+end
+
+-- Write the per-layer result summary and persist the aggregate metadata.
+local function finalizeRegressionRun()
+   for _, layer in ipairs(LAYERS) do
+      local cnt = layerCounts[layer.name]
+      if cnt.total > 0 then
+         insertRegressionMeta(layer.name, runID, runDate,
+            cnt.total, cnt.passed, cnt.failed,
+            GPU_BUILD and 1 or 0, cnt.gpu_passed, cnt.gpu_failed)
+         local summary = string.format(
+            "  Layer %-12s  total=%d  passed=%d  failed=%d",
+            layer.name, cnt.total, cnt.passed, cnt.failed)
+         if GPU_BUILD and GPU_LAYERS[layer.name] then
+            summary = summary .. string.format(
+               "  gpu_total=%d  gpu_pass=%d  gpu_fail=%d",
+               cnt.gpu_total, cnt.gpu_passed, cnt.gpu_failed)
+         end
+         log(summary .. "\n")
+      end
    end
 end
 
@@ -1772,6 +1872,18 @@ end
 -- accepted baselines are deterministic.
 local function run_action(args, name)
    loadConfigure(args)
+
+   if args.parallel and args.no_parallel then
+      log("ERROR: --parallel and --no-parallel cannot be combined.\n")
+      os.exit(1)
+   end
+   if args.parallel then
+      if args.lua_only or args.moat or args.run_only then
+         log("ERROR: --parallel cannot be combined with --lua-only, --moat, or --run-only.\n")
+         os.exit(1)
+      end
+      args.c_only = true
+   end
 
    local luaTests, cTests = list_tests(detectedLayer, args)
    if args.compile then
@@ -1805,6 +1917,53 @@ local function run_action(args, name)
       postRun = create_action
    elseif args.check then
       postRun = check_action
+   end
+   local tmStart = Time.clock()
+
+   if args.parallel then
+      log("Running parallel C regression tests serially by MPI collective ...\n\n")
+      local timeoutSecs = args.timeout or 0
+      for _, test in ipairs(cTests) do
+         local useGpu = GPU_BUILD and GPU_LAYERS[test.layer] and not args.no_gpu
+         local prep = prepareParallelCRun(test, timeoutSecs, args.execute_only, useGpu)
+         local status, runlog, runtime
+         layerCounts[test.layer].total = layerCounts[test.layer].total + 1
+         if prep.compileFailed then
+            status, runlog, runtime = -4, "COMPILE FAILED:\n" .. prep.compileLog, prep.compileSecs
+            layerCounts[test.layer].failed = layerCounts[test.layer].failed + 1
+         else
+            log(string.format("[MPI-C] %s (ranks=%d cuts={%s}) ...\n", test.name,
+               prep.parallelRanks, table.concat(test.parallel.cuts, ",")))
+            verboseLog("MPI command: " .. prep.launchCmd .. "\n")
+            local result = executeBatch({ prep })[1]
+            runtime, runlog = result.runtm, result.runlog
+            verboseLog(runlog)
+            runlog = (prep.compileLog or "") .. "\n" .. runlog
+            if result.timedOut then
+               status = -3
+               layerCounts[test.layer].failed = layerCounts[test.layer].failed + 1
+            elseif result.exitCode ~= 0 then
+               status = 0
+               layerCounts[test.layer].failed = layerCounts[test.layer].failed + 1
+               runlog = runlog .. string.format("MPI launcher/test exited with status %d.\n",
+                  result.exitCode)
+               log(string.format("... MPI launch FAILED (exit status %d)\n", result.exitCode))
+            else
+               status = postRun(test, prep.runDir, "c")
+            end
+            local testname = stripext(basename(test.src))
+            if not args.execute_only then
+               os.execute(string.format("rm -f '%s/%s' '%s/%s.d' 2>/dev/null",
+                  prep.runDir, testname, prep.runDir, testname))
+               os.execute(string.format("rm -rf '%s/%s.dSYM' 2>/dev/null", prep.runDir, testname))
+            end
+         end
+         insertRegressionData(test.layer, runID, test.name, "c", status, runtime, runlog)
+      end
+      log(string.format(
+         "\nAll regression tests completed in %g secs\n", Time.clock() - tmStart))
+      finalizeRegressionRun()
+      return
    end
 
    -- Track timed-out tests per layer so we can update ignoretests.lua.
@@ -1908,8 +2067,6 @@ local function run_action(args, name)
    else
       log("Running regression tests ...\n\n")
    end
-   local tmStart = Time.clock()
-
    if jobCount <= 1 then
       -- ================================================================
       -- SERIAL PATH (default): one test at a time, preserving all
@@ -2214,25 +2371,7 @@ local function run_action(args, name)
       end
    end
 
-   -- Finalize: write per-layer summary rows into each layer's database.
-   -- We only write a metadata row for layers that actually had tests.
-   for _, layer in ipairs(LAYERS) do
-      local cnt = layerCounts[layer.name]
-      if cnt.total > 0 then
-         insertRegressionMeta(layer.name, runID, runDate,
-            cnt.total, cnt.passed, cnt.failed,
-            GPU_BUILD and 1 or 0, cnt.gpu_passed, cnt.gpu_failed)
-         local summary = string.format(
-            "  Layer %-12s  total=%d  passed=%d  failed=%d",
-            layer.name, cnt.total, cnt.passed, cnt.failed)
-         if GPU_BUILD and GPU_LAYERS[layer.name] then
-            summary = summary .. string.format(
-               "  gpu_total=%d  gpu_pass=%d  gpu_fail=%d",
-               cnt.gpu_total, cnt.gpu_passed, cnt.gpu_failed)
-         end
-         log(summary .. "\n")
-      end
-   end
+   finalizeRegressionRun()
 end
 
 -- 'listunit' command.
@@ -2299,9 +2438,14 @@ c_conf:option("-p --prefix",
    .. "Auto-detected from config.mak if omitted.")
    :target("config_prefix")
 c_conf:option("-m --mpiexec",
-   "Full path to MPI executable.\n"
-   .. "(MPI parallelism not yet implemented).")
+   "Full path to MPI launcher used by --parallel.")
    :target("config_mpiexec")
+c_conf:option("--mpi-args",
+   "Optional MPI-launcher arguments used by --parallel (for example Slurm GPU binding).")
+   :target("config_mpi_args")
+c_conf:option("--results-subdir",
+   "Optional subdirectory below gkeyll-results for an independent regression suite.")
+   :target("config_results_subdir")
 c_conf:flag("--drop-tables",
    "Drop and re-create all SQL tables\n"
    .. "(erases existing regression data).", false)
@@ -2313,10 +2457,12 @@ local c_list = parser:command("list", "List all regression tests")
 c_list:option("-r --run-only",
    "List only this test. Accepts a bare name (rt_foo), an absolute path, or a directory.")
 c_list:flag("-a --all",
-   "List all tests, bypassing ignore_lua_tests.lua / ignore_c_tests.lua.\n"
+   "List all tests, bypassing lua_test_manifest.lua / c_test_manifest.lua ignores.\n"
    .. "Combine with --lua-only or --c-only to bypass only that suite's ignore list.")
 c_list:flag("-m --moat", "Only list MOAT (Mother Of All Tests) regression tests\n"
    .. "A condensed suite of the most comprehensive regression tests.")
+c_list:flag("--parallel", "Only list C regression tests configured for MPI parallel execution.")
+c_list:flag("--no-parallel", "Do not select the manifest's MPI parallel-test mode; serial test selection is unchanged.")
 c_list:flag("-c --c-only",   "Only list C regression tests (skip Lua tests)")
 c_list:flag("-l --lua-only", "Only list Lua regression tests (skip C tests)")
 
@@ -2336,10 +2482,12 @@ c_run:option("-r --run-only",
    .. "Accepts bare names (rt_foo), absolute paths, or directories.\n"
    .. "Use --c-only/--lua-only to disambiguate when a C and Lua test share the same name.")
 c_run:flag("-a --all",
-   "Run all tests, bypassing ignore_lua_tests.lua / ignore_c_tests.lua.\n"
+   "Run all tests, bypassing lua_test_manifest.lua / c_test_manifest.lua ignores.\n"
    .. "Combine with --lua-only or --c-only to bypass only that suite's ignore list.")
 c_run:flag("-m --moat", "Only run MOAT (Mother Of All Tests) regression tests\n"
    .. "A condensed suite of the most comprehensive regression tests.")
+c_run:flag("--parallel", "Only run C regression tests configured for MPI parallel execution.")
+c_run:flag("--no-parallel", "Do not select the manifest's MPI parallel-test mode; serial test selection is unchanged.")
 c_run:flag("-c --c-only",   "Only run C regression tests (skip Lua tests)")
 c_run:flag("-l --lua-only", "Only run Lua regression tests (skip C tests)")
 c_run:flag("-e --execute-only",

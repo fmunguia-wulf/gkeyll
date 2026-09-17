@@ -6,7 +6,8 @@ pull request or an explicit candidate/baseline comparison. Jenkins runs on the
 login side and submits unit tests and C regressions to Slurm CPU nodes.
 
 The job uses a reviewed Pipeline and fixed reviewed baseline. It does not use
-GitHub webhooks or run Lua, MPI, MOAT-only, or GPU regressions. Jenkins is
+GitHub webhooks or run Lua, MOAT-only, or GPU regressions. Alongside the
+serial C suite it runs manifest-selected C MPI regressions on four ranks. Jenkins is
 available only through the authenticated Stellar login session or an SSH tunnel.
 
 # Installation

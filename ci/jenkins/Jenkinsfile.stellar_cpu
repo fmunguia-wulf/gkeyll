@@ -192,7 +192,7 @@ def publishGitHubCommitStatus(String statusCredentialsId, String commit, String 
     }
 }
 
-def submitSlurmJob(String kind, String payload, String cpus, String timeLimit, List<String> extraExports = []) {
+def submitSlurmJob(String kind, String payload, String cpus, String timeLimit, List<String> extraExports = [], String tasks = '1') {
     def qos = requireValue('STELLAR_CPU_SLURM_QOS', env.STELLAR_CPU_SLURM_QOS)
     def account = env.STELLAR_CPU_SLURM_ACCOUNT?.trim()
     def idFile = "slurm-${kind}-job-id.txt"
@@ -214,6 +214,7 @@ def submitSlurmJob(String kind, String payload, String cpus, String timeLimit, L
         "CI_STELLAR_CPU_TIME=${timeLimit}",
         "CI_STELLAR_CPU_ACCOUNT=${account ?: ''}",
         "CI_STELLAR_CPU_CPUS=${cpus}",
+        "CI_SLURM_TASKS=${tasks}",
         "CI_SLURM_PAYLOAD=${payload}",
         "CI_SLURM_EXPORTS=${exports.join(',')}",
         "CI_SLURM_OUTPUT=${outputFile}"
@@ -254,7 +255,7 @@ def submitSlurmJob(String kind, String payload, String cpus, String timeLimit, L
                 --parsable
                 "--job-name=gkyl-ci-${CI_SLURM_JOB_KIND}-${BUILD_NUMBER}"
                 --nodes=1
-                --ntasks=1
+                "--ntasks=${CI_SLURM_TASKS}"
                 "--cpus-per-task=${CI_STELLAR_CPU_CPUS}"
                 "--qos=${CI_STELLAR_CPU_QOS}"
                 "--time=${CI_STELLAR_CPU_TIME}"
@@ -344,22 +345,39 @@ def submitRegressionTests() {
     )
 }
 
-def configureAndCompileCRegressions(String label, String driver, String sourceDir, String prefix, String moduleFile) {
+def submitParallelRegressionTests() {
+    submitSlurmJob(
+        'parallel-regression',
+        'ci/jenkins/slurm-parallel-regression-tests.stellar_cpu.sh',
+        '1',
+        (env.STELLAR_CPU_REGRESSION_TIME ?: '04:00:00').trim(),
+        [
+            "CI_BASELINE_DIR=${env.WORKSPACE}/_baseline",
+            "CI_BASELINE_PREFIX=${env.WORKSPACE}/_baseline/gkylsoft",
+            "CI_CANDIDATE_PREFIX=${env.WORKSPACE}/gkylsoft"
+        ],
+        '4'
+    )
+}
+
+def configureAndCompileCRegressions(String label, String driver, String sourceDir, String prefix, String moduleFile, String runOptions = '', String configureOptions = '') {
     withEnv([
         "CI_REGRESSION_LABEL=${label}",
         "CI_REGRESSION_DRIVER=${driver}",
         "CI_REGRESSION_SOURCE_DIR=${sourceDir}",
         "CI_REGRESSION_PREFIX=${prefix}",
-        "CI_REGRESSION_MODULE_FILE=${moduleFile}"
+        "CI_REGRESSION_MODULE_FILE=${moduleFile}",
+        "CI_REGRESSION_RUN_OPTIONS=${runOptions}",
+        "CI_REGRESSION_CONFIGURE_OPTIONS=${configureOptions}"
     ]) {
         sh '''#!/bin/bash -l
             set -euo pipefail
             . "$CI_REGRESSION_MODULE_FILE"
             "$CI_REGRESSION_DRIVER" runregression configure \
                 --source-dir "$CI_REGRESSION_SOURCE_DIR" \
-                --prefix "$CI_REGRESSION_PREFIX"
+                --prefix "$CI_REGRESSION_PREFIX" $CI_REGRESSION_CONFIGURE_OPTIONS
             started="$(date +%s)"
-            "$CI_REGRESSION_DRIVER" runregression run -c compile
+            "$CI_REGRESSION_DRIVER" runregression run -c $CI_REGRESSION_RUN_OPTIONS compile
             elapsed="$(( $(date +%s) - started ))"
             printf '%s\n' "$elapsed" > "$CI_REGRESSION_LABEL-c-compile-seconds.txt"
             echo "$CI_REGRESSION_LABEL C-regression compile time: $elapsed seconds"
@@ -622,6 +640,27 @@ node(nodeLabel) {
             }
             stage('Run C regressions (SLURM)') {
                 submitRegressionTests()
+            }
+            stage('Compile parallel C regressions') {
+                configureAndCompileCRegressions(
+                    'candidate-parallel',
+                    "${env.WORKSPACE}/gkylsoft/gkeyll/bin/gkeyll",
+                    env.WORKSPACE,
+                    "${env.WORKSPACE}/gkylsoft",
+                    'machines/module_load.stellar-intel.sh',
+                    '--parallel', '--results-subdir parallel-c-4 --mpiexec srun'
+                )
+                configureAndCompileCRegressions(
+                    'baseline-parallel',
+                    "${env.WORKSPACE}/_baseline/gkylsoft/gkeyll/bin/gkeyll",
+                    "${env.WORKSPACE}/_baseline",
+                    "${env.WORKSPACE}/_baseline/gkylsoft",
+                    'machines/module_load.stellar-intel.sh',
+                    '--parallel', '--results-subdir parallel-c-4 --mpiexec srun'
+                )
+            }
+            stage('Run parallel C regressions (SLURM)') {
+                submitParallelRegressionTests()
             }
             terminalStatus = 'success'
             terminalDescription = 'Stellar CPU CPU unit and C regression tests passed.'
