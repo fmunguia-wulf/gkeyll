@@ -23,9 +23,25 @@ for artifact in json.load(sys.stdin).get("artifacts", []):
 ' <<< "$payload"
 }
 
+ci_print_tree_line() {
+    printf '├─ %s\n' "$*"
+}
+
+ci_print_tree_items() {
+    local -a items=("$@")
+    local index
+    for ((index = 0; index < ${#items[@]}; ++index)); do
+        if ((index + 1 == ${#items[@]})); then
+            printf '│  └─ %s\n' "${items[index]}"
+        else
+            printf '│  ├─ %s\n' "${items[index]}"
+        fi
+    done
+}
+
 ci_print_build() {
     local payload="$1"
-    python3 -c '
+    ci_print_tree_line "$(python3 -c '
 import datetime
 import json
 import sys
@@ -47,7 +63,7 @@ print("BUILD #{number} {state} queue={queue} {when} pr={pr} candidate={candidate
     when=when, pr=values.get("CANDIDATE_PR", "-"),
     candidate=values.get("CANDIDATE_REF", "-"),
     baseline=values.get("BASELINE_REF", "-"), url=build.get("url", "-")))
-' <<< "$payload"
+' <<< "$payload")"
 }
 
 ci_artifact_url() {
@@ -85,20 +101,21 @@ ci_print_failure_summary() {
                 esac
             done < "$temporary"
             rm -f "$temporary"
-            echo "Failure: ${stage:-unknown}: ${message:-${result:-unknown failure}}"
+            ci_print_tree_line "Failure: ${stage:-unknown}: ${message:-${result:-unknown failure}}"
         else
             rm -f "$temporary"
-            echo 'Failure: CI failure summary artifact could not be downloaded.'
+            ci_print_tree_line 'Failure: CI failure summary artifact could not be downloaded.'
         fi
         return
     done < <(ci_artifact_records "$build_number" "$payload")
 }
 
 ci_print_regression_failures() {
-    local build_number="$1" payload="$2" queryrdb record artifact_path temporary layer output found=false
+    local build_number="$1" payload="$2" queryrdb record artifact_path temporary layer output
+    local -a failures=()
     queryrdb="${GKYL_QUERYRDB:-$SCRIPT_DIR/../../gkylsoft/gkeyll/bin/gkeyll}"
     [[ -x "$queryrdb" ]] || {
-        echo "Regression failures: queryrdb is unavailable at $queryrdb"
+        ci_print_tree_line "Regression failures: queryrdb is unavailable at $queryrdb"
         return
     }
     while IFS= read -r artifact_path; do
@@ -107,35 +124,39 @@ ci_print_regression_failures() {
         temporary="$(mktemp "${TMPDIR:-/tmp}/gkeyll-ci-regressiondb.XXXXXX")"
         if ! ci_download_artifact "$build_number" "$artifact_path" "$temporary"; then
             rm -f "$temporary"
-            echo "Regression failures: could not download $artifact_path"
+            ci_print_tree_line "Regression failures: could not download $artifact_path"
             continue
         fi
         if output="$("$queryrdb" queryrdb --db "$temporary" query --id 1 --fail-only 2>/dev/null)"; then
             while IFS= read -r record; do
                 if [[ "$record" =~ ^[[:space:]]*[0-9]+[[:space:]]*:[[:space:]]+[^[:space:]]+[[:space:]]+(.+)[[:space:]]+(fail|timeout|compile_fail|no_output|crash)[[:space:]] ]]; then
-                    if [[ "$found" == false ]]; then
-                        echo 'Regression failures:'
-                        found=true
-                    fi
-                    echo "  $layer/${BASH_REMATCH[1]} [${BASH_REMATCH[2]}]"
+                    failures+=("$layer/${BASH_REMATCH[1]} [${BASH_REMATCH[2]}]")
                 fi
             done <<< "$output"
         else
-            echo "Regression failures: queryrdb could not inspect $artifact_path"
+            ci_print_tree_line "Regression failures: queryrdb could not inspect $artifact_path"
         fi
         rm -f "$temporary"
     done < <(ci_artifact_records "$build_number" "$payload")
+    if ((${#failures[@]})); then
+        ci_print_tree_line 'Regression failures:'
+        ci_print_tree_items "${failures[@]}"
+    fi
 }
 
 ci_print_artifact_list() {
-    local build_number="$1" payload="$2" artifact_path found=false
-    echo "Artifacts URL: $(ci_build_url "$build_number")/artifact/"
-    echo 'Artifacts:'
+    local build_number="$1" payload="$2" artifact_path
+    local -a artifacts=()
     while IFS= read -r artifact_path; do
-        echo "  $artifact_path"
-        found=true
+        artifacts+=("$artifact_path")
     done < <(ci_artifact_records "$build_number" "$payload")
-    [[ "$found" == true ]] || echo '  (none)'
+    ci_print_tree_line "Artifacts URL: $(ci_build_url "$build_number")/artifact/"
+    ci_print_tree_line 'Artifacts:'
+    if ((${#artifacts[@]})); then
+        ci_print_tree_items "${artifacts[@]}"
+    else
+        ci_print_tree_items '(none)'
+    fi
 }
 
 ci_info_command() {
