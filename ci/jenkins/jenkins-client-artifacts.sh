@@ -11,18 +11,16 @@ ci_build_payload() {
 }
 
 ci_artifact_records() {
-    local build_number="$1" payload="$2"
+    local payload="$2"
     python3 -c '
 import json
 import sys
-import urllib.parse
 
-base = sys.argv[1].rstrip("/")
 for artifact in json.load(sys.stdin).get("artifacts", []):
     path = artifact.get("relativePath")
     if isinstance(path, str) and path:
-        print("{}\t{}/artifact/{}".format(path, base, urllib.parse.quote(path, safe="/")))
-' "$(ci_build_url "$build_number")" <<< "$payload"
+        print(path)
+' <<< "$payload"
 }
 
 ci_print_build() {
@@ -73,8 +71,8 @@ ci_download_artifact() {
 }
 
 ci_print_failure_summary() {
-    local build_number="$1" payload="$2" record artifact_path artifact_url temporary
-    while IFS=$'\t' read -r artifact_path artifact_url; do
+    local build_number="$1" payload="$2" record artifact_path temporary
+    while IFS= read -r artifact_path; do
         [[ "$artifact_path" == ci-failure-summary.txt ]] || continue
         temporary="$(mktemp "${TMPDIR:-/tmp}/gkeyll-ci-failure.XXXXXX")"
         if ci_download_artifact "$build_number" "$artifact_path" "$temporary"; then
@@ -97,13 +95,13 @@ ci_print_failure_summary() {
 }
 
 ci_print_regression_failures() {
-    local build_number="$1" payload="$2" queryrdb record artifact_path artifact_url temporary layer output found=false
+    local build_number="$1" payload="$2" queryrdb record artifact_path temporary layer output found=false
     queryrdb="${GKYL_QUERYRDB:-$SCRIPT_DIR/../../gkylsoft/gkeyll/bin/gkeyll}"
     [[ -x "$queryrdb" ]] || {
         echo "Regression failures: queryrdb is unavailable at $queryrdb"
         return
     }
-    while IFS=$'\t' read -r artifact_path artifact_url; do
+    while IFS= read -r artifact_path; do
         [[ "$artifact_path" =~ ^gkylsoft/gkeyll-results/(.*/)?(moments|vlasov|gyrokinetic|pkpm)/regressiondb$ ]] || continue
         layer="${BASH_REMATCH[2]}"
         temporary="$(mktemp "${TMPDIR:-/tmp}/gkeyll-ci-regressiondb.XXXXXX")"
@@ -129,6 +127,17 @@ ci_print_regression_failures() {
     done < <(ci_artifact_records "$build_number" "$payload")
 }
 
+ci_print_artifact_list() {
+    local build_number="$1" payload="$2" artifact_path found=false
+    echo "Artifacts URL: $(ci_build_url "$build_number")/artifact/"
+    echo 'Artifacts:'
+    while IFS= read -r artifact_path; do
+        echo "  $artifact_path"
+        found=true
+    done < <(ci_artifact_records "$build_number" "$payload")
+    [[ "$found" == true ]] || echo '  (none)'
+}
+
 ci_info_command() {
     [[ $# -eq 2 && "$1" == --build ]] || die 'usage: info --build NUMBER'
     ci_positive_integer 'build number' "$2"
@@ -137,14 +146,7 @@ ci_info_command() {
     ci_print_build "$payload"
     ci_print_failure_summary "$2" "$payload"
     ci_print_regression_failures "$2" "$payload"
-    echo "Artifacts URL: $(ci_build_url "$2")/artifact/"
-    echo 'Artifacts:'
-    local artifact_path artifact_url found=false
-    while IFS=$'\t' read -r artifact_path artifact_url; do
-        echo "  $artifact_path  $artifact_url"
-        found=true
-    done < <(ci_artifact_records "$2" "$payload")
-    [[ "$found" == true ]] || echo '  (none)'
+    ci_print_artifact_list "$2" "$payload"
 }
 
 ci_artifact_command() {
@@ -166,20 +168,15 @@ ci_artifact_command() {
     local payload
     payload="$(ci_build_payload "$build_number")" || die "Build #$build_number is not available"
     if [[ "$mode" == list ]]; then
-        local artifact_path artifact_url found=false
-        while IFS=$'\t' read -r artifact_path artifact_url; do
-            echo "$artifact_path  $artifact_url"
-            found=true
-        done < <(ci_artifact_records "$build_number" "$payload")
-        [[ "$found" == true ]] || echo 'No archived artifacts.'
+        ci_print_artifact_list "$build_number" "$payload"
         return
     fi
 
     [[ -n "$output_dir" ]] || output_dir="gkeyll-ci-build-$build_number"
     [[ ! -e "$output_dir" ]] || die "output directory already exists: $output_dir"
     local -a available=() selected=() requested=()
-    local artifact_path artifact_url requested_path
-    while IFS=$'\t' read -r artifact_path artifact_url; do
+    local artifact_path requested_path
+    while IFS= read -r artifact_path; do
         ci_safe_artifact_path "$artifact_path" || die "Jenkins returned unsafe artifact path: $artifact_path"
         available+=("$artifact_path")
     done < <(ci_artifact_records "$build_number" "$payload")
