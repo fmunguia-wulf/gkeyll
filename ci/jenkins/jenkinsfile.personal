@@ -85,7 +85,7 @@ def timeCommand(String metricFile, String command) {
 
 def buildTree(String label, String prefix, String mkdeps, String configure, String jobs) {
     def metricDirectory = label == 'baseline' ? '../' : ''
-    def mpiHome = env.MPI_HOME?.trim() ?: "${prefix}/openmpi"
+    def mpiHome = env.PERSONAL_MPI_HOME?.trim() ?: "${prefix}/openmpi"
     withEnv(["PREFIX=${prefix}", "MPI_HOME=${mpiHome}"]) {
         sh """#!/bin/bash
             set -euo pipefail
@@ -132,6 +132,8 @@ def runCandidateRegressions(String regressionJobs) {
 }
 
 def runParallelRegressions(String mpiExec) {
+    def mpiHome = env.PERSONAL_MPI_HOME?.trim()
+    mpiExec = mpiExec ?: (mpiHome ? "${mpiHome}/bin/mpiexec" : '')
     def candidateMpiExec = mpiExec ?: "${env.WORKSPACE}/gkylsoft/openmpi/bin/mpiexec"
     def baselineMpiExec = mpiExec ?: "${env.WORKSPACE}/_baseline/gkylsoft/openmpi/bin/mpiexec"
     def gkeyll = "${env.WORKSPACE}/gkylsoft/gkeyll/bin/gkeyll"

@@ -58,7 +58,14 @@ and Python with NumPy. Set these global environment variables:
 | `PERSONAL_GITHUB_CREDENTIAL_ID` | GitHub status/API credential ID |
 | `PERSONAL_BUILD_JOBS` | Optional; default `3` |
 | `PERSONAL_REGRESSION_JOBS` | Optional; default `1` |
-| `PERSONAL_MPIEXEC` | Optional launcher override for both trees; otherwise each tree uses its own `gkylsoft/openmpi/bin/mpiexec` |
+| `PERSONAL_MPI_HOME` | Optional MPI installation path for both trees; default is each tree's `gkylsoft/openmpi` |
+| `PERSONAL_MPIEXEC` | Optional launcher override for both trees; default is `bin/mpiexec` under the selected MPI installation |
+
+The workflow sets `MPI_HOME` to `PERSONAL_MPI_HOME` while building each tree.
+If `PERSONAL_MPI_HOME` is unset or blank, it uses that tree's workspace-local
+`gkylsoft/openmpi`. Set `PERSONAL_MPI_HOME` (for example, `/opt/openmpi`) to use
+an existing MPI installation for both builds and parallel regressions.
+An ambient `MPI_HOME` does not select the CI installation.
 
 ### Create the one parameterized Pipeline job
 
