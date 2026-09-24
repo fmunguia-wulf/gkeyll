@@ -263,6 +263,8 @@ def runCi = {
     try {
         ciStage('Resolve candidate and baseline') {
             if (candidatePr) { candidateRef = "PR #${candidatePr}"; requestedBaseline = pullRequestBase(statusCredentialsId, candidatePr) }
+            currentBuild.displayName = "#${env.BUILD_NUMBER} ${candidatePr ? "PR-${candidatePr}" : candidateRef}"
+            currentBuild.description = "${candidateRef} vs ${requestedBaseline}"
             writeFile file: 'ci-selection.txt', text: "candidate_selector=${candidateRef}\nbaseline_selector=${requestedBaseline}\n"
         }
         ciStage('Checkout candidate') {
@@ -270,6 +272,7 @@ def runCi = {
             if (candidatePr) checkoutPullRequest(candidatePr); else checkoutRef(candidateRef, 'candidate')
             commit = sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
             writeFile file: 'ci-candidate-commit.txt', text: "${commit}\n"
+            currentBuild.description += " @ ${commit.take(9)}"
             if (env.CI_TRUSTED_CI_COMMIT?.trim()) {
                 writeFile file: 'ci-trusted-ci-commit.txt', text: "${env.CI_TRUSTED_CI_COMMIT.trim()}\n"
             }
