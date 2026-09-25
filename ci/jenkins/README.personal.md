@@ -63,7 +63,6 @@ and Python with NumPy. Set these global environment variables:
 
 The selected dependency script must pass `--build-adas=yes` to
 `install-deps/mkdeps.sh` so ADAS data is available before unit tests run.
-Both `mkdeps.linux.sh` and `mkdeps.macos.sh` include this flag.
 
 The workflow sets `MPI_HOME` to `PERSONAL_MPI_HOME` while building each tree.
 If `PERSONAL_MPI_HOME` is unset or blank, it uses that tree's workspace-local

@@ -110,7 +110,6 @@ toolchain, `cmake`, and Python/NumPy. Set these global environment variables:
 
 The selected dependency script must pass `--build-adas=yes` to
 `install-deps/mkdeps.sh` so ADAS data is available before unit tests run.
-Both `mkdeps.linux.sh` and `mkdeps.macos.sh` include this flag.
 
 The workflow builds dependencies separately for the candidate and baseline in
 their workspace-local `gkylsoft` directories. Set `WORKSTATION_MPI_HOME` (for
