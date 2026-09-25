@@ -560,7 +560,7 @@ node(nodeLabel) {
     ws("${workspaceRoot}/${env.JOB_NAME}/${env.BUILD_TAG}") {
         try {
             ciStage('Resolve candidate and baseline') {
-                currentBuild.displayName = "#${env.BUILD_NUMBER} ${candidatePr ? "PR-${candidatePr}" : candidateRef}"
+                currentBuild.displayName = "#${env.BUILD_NUMBER} ${candidatePr ? "PR-${candidatePr}" : (isCommitSha(candidateRef) ? candidateRef.take(7) : candidateRef)}"
                 if (candidatePr) {
                     candidateSelector = "PR #${candidatePr}"
                     baselineSelector = resolvePullRequestBase(statusCredentialsId, candidatePr)
