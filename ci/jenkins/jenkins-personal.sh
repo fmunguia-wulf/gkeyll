@@ -186,7 +186,7 @@ wait_for_build_number() {
         fi
         IFS=$'\t' read -r number cancelled why <<< "$record"
         # Jenkins can report cancelled=true briefly while the item becomes a build.
-        if [[ "$cancelled" == true ]]; then if number="$(build_for_queue "$queue_id")" && [[ -n "$number" ]]; then RESOLVED_BUILD_NUMBER="$number"; return 0; fi; die "Queue item $queue_id was cancelled"; fi
+        if [[ "$cancelled" == true ]]; then for attempt in {1..12}; do if number="$(build_for_queue "$queue_id")" && [[ "$number" =~ ^[1-9][0-9]*$ ]]; then RESOLVED_BUILD_NUMBER="$number"; return 0; fi; sleep 5; done; die "Queue item $queue_id was cancelled"; fi
         if [[ -n "$number" ]]; then
             RESOLVED_BUILD_NUMBER="$number"
             return 0
@@ -278,7 +278,7 @@ follow() {
 follow_command() {
     [[ $# == 2 ]] || die 'usage: follow --queue ID | follow --build NUMBER'
     case "$1" in
-        --queue) positive 'queue ID' "$2"; wait_for_build_number "$2"; follow "$RESOLVED_BUILD_NUMBER" ;;
+        --queue) positive 'queue ID' "$2"; wait_for_build_number "$2"; [[ "$RESOLVED_BUILD_NUMBER" =~ ^[1-9][0-9]*$ ]] || die "Queue item $2 did not resolve to a build number (got '$RESOLVED_BUILD_NUMBER')"; follow "$RESOLVED_BUILD_NUMBER" ;;
         --build) follow "$2" ;;
         *) die 'usage: follow --queue ID | follow --build NUMBER' ;;
     esac

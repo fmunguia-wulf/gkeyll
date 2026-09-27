@@ -217,11 +217,11 @@ def unit_section(label, results_file, log_file):
         rows.append("| {} | {} | {}{} | {} |".format(
             layer, entry["passed"], len(failed), mark, ", ".join(code(t) for t in failed)))
     total = sum(e["passed"] for e in layers.values())
-    head = "**{} unit tests:** {} passed, {} failed".format(label, total, nfail)
+    head = "{} unit tests: {} passed, {} failed".format(label, total, nfail)
     table = ["| Layer | Passed | Failed | Failing tests |", "| --- | ---: | ---: | --- |"] + rows
     if nfail:
-        body = [head, ""] + table
-    else:  # all green: keep the per-layer table one click away
+        body = ["**{}**".format(head), ""] + table
+    else:  # all green: keep the per-layer table one click away; no markup in <summary>
         body = ["<details><summary>{}</summary>".format(head), ""] + table + ["", "</details>"]
     for layer in order:
         for test in layers.get(layer, {}).get("failed", []):

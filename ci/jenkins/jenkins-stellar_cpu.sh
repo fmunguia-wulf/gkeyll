@@ -387,7 +387,7 @@ wait_for_build_number() {
         fi
         IFS=$'\t' read -r number cancelled why <<< "$state"
         # Jenkins can report cancelled=true briefly while the item becomes a build.
-        if [[ "$cancelled" == true ]]; then if number="$(build_for_queue "$queue_id")" && [[ -n "$number" ]]; then RESOLVED_BUILD_NUMBER="$number"; return 0; fi; die "Queue item $queue_id was cancelled"; fi
+        if [[ "$cancelled" == true ]]; then for attempt in {1..12}; do if number="$(build_for_queue "$queue_id")" && [[ "$number" =~ ^[1-9][0-9]*$ ]]; then RESOLVED_BUILD_NUMBER="$number"; return 0; fi; sleep 5; done; die "Queue item $queue_id was cancelled"; fi
         if [[ -n "$number" ]]; then
             RESOLVED_BUILD_NUMBER="$number"
             return 0
