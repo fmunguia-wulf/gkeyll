@@ -18,9 +18,11 @@ that the token is never bound while candidate code runs.
 """
 
 import argparse
+import datetime
 import json
 import os
 import re
+import socket
 import sys
 import urllib.error
 import urllib.parse
@@ -139,8 +141,9 @@ def build_report(args):
     baseline = read_text("ci-baseline-commit.txt").strip()
     failure = read_kv("ci-failure-summary.txt")
     build_number = os.environ.get("BUILD_NUMBER", "?")
-    build_url = os.environ.get("BUILD_URL", "")
-    node = os.environ.get("NODE_NAME") or os.environ.get("HOSTNAME") or ""
+    node = os.environ.get("NODE_NAME", "")
+    if node in ("", "built-in", "master"):
+        node = os.environ.get("HOSTNAME") or socket.gethostname().split(".")[0]
 
     parts = [MARKER_FORMAT.format(args.context)]
     parts.append("### Gkeyll CI on {}: {}".format(
@@ -150,12 +153,12 @@ def build_report(args):
     baseline_sel = first(selection, "baseline_selector", "?")
     meta = ["**Candidate:** {} @ {}".format(candidate_sel, code(short(candidate))),
             "**Baseline:** {} @ {}".format(baseline_sel, code(short(baseline)))]
-    where = "Jenkins build #{}".format(build_number)
-    if node:
-        where += " on {}".format(code(node))
-    if build_url:
-        where += " ({}, reachable only from that controller)".format(build_url)
-    meta.append(where)
+    # No controller URL: every controller is loopback-only, so a link would be
+    # dead for everyone but the machine owner. The build number is what that
+    # owner needs to fetch artifacts (see the footer).
+    finished = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    meta.append("**Run:** {} build #{} on {}, finished {}".format(
+        code(args.platform), build_number, code(node), finished))
     parts.append("  \n".join(meta))
 
     if args.result != "success":
@@ -177,8 +180,8 @@ def build_report(args):
     if timings:
         parts.append(timings)
 
-    parts.append("_Artifacts: `./ci/jenkins/gkeyll-ci.sh {} artifact --build {} --fetch` "
-                 "for anyone with access to this controller._".format(args.platform, build_number))
+    parts.append("_Logs and regression databases stay on that machine; its owner can fetch them with "
+                 "`./ci/jenkins/gkeyll-ci.sh {} artifact --build {} --fetch`._".format(args.platform, build_number))
 
     report = "\n\n".join(parts) + "\n"
     report = truncate(report, COMMENT_LIMIT)

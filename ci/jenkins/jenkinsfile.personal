@@ -323,13 +323,14 @@ def runCi = {
             currentBuild.displayName = "#${env.BUILD_NUMBER} ${candidatePr ? "PR-${candidatePr}" : shortRef(candidateRef)}"
             if (candidatePr) { candidateRef = "PR #${candidatePr}"; requestedBaseline = pullRequestBase(statusCredentialsId, candidatePr) }
             currentBuild.description = "${shortRef(candidateRef)} vs ${shortRef(requestedBaseline)}"
-            writeFile file: 'ci-selection.txt', text: "candidate_selector=${candidateRef}\nbaseline_selector=${requestedBaseline}\n"
         }
         ciStage('Checkout candidate') {
             deleteDir()
             if (candidatePr) checkoutPullRequest(candidatePr); else checkoutRef(candidateRef, 'candidate')
             commit = sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
             writeFile file: 'ci-candidate-commit.txt', text: "${commit}\n"
+            // Written after deleteDir() above so it survives into the artifacts and report.
+            writeFile file: 'ci-selection.txt', text: "candidate_selector=${candidateRef}\nbaseline_selector=${requestedBaseline}\n"
             currentBuild.description += " @ ${commit.take(7)}"
             if (env.CI_TRUSTED_CI_COMMIT?.trim()) {
                 writeFile file: 'ci-trusted-ci-commit.txt', text: "${env.CI_TRUSTED_CI_COMMIT.trim()}\n"
