@@ -64,6 +64,8 @@ CUDA_ARCH                  CUDA architecture flag to specify compute capability.
 --use-cudss                [no] Build CUDSS-dependent code
 --use-lua                  [no] Build Lua dependent code
 --use-lapack-lite          [no] Build LAPACK-lite (lower efficiency that OpenBLAS)
+                           Cannot be combined with --lapack-* options or
+                           LAPACK_INC_DIR/LAPACK_LIB_DIR/LAPACK_LIB_NAME overrides.
 --app                      [all] What app to build? One of
 			   core, moments, vlasov, gyrokinetic, pkpm, all
 
@@ -273,11 +275,16 @@ else
     USE_LUA=
 fi
 
-if [ "$USE_LAPACK_LITE" = "yes" ]
+if [ "$USE_LAPACK_LITE" = "yes" ] || [ "$USE_LAPACK_LITE" = "1" ]
 then
+    # Check explicit settings before filling in the default OpenBLAS paths.
+    if [ "${LAPACK_INC_DIR+x}" = x ] || [ "${LAPACK_LIB_DIR+x}" = x ] || [ "${LAPACK_LIB_NAME+x}" = x ]
+    then
+        die "Error: LAPACK-lite cannot be combined with external LAPACK settings (--lapack-inc, --lapack-lib, --lapack-lib-name, or the corresponding LAPACK_* environment variables). Choose one LAPACK implementation."
+    fi
     USE_LAPACK_LITE=1
 else
-    USE_MPI=
+    USE_LAPACK_LITE=
 fi
 
 echo "Building APP " $APP
