@@ -902,10 +902,10 @@ rot_to_local(
       double hessian = 0.0;
       for (int k = 0; k < 3; k++) {
         for (int l = 0; l < 3; l++) {
-          hessian += frame[i][k] * qglobal[68 + 3*k + l] * frame[j][l];
+          hessian += frame[i][k] * qglobal[68 + 3 * k + l] * frame[j][l];
         }
       }
-      qlocal[68 + 3*i + j] = hessian;
+      qlocal[68 + 3 * i + j] = hessian;
     }
   }
 }
@@ -1187,10 +1187,10 @@ rot_to_global(
       double hessian = 0.0;
       for (int k = 0; k < 3; k++) {
         for (int l = 0; l < 3; l++) {
-          hessian += frame[k][i] * qlocal[68 + 3*k + l] * frame[l][j];
+          hessian += frame[k][i] * qlocal[68 + 3 * k + l] * frame[l][j];
         }
       }
-      qglobal[68 + 3*i + j] = hessian;
+      qglobal[68 + 3 * i + j] = hessian;
     }
   }
 }
