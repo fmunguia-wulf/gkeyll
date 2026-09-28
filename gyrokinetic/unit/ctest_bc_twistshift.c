@@ -5,6 +5,7 @@
 #include <acutest.h>
 
 #include <gkyl_array.h>
+#include <gkyl_array_integrate.h>
 #include <gkyl_array_ops.h>
 #include <gkyl_basis.h>
 #include <gkyl_bc_twistshift.h>
@@ -110,27 +111,9 @@ ts_donor_new(const struct ts_setup *s)
   return f;
 }
 
-// The 1D DG shift on the shear cells of the update range, as the app builds it.
-static struct gkyl_array *
-ts_shift_dg_new(const struct ts_setup *s, struct ts_ctx *tctx)
-{
-  struct gkyl_rect_grid xgrid;
-  gkyl_rect_grid_init(&xgrid, 1, &ts_lower[0], &ts_upper[0], &ts_cells[0]);
-  struct gkyl_basis xbasis;
-  gkyl_cart_modal_serendip(&xbasis, 1, s->basis.poly_order);
-
-  struct gkyl_range xrng;
-  gkyl_range_init(&xrng, 1, (int[]){s->update_r.lower[0]}, (int[]){s->update_r.upper[0]});
-
-  struct gkyl_array *shift_dg = gkyl_array_new(GKYL_DOUBLE, xbasis.num_basis, xrng.volume);
-  gkyl_eval_on_nodes *ev = gkyl_eval_on_nodes_new(&xgrid, &xbasis, 1, shift_func, tctx);
-  gkyl_eval_on_nodes_advance(ev, 0.0, &xrng, shift_dg);
-  gkyl_eval_on_nodes_release(ev);
-  return shift_dg;
-}
-
 // Apply the BC to a fresh donor field and return it. Pass shift_dg to exercise
-// the discretized-shift input instead of the shift function.
+// the discretized-shift input instead of the shift function, and a negative
+// half_width for the plain twist-shift without the anti-aliasing filter.
 static struct gkyl_array *
 ts_run(
   const struct ts_setup *s, enum gkyl_edge_loc edge, int upsample, int half_width, double cutoff,
@@ -150,7 +133,6 @@ ts_run(
     .basis = &s->basis,
     .grid = &s->grid,
     .use_gpu = false,
-    .type = half_width == 0 ? GKYL_CLOSED_FLUX_TSBC_NOFILTER : GKYL_CLOSED_FLUX_TSBC,
     .upsample_factor = upsample,
     .filter_half_width = half_width,
     .filter_cutoff_wavelength = cutoff,
@@ -189,36 +171,8 @@ ts_max_diff(
   return maxd;
 }
 
-// Largest difference over the whole array, ghost cells included.
-static double
-ts_max_diff_all(const struct ts_setup *s, const struct gkyl_array *fa, const struct gkyl_array *fb)
-{
-  double maxd = 0.0;
-  for (long i = 0; i < fa->size; i++) {
-    const double *a = gkyl_array_cfetch(fa, i);
-    const double *b = gkyl_array_cfetch(fb, i);
-    for (int k = 0; k < s->basis.num_basis; k++) {
-      maxd = GKYL_MAX2(maxd, fabs(a[k] - b[k]));
-    }
-  }
-  return maxd;
-}
-
-// Integral of the field over the plane the BC fills.
-static double
-ts_ghost_sum(const struct ts_setup *s, const struct gkyl_array *f)
-{
-  double tot = 0.0;
-  struct gkyl_range_iter iter;
-  gkyl_range_iter_init(&iter, &s->ghost_r);
-  while (gkyl_range_iter_next(&iter)) {
-    tot += ((const double *)gkyl_array_cfetch(f, gkyl_range_idx(&s->ghost_r, iter.idx)))[0];
-  }
-  return tot;
-}
-
 void
-test_plain_matches_twistshift_dg(void)
+test_bc_twistshift_plain_matches_twistshift_dg_ho(void)
 {
   // With no anti-aliasing the BC must be exactly the bare twist-shift.
   struct ts_ctx tctx = {.offset = 0.75, .shear = 0.25};
@@ -227,7 +181,7 @@ test_plain_matches_twistshift_dg(void)
     struct ts_setup s;
     ts_setup_init(&s, edge);
 
-    struct gkyl_array *f_bc = ts_run(&s, edge, 1, 0, 0.0, NULL, &tctx);
+    struct gkyl_array *f_bc = ts_run(&s, edge, 1, -1, 0.0, NULL, &tctx);
 
     struct gkyl_array *f_ref = ts_donor_new(&s);
     struct gkyl_twistshift_dg_inp tsinp = {
@@ -248,10 +202,10 @@ test_plain_matches_twistshift_dg(void)
     gkyl_twistshift_dg_advance(ts, f_ref, f_ref);
     gkyl_twistshift_dg_release(ts);
 
-    TEST_CHECK(ts_max_diff_all(&s, f_bc, f_ref) == 0.0);
+    TEST_CHECK(ts_max_diff(f_bc, f_ref, &s.local_ext, s.basis.num_basis) == 0.0);
     TEST_MSG(
       "edge %d: bc_twistshift differs from twistshift_dg by %.3e", e,
-      ts_max_diff_all(&s, f_bc, f_ref)
+      ts_max_diff(f_bc, f_ref, &s.local_ext, s.basis.num_basis)
     );
 
     gkyl_array_release(f_bc);
@@ -260,13 +214,13 @@ test_plain_matches_twistshift_dg(void)
 }
 
 void
-test_only_ghost_plane_written(void)
+test_bc_twistshift_only_ghost_plane_written_ho(void)
 {
   // Nothing but the ghost plane the BC fills may change, in any configuration.
   struct ts_ctx tctx = {.offset = 0.75, .shear = 0.25};
   double dx = (ts_upper[0] - ts_lower[0]) / ts_cells[0];
   int upsample[] = {1, 1, 2, 4};
-  int half_width[] = {0, 4, 4, 4};
+  int half_width[] = {-1, 4, 4, 4};
   double cutoff[] = {0.0, 4.0 * dx, 2.0 * dx, 2.0 * dx};
 
   for (int e = 0; e < 2; e++) {
@@ -281,7 +235,7 @@ test_only_ghost_plane_written(void)
 
       // Restore the ghost plane so any remaining difference is a stray write.
       gkyl_array_copy_range(f, f_pre, &s.ghost_r);
-      double maxd = ts_max_diff_all(&s, f, f_pre);
+      double maxd = ts_max_diff(f, f_pre, &s.local_ext, s.basis.num_basis);
       TEST_CHECK(maxd == 0.0);
       TEST_MSG(
         "edge %d, config %d (upsample %d, M %d): wrote %.3e outside the ghost plane", e, c,
@@ -295,7 +249,7 @@ test_only_ghost_plane_written(void)
 }
 
 void
-test_identity_filter_matches_plain(void)
+test_bc_twistshift_identity_filter_matches_plain_ho(void)
 {
   // A cutoff at the Nyquist wavelength makes the kernel the identity, so
   // filtering must leave the plain twist-shift result alone.
@@ -305,7 +259,7 @@ test_identity_filter_matches_plain(void)
   struct ts_setup s;
   ts_setup_init(&s, GKYL_LOWER_EDGE);
 
-  struct gkyl_array *f_plain = ts_run(&s, GKYL_LOWER_EDGE, 1, 0, 0.0, NULL, &tctx);
+  struct gkyl_array *f_plain = ts_run(&s, GKYL_LOWER_EDGE, 1, -1, 0.0, NULL, &tctx);
   struct gkyl_array *f_filt = ts_run(&s, GKYL_LOWER_EDGE, 1, 4, 2.0 * dx, NULL, &tctx);
 
   double maxd = ts_max_diff(f_plain, f_filt, &s.ghost_r, s.basis.num_basis);
@@ -317,11 +271,11 @@ test_identity_filter_matches_plain(void)
 }
 
 void
-test_upsample_no_shear_matches_plain(void)
+test_bc_twistshift_upsample_no_shear_matches_plain_ho(void)
 {
   // With a uniform shift the twist-shift creates no structure along x, so the
-  // supersampled field stays an exact refinement of the coarse one and the
-  // refine/identity-filter/restrict round trip must be lossless.
+  // supersampled field stays an exact prolongation of the coarse one and the
+  // prolong/identity-filter/restrict round trip must be lossless.
   struct ts_ctx tctx = {.offset = 0.75, .shear = 0.0};
   double dx = (ts_upper[0] - ts_lower[0]) / ts_cells[0];
 
@@ -329,7 +283,7 @@ test_upsample_no_shear_matches_plain(void)
     struct ts_setup s;
     ts_setup_init(&s, GKYL_LOWER_EDGE);
 
-    struct gkyl_array *f_plain = ts_run(&s, GKYL_LOWER_EDGE, 1, 0, 0.0, NULL, &tctx);
+    struct gkyl_array *f_plain = ts_run(&s, GKYL_LOWER_EDGE, 1, -1, 0.0, NULL, &tctx);
     struct gkyl_array *f_up =
       ts_run(&s, GKYL_LOWER_EDGE, upsample, 4, 2.0 * dx / upsample, NULL, &tctx);
 
@@ -343,19 +297,31 @@ test_upsample_no_shear_matches_plain(void)
 }
 
 void
-test_shift_dg_matches_shift_func(void)
+test_bc_twistshift_shift_dg_matches_shift_func_ho(void)
 {
   // A discretized shift given on the field's own grid must give the same answer
-  // as the shift function, including when the shift has to be refined.
+  // as the shift function, including when the shift has to be prolongated.
   struct ts_ctx tctx = {.offset = 0.75, .shear = 0.25};
   double dx = (ts_upper[0] - ts_lower[0]) / ts_cells[0];
 
   for (int upsample = 1; upsample <= 2; upsample++) {
     struct ts_setup s;
     ts_setup_init(&s, GKYL_LOWER_EDGE);
-    struct gkyl_array *shift_dg = ts_shift_dg_new(&s, &tctx);
 
-    int half_width = upsample > 1 ? 4 : 0;
+    // The 1D DG shift on the shear cells of the update range, as the app builds it.
+    struct gkyl_rect_grid xgrid;
+    gkyl_rect_grid_init(&xgrid, 1, &ts_lower[0], &ts_upper[0], &ts_cells[0]);
+    struct gkyl_basis xbasis;
+    gkyl_cart_modal_serendip(&xbasis, 1, s.basis.poly_order);
+    struct gkyl_range xrng;
+    gkyl_range_init(&xrng, 1, (int[]){s.update_r.lower[0]}, (int[]){s.update_r.upper[0]});
+
+    struct gkyl_array *shift_dg = gkyl_array_new(GKYL_DOUBLE, xbasis.num_basis, xrng.volume);
+    gkyl_eval_on_nodes *ev = gkyl_eval_on_nodes_new(&xgrid, &xbasis, 1, shift_func, &tctx);
+    gkyl_eval_on_nodes_advance(ev, 0.0, &xrng, shift_dg);
+    gkyl_eval_on_nodes_release(ev);
+
+    int half_width = upsample > 1 ? 4 : -1;
     double cutoff = upsample > 1 ? 2.0 * dx : 0.0;
 
     struct gkyl_array *f_func =
@@ -374,7 +340,7 @@ test_shift_dg_matches_shift_func(void)
 }
 
 void
-test_dealiasing_smooths_shear_direction(void)
+test_bc_twistshift_dealiasing_smooths_shear_direction_ho(void)
 {
   // Check that the anti-aliasing filter actually smooths the field along the shear direction.
   // We test that the total variation along the x-direction of the cell averages,
@@ -385,7 +351,7 @@ test_dealiasing_smooths_shear_direction(void)
   struct ts_setup s;
   ts_setup_init(&s, GKYL_LOWER_EDGE);
 
-  struct gkyl_array *f_plain = ts_run(&s, GKYL_LOWER_EDGE, 1, 0, 0.0, NULL, &tctx);
+  struct gkyl_array *f_plain = ts_run(&s, GKYL_LOWER_EDGE, 1, -1, 0.0, NULL, &tctx);
   struct gkyl_array *f_deal = ts_run(&s, GKYL_LOWER_EDGE, 4, 4, 2.0 * dx, NULL, &tctx);
 
   double tv[2] = {0.0, 0.0};
@@ -409,13 +375,13 @@ test_dealiasing_smooths_shear_direction(void)
 }
 
 void
-test_conserves_particles(void)
+test_bc_twistshift_conserves_particles_ho(void)
 {
   // Check that the integral is preserved.
   struct ts_ctx tctx = {.offset = 0.75, .shear = 2.9};
   double dx = (ts_upper[0] - ts_lower[0]) / ts_cells[0];
   int upsample[] = {1, 1, 2, 4};
-  int half_width[] = {0, 4, 4, 4};
+  int half_width[] = {-1, 4, 4, 4};
   double cutoff[] = {0.0, 4.0 * dx, 2.0 * dx, 2.0 * dx};
 
   for (int e = 0; e < 2; e++) {
@@ -423,12 +389,18 @@ test_conserves_particles(void)
     struct ts_setup s;
     ts_setup_init(&s, edge);
 
+    // Integral over the plane the BC fills.
+    struct gkyl_array_integrate *integ =
+      gkyl_array_integrate_new(&s.grid, &s.basis, 1, GKYL_ARRAY_INTEGRATE_OP_NONE, false);
+
     struct gkyl_array *f_pre = ts_donor_new(&s);
-    double tot_pre = ts_ghost_sum(&s, f_pre);
+    double tot_pre;
+    gkyl_array_integrate_advance(integ, f_pre, 1.0, NULL, &s.ghost_r, &s.ghost_r, &tot_pre);
 
     for (int c = 0; c < 4; c++) {
       struct gkyl_array *f = ts_run(&s, edge, upsample[c], half_width[c], cutoff[c], NULL, &tctx);
-      double tot = ts_ghost_sum(&s, f);
+      double tot;
+      gkyl_array_integrate_advance(integ, f, 1.0, NULL, &s.ghost_r, &s.ghost_r, &tot);
 
       TEST_CHECK(fabs(tot - tot_pre) < 1.0e-12 * fabs(tot_pre));
       TEST_MSG(
@@ -439,11 +411,12 @@ test_conserves_particles(void)
       gkyl_array_release(f);
     }
     gkyl_array_release(f_pre);
+    gkyl_array_integrate_release(integ);
   }
 }
 
 void
-test_zero_shift_is_identity(void)
+test_bc_twistshift_zero_shift_is_identity_ho(void)
 {
   // Check that a zero shift leaves the ghost plane alone, for any upsampling.
   struct ts_ctx tctx = {.offset = 0.0, .shear = 0.0};
@@ -458,7 +431,7 @@ test_zero_shift_is_identity(void)
 
     int upsample[] = {1, 2, 4};
     for (int c = 0; c < 3; c++) {
-      int half_width = upsample[c] > 1 ? 4 : 0;
+      int half_width = upsample[c] > 1 ? 4 : -1;
       double cutoff = upsample[c] > 1 ? 2.0 * dx / upsample[c] : 0.0;
       struct gkyl_array *f = ts_run(&s, edge, upsample[c], half_width, cutoff, NULL, &tctx);
 
@@ -475,7 +448,7 @@ test_zero_shift_is_identity(void)
 }
 
 void
-test_zero_shear_is_cell_translation(void)
+test_bc_twistshift_zero_shear_is_cell_translation_ho(void)
 {
   // Check that a uniform shift is equivalent to a cell translation, for any upsampling.
   int num_cells = 3;
@@ -488,7 +461,7 @@ test_zero_shear_is_cell_translation(void)
     ts_setup_init(&s, edge);
 
     struct gkyl_array *f_pre = ts_donor_new(&s);
-    struct gkyl_array *f = ts_run(&s, edge, 1, 0, 0.0, NULL, &tctx);
+    struct gkyl_array *f = ts_run(&s, edge, 1, -1, 0.0, NULL, &tctx);
 
     double maxd = 0.0;
     struct gkyl_range_iter iter;
@@ -516,14 +489,21 @@ test_zero_shear_is_cell_translation(void)
 }
 
 TEST_LIST = {
-  {"test_zero_shift_is_identity", test_zero_shift_is_identity},
-  {"test_zero_shear_is_cell_translation", test_zero_shear_is_cell_translation},
-  {"test_plain_matches_twistshift_dg", test_plain_matches_twistshift_dg},
-  {"test_conserves_particles", test_conserves_particles},
-  {"test_only_ghost_plane_written", test_only_ghost_plane_written},
-  {"test_identity_filter_matches_plain", test_identity_filter_matches_plain},
-  {"test_upsample_no_shear_matches_plain", test_upsample_no_shear_matches_plain},
-  {"test_shift_dg_matches_shift_func", test_shift_dg_matches_shift_func},
-  {"test_dealiasing_smooths_shear_direction", test_dealiasing_smooths_shear_direction},
+  {"test_bc_twistshift_zero_shift_is_identity_ho", test_bc_twistshift_zero_shift_is_identity_ho},
+  {"test_bc_twistshift_zero_shear_is_cell_translation_ho",
+   test_bc_twistshift_zero_shear_is_cell_translation_ho},
+  {"test_bc_twistshift_plain_matches_twistshift_dg_ho",
+   test_bc_twistshift_plain_matches_twistshift_dg_ho},
+  {"test_bc_twistshift_conserves_particles_ho", test_bc_twistshift_conserves_particles_ho},
+  {"test_bc_twistshift_only_ghost_plane_written_ho", test_bc_twistshift_only_ghost_plane_written_ho
+  },
+  {"test_bc_twistshift_identity_filter_matches_plain_ho",
+   test_bc_twistshift_identity_filter_matches_plain_ho},
+  {"test_bc_twistshift_upsample_no_shear_matches_plain_ho",
+   test_bc_twistshift_upsample_no_shear_matches_plain_ho},
+  {"test_bc_twistshift_shift_dg_matches_shift_func_ho",
+   test_bc_twistshift_shift_dg_matches_shift_func_ho},
+  {"test_bc_twistshift_dealiasing_smooths_shear_direction_ho",
+   test_bc_twistshift_dealiasing_smooths_shear_direction_ho},
   {NULL, NULL}
 };

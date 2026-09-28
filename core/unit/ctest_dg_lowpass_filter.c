@@ -1,7 +1,9 @@
 // Test the dg_lowpass_filter updater.
 #include <acutest.h>
 
+#include <gkyl_alloc.h>
 #include <gkyl_array.h>
+#include <gkyl_array_integrate.h>
 #include <gkyl_array_ops.h>
 #include <gkyl_basis.h>
 #include <gkyl_dg_lowpass_filter.h>
@@ -150,21 +152,38 @@ filter_apply(
 }
 
 static double
+filter_integral(
+  struct filter_env *env, const struct gkyl_range *sub, const struct gkyl_array *f,
+  enum gkyl_array_integrate_op op
+)
+{
+  // Integral of f over sub, with op applied in every cell.
+  struct gkyl_array_integrate *integ =
+    gkyl_array_integrate_new(&env->grid, &env->basis, 1, op, env->use_gpu);
+  double *out = env->use_gpu ? gkyl_cu_malloc(sizeof(double)) : gkyl_malloc(sizeof(double));
+  gkyl_array_integrate_advance(integ, f, 1.0, NULL, sub, sub, out);
+
+  double out_ho;
+  if (env->use_gpu) {
+    gkyl_cu_memcpy(&out_ho, out, sizeof(double), GKYL_CU_MEMCPY_D2H);
+    gkyl_cu_free(out);
+  } else {
+    out_ho = out[0];
+    gkyl_free(out);
+  }
+  gkyl_array_integrate_release(integ);
+  return out_ho;
+}
+
+static double
 filter_integral_check(
   struct filter_env *env, const struct gkyl_range *sub, double tol, const char *what
 )
 {
   // Change of the integral over sub, as a fraction of the mass in the range.
-  double tot_in = 0.0, tot_out = 0.0, mass = 0.0;
-  struct gkyl_range_iter iter;
-  gkyl_range_iter_init(&iter, sub);
-  while (gkyl_range_iter_next(&iter)) {
-    long linidx = gkyl_range_idx(sub, iter.idx);
-    double in = ((const double *)gkyl_array_cfetch(env->fin_ho, linidx))[0];
-    tot_in += in;
-    mass += fabs(in);
-    tot_out += ((const double *)gkyl_array_cfetch(env->fout_ho, linidx))[0];
-  }
+  double tot_in = filter_integral(env, sub, env->fin, GKYL_ARRAY_INTEGRATE_OP_NONE);
+  double tot_out = filter_integral(env, sub, env->fout, GKYL_ARRAY_INTEGRATE_OP_NONE);
+  double mass = filter_integral(env, sub, env->fin, GKYL_ARRAY_INTEGRATE_OP_ABS);
 
   double rel = (tot_out - tot_in) / mass;
   TEST_CHECK(fabs(rel) < tol);
@@ -201,7 +220,7 @@ filter_gain_check(
 }
 
 static void
-test_response(bool use_gpu, int ndim, const int *cells)
+dg_lowpass_filter_response(bool use_gpu, int ndim, const int *cells)
 {
   // Away from the edges the filter scales each field by the kernel response.
   int M = 8;
@@ -283,7 +302,7 @@ test_response(bool use_gpu, int ndim, const int *cells)
 }
 
 static void
-test_conservation(bool use_gpu, int ndim, const int *cells)
+dg_lowpass_filter_conservation(bool use_gpu, int ndim, const int *cells)
 {
   // The integral survives a reflected stencil, and a truncated one only for a constant.
   int M = 8;
@@ -322,116 +341,84 @@ test_conservation(bool use_gpu, int ndim, const int *cells)
   filter_env_release(&env);
 }
 
-static void
-test_1x_response(bool use_gpu)
-{
-  test_response(use_gpu, 1, (int[]){32});
-}
-static void
-test_2x_response(bool use_gpu)
-{
-  test_response(use_gpu, 2, (int[]){32, 8});
-}
-static void
-test_3x_response(bool use_gpu)
-{
-  test_response(use_gpu, 3, (int[]){32, 8, 6});
-}
-
-static void
-test_1x_conservation(bool use_gpu)
-{
-  test_conservation(use_gpu, 1, (int[]){64});
-}
-static void
-test_2x_conservation(bool use_gpu)
-{
-  test_conservation(use_gpu, 2, (int[]){64, 8});
-}
-static void
-test_3x_conservation(bool use_gpu)
-{
-  test_conservation(use_gpu, 3, (int[]){64, 8, 6});
-}
-
 void
-test_1x_response_ho()
+test_dg_lowpass_filter_1x_response_ho()
 {
-  test_1x_response(false);
+  dg_lowpass_filter_response(false, 1, (int[]){32});
 }
 void
-test_2x_response_ho()
+test_dg_lowpass_filter_2x_response_ho()
 {
-  test_2x_response(false);
+  dg_lowpass_filter_response(false, 2, (int[]){32, 8});
 }
 void
-test_3x_response_ho()
+test_dg_lowpass_filter_3x_response_ho()
 {
-  test_3x_response(false);
+  dg_lowpass_filter_response(false, 3, (int[]){32, 8, 6});
 }
 void
-test_1x_conservation_ho()
+test_dg_lowpass_filter_1x_conservation_ho()
 {
-  test_1x_conservation(false);
+  dg_lowpass_filter_conservation(false, 1, (int[]){64});
 }
 void
-test_2x_conservation_ho()
+test_dg_lowpass_filter_2x_conservation_ho()
 {
-  test_2x_conservation(false);
+  dg_lowpass_filter_conservation(false, 2, (int[]){64, 8});
 }
 void
-test_3x_conservation_ho()
+test_dg_lowpass_filter_3x_conservation_ho()
 {
-  test_3x_conservation(false);
+  dg_lowpass_filter_conservation(false, 3, (int[]){64, 8, 6});
 }
 
 #ifdef GKYL_HAVE_CUDA
 void
-test_1x_response_cu()
+test_dg_lowpass_filter_1x_response_dev()
 {
-  test_1x_response(true);
+  dg_lowpass_filter_response(true, 1, (int[]){32});
 }
 void
-test_2x_response_cu()
+test_dg_lowpass_filter_2x_response_dev()
 {
-  test_2x_response(true);
+  dg_lowpass_filter_response(true, 2, (int[]){32, 8});
 }
 void
-test_3x_response_cu()
+test_dg_lowpass_filter_3x_response_dev()
 {
-  test_3x_response(true);
+  dg_lowpass_filter_response(true, 3, (int[]){32, 8, 6});
 }
 void
-test_1x_conservation_cu()
+test_dg_lowpass_filter_1x_conservation_dev()
 {
-  test_1x_conservation(true);
+  dg_lowpass_filter_conservation(true, 1, (int[]){64});
 }
 void
-test_2x_conservation_cu()
+test_dg_lowpass_filter_2x_conservation_dev()
 {
-  test_2x_conservation(true);
+  dg_lowpass_filter_conservation(true, 2, (int[]){64, 8});
 }
 void
-test_3x_conservation_cu()
+test_dg_lowpass_filter_3x_conservation_dev()
 {
-  test_3x_conservation(true);
+  dg_lowpass_filter_conservation(true, 3, (int[]){64, 8, 6});
 }
 #endif
 
 TEST_LIST = {
-  {"test_1x_response", test_1x_response_ho},
-  {"test_2x_response", test_2x_response_ho},
-  {"test_3x_response", test_3x_response_ho},
-  {"test_1x_conservation", test_1x_conservation_ho},
-  {"test_2x_conservation", test_2x_conservation_ho},
-  {"test_3x_conservation", test_3x_conservation_ho},
+  {"test_dg_lowpass_filter_1x_response_ho", test_dg_lowpass_filter_1x_response_ho},
+  {"test_dg_lowpass_filter_2x_response_ho", test_dg_lowpass_filter_2x_response_ho},
+  {"test_dg_lowpass_filter_3x_response_ho", test_dg_lowpass_filter_3x_response_ho},
+  {"test_dg_lowpass_filter_1x_conservation_ho", test_dg_lowpass_filter_1x_conservation_ho},
+  {"test_dg_lowpass_filter_2x_conservation_ho", test_dg_lowpass_filter_2x_conservation_ho},
+  {"test_dg_lowpass_filter_3x_conservation_ho", test_dg_lowpass_filter_3x_conservation_ho},
 #ifdef GKYL_HAVE_CUDA
-  {"test_1x_response_cu", test_1x_response_cu},
-  {"test_2x_response_cu", test_2x_response_cu},
-  {"test_3x_response_cu", test_3x_response_cu},
-  {"test_1x_conservation_cu", test_1x_conservation_cu},
-  {"test_2x_conservation_cu", test_2x_conservation_cu},
-  {"test_3x_conservation_cu", test_3x_conservation_cu},
+  {"test_dg_lowpass_filter_1x_response_dev", test_dg_lowpass_filter_1x_response_dev},
+  {"test_dg_lowpass_filter_2x_response_dev", test_dg_lowpass_filter_2x_response_dev},
+  {"test_dg_lowpass_filter_3x_response_dev", test_dg_lowpass_filter_3x_response_dev},
+  {"test_dg_lowpass_filter_1x_conservation_dev", test_dg_lowpass_filter_1x_conservation_dev},
+  {"test_dg_lowpass_filter_2x_conservation_dev", test_dg_lowpass_filter_2x_conservation_dev},
+  {"test_dg_lowpass_filter_3x_conservation_dev", test_dg_lowpass_filter_3x_conservation_dev},
 #endif
   {NULL, NULL}
 };

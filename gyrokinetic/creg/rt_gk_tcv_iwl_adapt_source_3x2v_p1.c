@@ -885,15 +885,12 @@ main(int argc, char **argv)
     .bfield_ctx = &ctx,
     .has_LCFS = true,
     .x_LCFS = ctx.x_LCFS,
-    .closed_flux_bcs =
+    .core_parallel_bcs =
       {
-        .parallel_lower_bc_shift_func = bc_shift_func_lo,
-        .parallel_upper_bc_shift_func = bc_shift_func_up,
-        .parallel_lower_bc_shift_ctx = &ctx,
-        .parallel_upper_bc_shift_ctx = &ctx,
-        .ts_filter_cutoff_wavelength = 2.0 * ctx.Lx / ctx.Nx,
-        .ts_filter_half_width = 1,
-        .ts_upsample_factor = 4,
+        .lower_shift_func = bc_shift_func_lo,
+        .upper_shift_func = bc_shift_func_up,
+        .lower_shift_ctx = &ctx,
+        .upper_shift_ctx = &ctx,
       },
   };
 

@@ -203,7 +203,7 @@ gkyl_gyrokinetic_app_new_geom(struct gkyl_gk *gk)
   int poly_order = app->poly_order = gk->poly_order;
 
   // Closed flux surface BCs (filter defaults are set in bc_twistshift).
-  app->closed_flux_bcs = gk->geometry.closed_flux_bcs;
+  app->core_parallel_bcs = gk->geometry.core_parallel_bcs;
 
   int ns = app->num_species = gk->num_species;
   int neuts = app->num_neut_species = gk->num_neut_species;
@@ -374,10 +374,10 @@ gkyl_gyrokinetic_app_new_geom(struct gkyl_gk *gk)
     .comm = app->comm,
     .has_LCFS = gk->geometry.has_LCFS,
     .x_LCFS = gk->geometry.x_LCFS,
-    .parallel_lower_bc_shift_func = gk->geometry.closed_flux_bcs.parallel_lower_bc_shift_func,
-    .parallel_upper_bc_shift_func = gk->geometry.closed_flux_bcs.parallel_upper_bc_shift_func,
-    .parallel_lower_bc_shift_ctx = gk->geometry.closed_flux_bcs.parallel_lower_bc_shift_ctx,
-    .parallel_upper_bc_shift_ctx = gk->geometry.closed_flux_bcs.parallel_upper_bc_shift_ctx,
+    .lower_shift_func = gk->geometry.core_parallel_bcs.lower_shift_func,
+    .upper_shift_func = gk->geometry.core_parallel_bcs.upper_shift_func,
+    .lower_shift_ctx = gk->geometry.core_parallel_bcs.lower_shift_ctx,
+    .upper_shift_ctx = gk->geometry.core_parallel_bcs.upper_shift_ctx,
   };
   strcpy(geometry_inp.geometry_path, gk->geometry.geometry_path);
   for (int i = 0; i < 3; i++) {
@@ -718,8 +718,7 @@ gkyl_gyrokinetic_app_new_geom(struct gkyl_gk *gk)
 
   if (app->cdim == 3 && (app->gk_geom->geometry_id == GKYL_GEOMETRY_TOKAMAK ||
                          (app->gk_geom->geometry_id == GKYL_GEOMETRY_MAPC2P &&
-                          app->gk_geom->parallel_lower_bc_shift_func &&
-                          app->gk_geom->parallel_upper_bc_shift_func))) {
+                          app->gk_geom->lower_shift_func && app->gk_geom->upper_shift_func))) {
     // Create grid, range and basis on which the 1D shift will be defined.
     gkyl_rect_grid_init(&app->delta_ts_x_grid, 1, app->grid.lower, app->grid.upper, app->grid.cells);
     struct gkyl_range *ts_s_rng = gk->geometry.has_LCFS ? &app->local_core : &app->local;
@@ -1397,10 +1396,8 @@ gyrokinetic_app_write_ts_shift_mapc2p(struct gkyl_gyrokinetic_app *app)
       .num_ghost = ghost, // one ghost per config direction
       .basis = &app->basis,
       .grid = &app->grid,
-      .shift_func = eI == 0 ? app->gk_geom->parallel_lower_bc_shift_func :
-                              app->gk_geom->parallel_upper_bc_shift_func,
-      .shift_func_ctx = eI == 0 ? app->gk_geom->parallel_lower_bc_shift_ctx :
-                                  app->gk_geom->parallel_upper_bc_shift_ctx,
+      .shift_func = eI == 0 ? app->gk_geom->lower_shift_func : app->gk_geom->upper_shift_func,
+      .shift_func_ctx = eI == 0 ? app->gk_geom->lower_shift_ctx : app->gk_geom->upper_shift_ctx,
       .use_gpu = app->use_gpu,
     };
     struct gkyl_twistshift_dg *bc_ts_op = gkyl_twistshift_dg_inew(&ts_inp);
@@ -1473,7 +1470,7 @@ gyrokinetic_app_write_ts_shift(gkyl_gyrokinetic_app *app)
   }
 
   if (app->gk_geom->geometry_id == GKYL_GEOMETRY_MAPC2P &&
-      (app->gk_geom->parallel_lower_bc_shift_func && app->gk_geom->parallel_upper_bc_shift_func)) {
+      (app->gk_geom->lower_shift_func && app->gk_geom->upper_shift_func)) {
     gyrokinetic_app_write_ts_shift_mapc2p(app);
   } else if (app->gk_geom->geometry_id == GKYL_GEOMETRY_TOKAMAK) {
     int comm_rank, comm_size;
@@ -4511,8 +4508,7 @@ gkyl_gyrokinetic_app_release(gkyl_gyrokinetic_app *app)
 
   if (app->cdim == 3 && (app->gk_geom->geometry_id == GKYL_GEOMETRY_TOKAMAK ||
                          (app->gk_geom->geometry_id == GKYL_GEOMETRY_MAPC2P &&
-                          app->gk_geom->parallel_lower_bc_shift_func &&
-                          app->gk_geom->parallel_upper_bc_shift_func))) {
+                          app->gk_geom->lower_shift_func && app->gk_geom->upper_shift_func))) {
     gkyl_array_release(app->delta_ts_x_lo);
     gkyl_array_release(app->delta_ts_x_up);
   }

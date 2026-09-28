@@ -1702,7 +1702,7 @@ struct gkyl_gyrokinetic_app {
 
   int cdim; // Configuration space dimensions.
   int poly_order; // Polynomial order.
-  struct gkyl_gyrokinetic_closed_flux_bcs closed_flux_bcs; // BCs in closed flux surface region.
+  struct gkyl_gyrokinetic_core_parallel_bcs core_parallel_bcs; // BCs in closed flux surface region.
   double tcurr; // Current time.
   double cfl; // CFL number.
   double cfl_omegaH; // CFL number used for omega_H.

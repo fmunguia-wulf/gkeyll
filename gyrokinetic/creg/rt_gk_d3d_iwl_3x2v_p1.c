@@ -944,12 +944,12 @@ main(int argc, char **argv)
         .bfield_ctx = &ctx,
         .has_LCFS = true,
         .x_LCFS = ctx.x_LCFS, // Location of last closed flux surface.
-        .closed_flux_bcs =
+        .core_parallel_bcs =
           {
-            .parallel_lower_bc_shift_func = bc_shift_func_lo,
-            .parallel_upper_bc_shift_func = bc_shift_func_up,
-            .parallel_lower_bc_shift_ctx = &ctx,
-            .parallel_upper_bc_shift_ctx = &ctx,
+            .lower_shift_func = bc_shift_func_lo,
+            .upper_shift_func = bc_shift_func_up,
+            .lower_shift_ctx = &ctx,
+            .upper_shift_ctx = &ctx,
           },
       },
 
