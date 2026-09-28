@@ -128,16 +128,23 @@ gk_species_collisionless_write_diags_enabled(
   struct timespec wst = gkyl_wall_clock();
 
   // Package metadata.
-  gkyl_msgpack_map_elem_set_double(gks->io_meta_phase_len, gks->io_meta_phase, "time", tm);
-  gkyl_msgpack_map_elem_set_uint(gks->io_meta_phase_len, gks->io_meta_phase, "frame", frame);
-  struct gkyl_msgpack_map_elem desc[] = {{
-    .key = "Description",
-    .elem_type = GKYL_MP_STRING,
-    .cval = "Collisionless flux at cell surface.",
-  }};
-  int io_meta_len[] = {gks->io_meta_phase_len, app->gk_geom->io_meta_basic_len, 1};
+  struct gkyl_msgpack_map_elem desc[] = {
+    {
+      .key = "Description",
+      .elem_type = GKYL_MP_STRING,
+      .cval = "Collisionless flux at cell surface.",
+    },
+    {.key = "value_form", .elem_type = GKYL_MP_STRING, .cval = "modal"},
+    {.key = "poly_order", .elem_type = GKYL_MP_UNSIGNED_INT, .uval = gks->basis.poly_order},
+    {.key = "basis_type", .elem_type = GKYL_MP_STRING, .cval = gks->basis.id},
+    {.key = "time", .elem_type = GKYL_MP_DOUBLE, .dval = tm},
+    {.key = "frame", .elem_type = GKYL_MP_UNSIGNED_INT, .uval = frame}
+  };
+  int io_meta_len[] = {
+    gks->io_meta_basic_len, app->gk_geom->io_meta_basic_len, sizeof(desc) / sizeof(desc[0])
+  };
   const struct gkyl_msgpack_map_elem *io_meta[] = {
-    gks->io_meta_phase, app->gk_geom->io_meta_basic, desc
+    gks->io_meta_basic, app->gk_geom->io_meta_basic, desc
   };
   struct gkyl_msgpack_data *mt =
     gkyl_msgpack_create_union(sizeof(io_meta_len) / sizeof(int), io_meta_len, io_meta);
