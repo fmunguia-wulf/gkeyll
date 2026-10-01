@@ -26,7 +26,8 @@
 #SBATCH -o slurm-%j.out
 
 #.Load modules (this must match those in the machines/configure script).
-. ./machines/module_load.stellar-amd.sh
+. ./machines/module_load.stellarai-gpu.sh
+module unload anaconda3/2026.7 # Interferes with openmpi module.
 
 #.Run the rt_gk_sheath_2x2v_p1 executable using 1 GPU along x (-c 1) and 2
 #.GPUs along the field line (-d 2). See './rt_gk_sheath_2x2v_p1 -h' for
