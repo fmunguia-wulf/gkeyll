@@ -37,7 +37,7 @@ struct gk_app_ctx {
   double psi_sep;
   double Lx, Ly, Lz;
   double x_min, x_max, y_min, y_max, z_min, z_max, rho_min, rho_max;
-  int Nx, Ny, Nz, Nvpar, Nmu;
+  int num_cell_x, num_cell_y, num_cell_z, num_cell_vpar, num_cell_mu;
   int cells[GKYL_MAX_DIM], poly_order;
   double vpar_max_elc, mu_max_elc, vpar_max_ion, mu_max_ion;
   // Simulation control parameters
@@ -476,11 +476,11 @@ create_ctx(void)
   double temp_recycle_srcWALL = 4.0 * eV;
 
   // Grid parameters
-  int Nx = 12;
-  int Ny = 12;
-  int Nz = 8;
-  int Nvpar = 8;
-  int Nmu = 4;
+  int num_cell_x = 12;
+  int num_cell_y = 12;
+  int num_cell_z = 8;
+  int num_cell_vpar = 8;
+  int num_cell_mu = 4;
   int poly_order = 1;
 
   // Velocity box dimensions
@@ -540,12 +540,12 @@ create_ctx(void)
     .particle_srcWALL = particle_srcWALL,
     .floor_srcWALL = floor_srcWALL,
     .temp_recycle_srcWALL = temp_recycle_srcWALL,
-    .Nx = Nx,
-    .Ny = Ny,
-    .Nz = Nz,
-    .Nvpar = Nvpar,
-    .Nmu = Nmu,
-    .cells = {Nx, Ny, Nz, Nvpar, Nmu},
+    .num_cell_x = num_cell_x,
+    .num_cell_y = num_cell_y,
+    .num_cell_z = num_cell_z,
+    .num_cell_vpar = num_cell_vpar,
+    .num_cell_mu = num_cell_mu,
+    .cells = {num_cell_x, num_cell_y, num_cell_z, num_cell_vpar, num_cell_mu},
     .poly_order = poly_order,
     .vpar_max_elc = vpar_max_elc,
     .mu_max_elc = mu_max_elc,
