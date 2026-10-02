@@ -391,7 +391,7 @@ gk_species_write_cfl_enabled(gkyl_gyrokinetic_app *app, struct gk_species *gks, 
     {.key = "poly_order", .elem_type = GKYL_MP_UNSIGNED_INT, .uval = 0},
     {.key = "basis_type", .elem_type = GKYL_MP_STRING, .cval = "serendipity"},
     {.key = "Description", .elem_type = GKYL_MP_STRING, .cval = "CFL frequency."},
-    {.key = "value_form", .elem_type = GKYL_MP_STRING, .cval = "nodal"},
+    {.key = "value_form", .elem_type = GKYL_MP_STRING, .cval = "nodal"}
   };
   int mpe_cfl_len = sizeof(mpe_cfl) / sizeof(mpe_cfl[0]);
   // Update app basic metada with time/frame.

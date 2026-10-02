@@ -1796,14 +1796,12 @@ gkyl_gyrokinetic_app_write_geometry(
 
     // Package metadata for node file.
     struct gkyl_msgpack_map_elem desc_nodes[] = {
-      {.key = "Description",
-       .elem_type = GKYL_MP_STRING,
-       .cval = "Physical coordinates of grid corner nodes."},
       {
-        .key = "value_form",
+        .key = "Description",
         .elem_type = GKYL_MP_STRING,
-        .cval = "nodal",
+        .cval = "Physical coordinates of grid corner nodes.",
       },
+      {.key = "value_form", .elem_type = GKYL_MP_STRING, .cval = "nodal"}
     };
     int io_meta_nodes_len[] = {app->io_meta_dg_len, app->gk_geom->io_meta_basic_len, 1};
     const struct gkyl_msgpack_map_elem *io_meta_nodes[] = {
