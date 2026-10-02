@@ -270,6 +270,7 @@ gkyl_bc_sheath_gyrokinetic_new(
     if (fp == NULL) {
       gkyl_exit("surrogate_model_path does not point to a valid file");
     }
+    fclose(fp);
     up->perp_node_per_cell = 1 << (up->cdim - 1);
 
     // gkyl KANN wrapper

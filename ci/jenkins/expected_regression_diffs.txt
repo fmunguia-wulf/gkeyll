@@ -19,3 +19,60 @@ gyrokinetic/gyrokinetic/creg/rt_gk_cbc_passive_3x2v_p1            # TS filter on
 gyrokinetic/gyrokinetic/creg/rt_gk_d3d_iwl_3x2v_p1                # TS filter on by default
 gyrokinetic/gyrokinetic/creg/rt_gk_tcv_core_3x2v_p1               # TS filter on by default
 gyrokinetic/gyrokinetic/creg/rt_gk_cbc_3x2v_p1                    # TS filter on by default
+# PR #982: conducting sheath BC kernels regenerated (vcutsq computed first, then reflection).
+# Integrated moments agree with main to round-off; see the comparison plots in the PR.
+gyrokinetic/creg/rt_gk_asdex_solonly_3x2v_p1                   # sheath kernel round-off
+gyrokinetic/creg/rt_gk_bgk_asdex_2x2v_p1                       # sheath kernel round-off
+gyrokinetic/creg/rt_gk_bgk_im_asdex_2x2v_p1                    # sheath kernel round-off
+gyrokinetic/creg/rt_gk_d3d_iwl_2x2v_p1                         # sheath kernel round-off
+gyrokinetic/creg/rt_gk_d3d_iwl_3x2v_p1                         # sheath kernel round-off
+gyrokinetic/creg/rt_gk_helical_2x2v_p1                         # sheath kernel round-off
+gyrokinetic/creg/rt_gk_helical_3x2v_p1                         # sheath kernel round-off
+gyrokinetic/creg/rt_gk_lapd_cart_3x2v_p1                       # sheath kernel round-off
+gyrokinetic/creg/rt_gk_lapd_cyl_3x2v_p1                        # sheath kernel round-off
+gyrokinetic/creg/rt_gk_lapd_cyl_3x2v_p1_nonuniformr            # sheath kernel round-off
+gyrokinetic/creg/rt_gk_li_react_3x2v_p1                        # sheath kernel round-off
+gyrokinetic/creg/rt_gk_li_react_nonuniformv_3x2v_p1            # sheath kernel round-off
+gyrokinetic/creg/rt_gk_ltx_1x2v_p1                             # sheath kernel round-off
+gyrokinetic/creg/rt_gk_ltx_iwl_2x2v_p1                         # sheath kernel round-off
+gyrokinetic/creg/rt_gk_mdpx_cart_3x2v_p1                       # sheath kernel round-off
+gyrokinetic/creg/rt_gk_mirror_kinetic_elc_1x2v_p1              # sheath kernel round-off
+gyrokinetic/creg/rt_gk_multib_asdex_2x2v_p1                    # sheath kernel round-off
+gyrokinetic/creg/rt_gk_multib_sheath_1x2v_p1                   # sheath kernel round-off
+gyrokinetic/creg/rt_gk_multib_slab_2x2v_p1                     # sheath kernel round-off
+gyrokinetic/creg/rt_gk_multib_step_2x2v_p1                     # sheath kernel round-off
+gyrokinetic/creg/rt_gk_multib_step_eirene_2x2v_p1              # sheath kernel round-off
+gyrokinetic/creg/rt_gk_multib_step_nonuniform_2x2v_p1          # sheath kernel round-off
+gyrokinetic/creg/rt_gk_multib_step_sol_1x2v_p1                 # sheath kernel round-off
+gyrokinetic/creg/rt_gk_multib_step_sol_2x2v_p1                 # sheath kernel round-off
+gyrokinetic/creg/rt_gk_sheath_1x2v_p1                          # sheath kernel round-off
+gyrokinetic/creg/rt_gk_sheath_2x2v_p1                          # sheath kernel round-off
+gyrokinetic/creg/rt_gk_sheath_3x2v_p1                          # sheath kernel round-off
+gyrokinetic/creg/rt_gk_sheath_bgk_1x2v_p1                      # sheath kernel round-off
+gyrokinetic/creg/rt_gk_sheath_cx_2x2v_p1                       # sheath kernel round-off
+gyrokinetic/creg/rt_gk_sheath_flr_2x2v_p1                      # sheath kernel round-off
+gyrokinetic/creg/rt_gk_sheath_fluid_neut_1x2v_p1               # sheath kernel round-off
+gyrokinetic/creg/rt_gk_sheath_heat_source_2x2v_p1              # sheath kernel round-off
+gyrokinetic/creg/rt_gk_sheath_nonuniformv_1x2v_p1              # sheath kernel round-off
+gyrokinetic/creg/rt_gk_sheath_nonuniformv_2x2v_p1              # sheath kernel round-off
+gyrokinetic/creg/rt_gk_sheath_nonuniformv_3x2v_p1              # sheath kernel round-off
+gyrokinetic/creg/rt_gk_sheath_nonuniformx_1x2v_p1              # sheath kernel round-off
+gyrokinetic/creg/rt_gk_sheath_nonuniformx_2x2v_p1              # sheath kernel round-off
+gyrokinetic/creg/rt_gk_sheath_nonuniformx_3x2v_p1              # sheath kernel round-off
+gyrokinetic/creg/rt_gk_slab_2x2v_p1                            # sheath kernel round-off
+gyrokinetic/creg/rt_gk_solovev_out_3x2v_p1                     # sheath kernel round-off
+gyrokinetic/creg/rt_gk_step_2x2v_p1_cons                       # sheath kernel round-off
+gyrokinetic/creg/rt_gk_step_out_2x2v_p1                        # sheath kernel round-off
+gyrokinetic/creg/rt_gk_tcv_iwl_adapt_source_2x2v_p1            # sheath kernel round-off
+gyrokinetic/creg/rt_gk_tcv_iwl_adapt_source_3x2v_p1            # sheath kernel round-off, amplified by 3D turbulence
+gyrokinetic/creg/rt_gk_wham_1x2v_p1                            # sheath kernel round-off
+gyrokinetic/creg/rt_gk_wham_1x2v_p1_static_field               # sheath kernel round-off
+gyrokinetic/creg/rt_gk_wham_2x2v_p1                            # sheath kernel round-off
+gyrokinetic/creg/rt_gk_wham_nonuniformx_1x2v_p1                # sheath kernel round-off
+gyrokinetic/creg/rt_gk_wham_nonuniformx_2x2v_p1                # sheath kernel round-off
+# PR #982: new surrogate sheath BC tests, no accepted results on main yet.
+gyrokinetic/creg/rt_gk_helical_adapt_src_sheath_surr_2x2v_p1   # new test (surrogate sheath BC)
+gyrokinetic/creg/rt_gk_helical_adapt_src_sheath_surr_3x2v_p1   # new test (surrogate sheath BC)
+gyrokinetic/creg/rt_gk_helical_sheath_surr_1x2v_p1             # new test (surrogate sheath BC)
+gyrokinetic/creg/rt_gk_helical_sheath_surr_2x2v_p1             # new test (surrogate sheath BC)
+gyrokinetic/creg/rt_gk_tcv_iwl_sheath_surr_1x2v_p1             # new test (surrogate sheath BC)

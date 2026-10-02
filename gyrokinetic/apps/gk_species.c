@@ -848,11 +848,11 @@ gk_species_release_dynamic(const gkyl_gyrokinetic_app *app, const struct gk_spec
                (gks->upper_bc[d].type == GKYL_BC_GK_SPECIES_FIXED_FUNC)) {
       gkyl_bc_basic_gyrokinetic_release(gks->bc_up[d]);
     }
-    if (release_surr_aux_var) {
-      gk_species_moment_release(app, &gks->sheath_moms);
-      gkyl_array_release(gks->dens_sheath);
-      gkyl_array_release(gks->temp_sheath);
-    }
+  }
+  if (release_surr_aux_var) {
+    gk_species_moment_release(app, &gks->sheath_moms);
+    gkyl_array_release(gks->dens_sheath);
+    gkyl_array_release(gks->temp_sheath);
   }
 
   if (app->gk_geom->has_LCFS && app->cdim == 3) {
