@@ -1796,23 +1796,18 @@ gkyl_gyrokinetic_app_write_geometry(
 
     // Package metadata for node file.
     struct gkyl_msgpack_map_elem desc_nodes[] = {
+      {.key = "Description",
+       .elem_type = GKYL_MP_STRING,
+       .cval = "Physical coordinates of grid corner nodes."},
       {
-        .key = "Description",
+        .key = "value_form",
         .elem_type = GKYL_MP_STRING,
-        .cval = "Physical coordinates of grid corner nodes.",
+        .cval = "nodal",
       },
-      {.key = "value_form", .elem_type = GKYL_MP_STRING, .cval = "nodal"},
-      {.key = "poly_order", .elem_type = GKYL_MP_UNSIGNED_INT, .uval = app->basis.poly_order},
-      {.key = "basis_type", .elem_type = GKYL_MP_STRING, .cval = app->basis.id},
-      {.key = "time", .elem_type = GKYL_MP_DOUBLE, .dval = 0.0},
-      {.key = "frame", .elem_type = GKYL_MP_UNSIGNED_INT, .uval = 0}
     };
-    int io_meta_nodes_len[] = {
-      app->io_meta_basic_len, app->gk_geom->io_meta_basic_len,
-      sizeof(desc_nodes) / sizeof(desc_nodes[0])
-    };
+    int io_meta_nodes_len[] = {app->io_meta_dg_len, app->gk_geom->io_meta_basic_len, 1};
     const struct gkyl_msgpack_map_elem *io_meta_nodes[] = {
-      app->io_meta_basic, app->gk_geom->io_meta_basic, desc_nodes
+      app->io_meta_dg, app->gk_geom->io_meta_basic, desc_nodes
     };
     struct gkyl_msgpack_data *mt_nodes = gkyl_msgpack_create_union(
       sizeof(io_meta_nodes_len) / sizeof(int), io_meta_nodes_len, io_meta_nodes
