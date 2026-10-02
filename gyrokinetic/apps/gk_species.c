@@ -824,7 +824,7 @@ gk_species_release_dynamic(const gkyl_gyrokinetic_app *app, const struct gk_spec
     if (gks->lower_bc[d].type == GKYL_BC_GK_SPECIES_SHEATH_CONDUCTING) {
       gkyl_bc_sheath_gyrokinetic_release(gks->bc_sheath_lo);
     } else if (gks->lower_bc[d].type == GKYL_BC_GK_SPECIES_SHEATH_SURROGATE) {
-      gkyl_bc_sheath_gyrokinetic_release(s->bc_sheath_lo);
+      gkyl_bc_sheath_gyrokinetic_release(gks->bc_sheath_lo);
       release_surr_aux_var = true;
     } else if (gks->lower_bc[d].type == GKYL_BC_GK_SPECIES_TWISTSHIFT) {
       gkyl_bc_twistshift_release(gks->bc_ts_lo);
@@ -837,8 +837,8 @@ gk_species_release_dynamic(const gkyl_gyrokinetic_app *app, const struct gk_spec
 
     if (gks->upper_bc[d].type == GKYL_BC_GK_SPECIES_SHEATH_CONDUCTING) {
       gkyl_bc_sheath_gyrokinetic_release(gks->bc_sheath_up);
-    } else if (s->upper_bc[d].type == GKYL_BC_GK_SPECIES_SHEATH_SURROGATE) {
-      gkyl_bc_sheath_gyrokinetic_release(s->bc_sheath_up);
+    } else if (gks->upper_bc[d].type == GKYL_BC_GK_SPECIES_SHEATH_SURROGATE) {
+      gkyl_bc_sheath_gyrokinetic_release(gks->bc_sheath_up);
       release_surr_aux_var = true;
     } else if (gks->upper_bc[d].type == GKYL_BC_GK_SPECIES_TWISTSHIFT) {
       gkyl_bc_twistshift_release(gks->bc_ts_up);
@@ -849,9 +849,9 @@ gk_species_release_dynamic(const gkyl_gyrokinetic_app *app, const struct gk_spec
       gkyl_bc_basic_gyrokinetic_release(gks->bc_up[d]);
     }
     if (release_surr_aux_var) {
-      gk_species_moment_release(app, &s->sheath_moms);
-      gkyl_array_release(s->dens_sheath);
-      gkyl_array_release(s->temp_sheath);
+      gk_species_moment_release(app, &gks->sheath_moms);
+      gkyl_array_release(gks->dens_sheath);
+      gkyl_array_release(gks->temp_sheath);
     }
   }
 
