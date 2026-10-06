@@ -8,6 +8,8 @@
 # non-ignored C tests against a baseline built fresh from the PR's target branch.
 # Only a line new or changed from that baseline exempts its test; all other
 # failures/diffs still fail the build. See ci/jenkins/README.md.
+# A candidate-only test is executed but not numerically compared until it is
+# present in a future baseline; it must still compile, finish, and write output.
 #
 # Remove stale lines in any later PR to keep this file tidy. Removing a line
 # never acknowledges a difference. To deliberately acknowledge a new change to

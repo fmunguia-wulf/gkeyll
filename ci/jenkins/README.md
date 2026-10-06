@@ -50,6 +50,11 @@ the baseline file. Unchanged inherited entries are inert, so a later PR can
 safely remove stale lines. Updating an inherited line's reason explicitly
 acknowledges a new intentional change for that test.
 
+A C regression test introduced by the candidate is executed, but is not
+numerically compared until it exists in a baseline. CI reports it as
+candidate-only. It must still compile, finish without a timeout or crash, and
+write output.
+
 ## Unified local command
 
 The script `gkeyll-ci.sh` provides a CLI to run, query and terminate CI. See

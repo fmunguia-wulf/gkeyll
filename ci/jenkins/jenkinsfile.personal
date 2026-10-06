@@ -182,7 +182,7 @@ def runCandidateRegressions(String regressionJobs) {
         echo "Candidate C-regression check runtime: \$elapsed seconds"
         \"${baselineGkeyll}\" \"${env.WORKSPACE}/_baseline/ci/jenkins/check_regression_results.lua\" \\
           \"${results}\" \"${env.WORKSPACE}/ci/jenkins/expected_regression_diffs.txt\" ci-regression-summary.txt \\
-          \"${env.WORKSPACE}/_baseline/ci/jenkins/expected_regression_diffs.txt\"
+          \"${env.WORKSPACE}/_baseline/ci/jenkins/expected_regression_diffs.txt\" \"${baseline}\"
     """
 }
 
@@ -229,7 +229,7 @@ def runParallelRegressions(String mpiExec) {
         printf '%s\\n' "\$elapsed" > candidate-parallel-c-regression-check-seconds.txt
         "${baselineGkeyll}" "${env.WORKSPACE}/_baseline/ci/jenkins/check_regression_results.lua" \\
           "${results}" "${env.WORKSPACE}/ci/jenkins/expected_regression_diffs.txt" ci-parallel-regression-summary.txt \\
-          "${env.WORKSPACE}/_baseline/ci/jenkins/expected_regression_diffs.txt"
+          "${env.WORKSPACE}/_baseline/ci/jenkins/expected_regression_diffs.txt" "${baselineResults}"
     """
 }
 

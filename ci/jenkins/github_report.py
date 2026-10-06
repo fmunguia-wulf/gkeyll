@@ -104,10 +104,11 @@ def regression_section(title, summary_file):
     if not values:
         return ""
     passed = first(values, "c_regression_passed", "?")
+    candidate_only = first(values, "c_regression_candidate_only", "0")
     acked = first(values, "c_regression_acknowledged", "0")
     unacked = first(values, "c_regression_unacknowledged", "0")
-    lines = ["**{}:** {} passed, {} acknowledged, {} unacknowledged".format(
-        title, passed, acked, unacked)]
+    lines = ["**{}:** {} passed, {} candidate-only, {} acknowledged, {} unacknowledged".format(
+        title, passed, candidate_only, acked, unacked)]
     layers = [entry.split(":") for entry in values.get("c_regression_layer", [])]
     layers = [row for row in layers if len(row) == 4]
     if layers:
@@ -134,6 +135,10 @@ def regression_section(title, summary_file):
     if acked_tests:
         lines += ["", "Acknowledged diffs (new or updated versus the baseline): "
                   + ", ".join(code(t) for t in acked_tests)]
+    candidate_only_tests = values.get("c_regression_candidate_only_test", [])
+    if candidate_only_tests:
+        lines += ["", "Candidate-only tests (executed but not compared to a baseline): "
+                  + ", ".join(code(t) for t in candidate_only_tests)]
     return "\n".join(lines)
 
 

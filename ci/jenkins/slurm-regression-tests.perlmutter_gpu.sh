@@ -58,4 +58,5 @@ echo "Candidate C-regression check runtime: $elapsed seconds"
   "$CI_CANDIDATE_PREFIX/gkeyll-results" \
   "$CI_WORKSPACE/ci/jenkins/expected_regression_diffs.txt" \
   "$CI_WORKSPACE/ci-regression-summary.txt" \
-  "$CI_BASELINE_DIR/ci/jenkins/expected_regression_diffs.txt"
+  "$CI_BASELINE_DIR/ci/jenkins/expected_regression_diffs.txt" \
+  "$CI_BASELINE_PREFIX/gkeyll-results"

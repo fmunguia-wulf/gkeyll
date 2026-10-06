@@ -35,4 +35,5 @@ echo "Candidate parallel C-regression check runtime: $elapsed seconds"
   "$CI_CANDIDATE_PREFIX/gkeyll-results/parallel-c-4" \
   "$CI_WORKSPACE/ci/jenkins/expected_regression_diffs.txt" \
   "$CI_WORKSPACE/ci-parallel-regression-summary.txt" \
-  "$CI_BASELINE_DIR/ci/jenkins/expected_regression_diffs.txt"
+  "$CI_BASELINE_DIR/ci/jenkins/expected_regression_diffs.txt" \
+  "$CI_BASELINE_PREFIX/gkeyll-results/parallel-c-4"
