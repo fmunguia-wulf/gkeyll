@@ -264,8 +264,11 @@ build records and archives artifacts before removing normal completed workspaces
 ## Numerical regression differences
 
 An unlisted numerical regression difference fails CI. Review a genuine change
-and add its accepted difference to `ci/jenkins/expected_regression_diffs.txt`;
-do not acknowledge output differences merely to make a build pass.
+and add a new or updated accepted difference to
+`ci/jenkins/expected_regression_diffs.txt`; do not acknowledge output
+differences merely to make a build pass. Entries unchanged from the baseline
+are inert, so stale entries may safely be removed in any later PR. Updating a
+baseline entry's reason acknowledges a new intentional change for that test.
 
 ## Validate manually
 

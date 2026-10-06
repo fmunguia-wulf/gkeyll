@@ -132,7 +132,7 @@ def regression_section(title, summary_file):
                           "", fenced("\n".join(details[name])), "", "</details>"]
     acked_tests = values.get("c_regression_acknowledged_test", [])
     if acked_tests:
-        lines += ["", "Acknowledged diffs (listed in expected_regression_diffs.txt): "
+        lines += ["", "Acknowledged diffs (new or updated versus the baseline): "
                   + ", ".join(code(t) for t in acked_tests)]
     return "\n".join(lines)
 

@@ -164,6 +164,7 @@ def createBaseline(String baseline, String mkdeps, String configure, String jobs
 
 def runCandidateRegressions(String regressionJobs) {
     def gkeyll = "${env.WORKSPACE}/gkylsoft/gkeyll/bin/gkeyll"
+    def baselineGkeyll = "${env.WORKSPACE}/_baseline/gkylsoft/gkeyll/bin/gkeyll"
     def results = "${env.WORKSPACE}/gkylsoft/gkeyll-results"
     def baseline = "${env.WORKSPACE}/_baseline/gkylsoft/gkeyll-results"
     sh "\"${gkeyll}\" runregression configure --source-dir \"${env.WORKSPACE}\" --prefix \"${env.WORKSPACE}/gkylsoft\""
@@ -179,7 +180,9 @@ def runCandidateRegressions(String regressionJobs) {
         elapsed=\$(( \$(date +%s) - started ))
         printf '%s\\n' "\$elapsed" > candidate-c-regression-check-seconds.txt
         echo "Candidate C-regression check runtime: \$elapsed seconds"
-        \"${gkeyll}\" ci/jenkins/check_regression_results.lua \"${results}\" ci/jenkins/expected_regression_diffs.txt ci-regression-summary.txt
+        \"${baselineGkeyll}\" \"${env.WORKSPACE}/_baseline/ci/jenkins/check_regression_results.lua\" \\
+          \"${results}\" \"${env.WORKSPACE}/ci/jenkins/expected_regression_diffs.txt\" ci-regression-summary.txt \\
+          \"${env.WORKSPACE}/_baseline/ci/jenkins/expected_regression_diffs.txt\"
     """
 }
 
@@ -224,7 +227,9 @@ def runParallelRegressions(String mpiExec) {
         "${gkeyll}" runregression run --c-only --parallel --execute-only check
         elapsed=\$(( \$(date +%s) - started ))
         printf '%s\\n' "\$elapsed" > candidate-parallel-c-regression-check-seconds.txt
-        "${gkeyll}" ci/jenkins/check_regression_results.lua "${results}" ci/jenkins/expected_regression_diffs.txt ci-parallel-regression-summary.txt
+        "${baselineGkeyll}" "${env.WORKSPACE}/_baseline/ci/jenkins/check_regression_results.lua" \\
+          "${results}" "${env.WORKSPACE}/ci/jenkins/expected_regression_diffs.txt" ci-parallel-regression-summary.txt \\
+          "${env.WORKSPACE}/_baseline/ci/jenkins/expected_regression_diffs.txt"
     """
 }
 

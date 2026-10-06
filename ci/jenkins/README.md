@@ -41,6 +41,15 @@ team-workstation checkout, otherwise `main`, or `GKEYLL_CI_TRUSTED_REF` when
 staging a CI change), never from the candidate checkout, because the GitHub
 token is bound while it runs.
 
+## Numerical regression differences
+
+Expected numerical changes require a reviewed, new or updated entry in
+`expected_regression_diffs.txt`. For a candidate/baseline comparison, CI
+honors only lines that are new or changed in the candidate file relative to
+the baseline file. Unchanged inherited entries are inert, so a later PR can
+safely remove stale lines. Updating an inherited line's reason explicitly
+acknowledges a new intentional change for that test.
+
 ## Unified local command
 
 The script `gkeyll-ci.sh` provides a CLI to run, query and terminate CI. See

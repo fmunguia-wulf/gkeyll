@@ -51,7 +51,8 @@ started="$(date +%s)"
 elapsed="$(( $(date +%s) - started ))"
 printf '%s\n' "$elapsed" > candidate-c-regression-check-seconds.txt
 echo "Candidate C-regression check runtime: $elapsed seconds"
-"$candidate_gkeyll" ci/jenkins/check_regression_results.lua \
+"$baseline_gkeyll" "$CI_BASELINE_DIR/ci/jenkins/check_regression_results.lua" \
   "$CI_CANDIDATE_PREFIX/gkeyll-results" \
-  ci/jenkins/expected_regression_diffs.txt \
-  ci-regression-summary.txt
+  "$CI_WORKSPACE/ci/jenkins/expected_regression_diffs.txt" \
+  "$CI_WORKSPACE/ci-regression-summary.txt" \
+  "$CI_BASELINE_DIR/ci/jenkins/expected_regression_diffs.txt"

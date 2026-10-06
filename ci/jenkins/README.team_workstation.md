@@ -254,5 +254,8 @@ trusted ref to `main`. Merge only after that staging run succeeds.
 
 ## Numerical regression differences
 
-Expected numerical changes require a reviewed entry in
+Expected numerical changes require a reviewed, new or updated entry in
 `ci/jenkins/expected_regression_diffs.txt`; unlisted differences fail CI.
+Entries unchanged from the baseline are inert, so stale entries may safely be
+removed in any later PR. Update the reason on a baseline entry to acknowledge
+a new intentional change for that same test.

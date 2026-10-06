@@ -2,9 +2,9 @@
 --
 -- Jenkins helper: evaluate regression results written by
 -- 'gkeyll runregression run ... check' and fail (os.exit(1)) if any test
--- did not pass, unless it's listed in the candidate acknowledgment file.
+-- did not pass, unless it has an active candidate acknowledgment.
 --
--- Usage: gkeyll ci/jenkins/check_regression_results.lua <resultsDir> [ackFile] [summaryFile]
+-- Usage: gkeyll ci/jenkins/check_regression_results.lua <resultsDir> [ackFile] [summaryFile] [baselineAckFile]
 --   <resultsDir>  the gkeyll-results/ directory written by 'runregression
 --                 configure' (i.e. <prefix>/gkeyll-results).
 --   [ackFile]     optional path to a text file listing tests (one per line,
@@ -14,6 +14,9 @@
 --                 as "<layer>/<basename>" ("moments/rt_euler_sodshock"), or by
 --                 basename alone. See ci/jenkins/expected_regression_diffs.txt.
 --   [summaryFile] optional machine-readable pass/acknowledged/failure counts.
+--   [baselineAckFile] when supplied, acknowledgments already present in this
+--                 baseline file are ignored. Only candidate lines that are new
+--                 or changed relative to the baseline can acknowledge a diff.
 --
 --    _______     ___
 -- + 6 @ |||| # P ||| +
@@ -33,25 +36,54 @@ local BAD_STATUSES = { [0] = true, [-3] = true, [-4] = true, [-5] = true, [-6] =
 local resultsDir = GKYL_COMMANDS_L[1]
 local ackFile = GKYL_COMMANDS_L[2]
 local summaryFile = GKYL_COMMANDS_L[3]
+local baselineAckFile = GKYL_COMMANDS_L[4]
 
 if not resultsDir then
-   print("Usage: gkeyll check_regression_results.lua <resultsDir> [ackFile] [summaryFile]")
+   print("Usage: gkeyll check_regression_results.lua <resultsDir> [ackFile] [summaryFile] [baselineAckFile]")
    os.exit(1)
 end
 
--- Parse the acknowledgment file into a set of "<layer>/<name>" entries.
--- Blank lines and '#' comments (including trailing '# reason' text) are
--- ignored.
-local acked = {}
-if ackFile then
-   local f = io.open(ackFile, "r")
+-- Parse an acknowledgment file into full, trimmed source lines mapped to their
+-- test names. Keep the comment in the source-line key: changing a reason is a
+-- deliberate new acknowledgment, while an identical inherited line is inert.
+local function readAcknowledgments(path)
+   local entries = {}
+   if not path then return entries end
+   local f = io.open(path, "r")
    if f then
       for line in f:lines() do
-         local entry = line:gsub("#.*$", ""):match("^%s*(.-)%s*$")
-         if entry and entry ~= "" then acked[entry] = true end
+         local sourceLine = line:match("^%s*(.-)%s*$")
+         local entry = sourceLine:gsub("#.*$", ""):match("^%s*(.-)%s*$")
+         if entry and entry ~= "" then entries[sourceLine] = entry end
       end
       f:close()
    end
+   return entries
+end
+
+local function countEntries(entries)
+   local count = 0
+   for _ in pairs(entries) do count = count + 1 end
+   return count
+end
+
+local candidateAcknowledgments = readAcknowledgments(ackFile)
+local baselineAcknowledgments = readAcknowledgments(baselineAckFile)
+local acked, activeAcknowledgmentLines = {}, 0
+for sourceLine, entry in pairs(candidateAcknowledgments) do
+   -- Without a baseline file retain the historical standalone behavior: every
+   -- candidate entry is active. Jenkins always supplies the baseline file.
+   if not baselineAckFile or not baselineAcknowledgments[sourceLine] then
+      acked[entry] = true
+      activeAcknowledgmentLines = activeAcknowledgmentLines + 1
+   end
+end
+
+if baselineAckFile then
+   print(string.format(
+      "Regression acknowledgments: %d candidate line(s), %d new or updated relative to %s",
+      countEntries(candidateAcknowledgments),
+      activeAcknowledgmentLines, baselineAckFile))
 end
 
 local npass, ackedHits, unacked = 0, {}, {}
