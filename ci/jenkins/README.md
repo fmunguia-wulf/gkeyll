@@ -64,6 +64,15 @@ The script `gkeyll-ci.sh` provides a CLI to run, query and terminate CI. See
 ./ci/jenkins/gkeyll-ci.sh --help
 ```
 
+## Candidate freshness
+
+Before building, CI resolves both references to commit SHAs and requires the
+candidate to contain the baseline commit. A behind candidate fails immediately,
+before dependency builds or Slurm submission. Update the candidate with its
+baseline before rerunning. For an intentional historical comparison, pass
+`--allow-behind-candidate` (or enable `ALLOW_BEHIND_CANDIDATE` in Jenkins); the
+CI artifact and GitHub report record that override.
+
 It can be used with any of the machines listed above, for example:
 
 ```sh

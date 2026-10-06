@@ -295,8 +295,9 @@ def timing_section():
 
 def build_report(args):
     selection = read_kv("ci-selection.txt")
-    candidate = read_text("ci-candidate-commit.txt").strip()
-    baseline = read_text("ci-baseline-commit.txt").strip()
+    preflight = read_kv("ci-baseline-preflight.txt")
+    candidate = read_text("ci-candidate-commit.txt").strip() or first(preflight, "candidate_commit")
+    baseline = read_text("ci-baseline-commit.txt").strip() or first(preflight, "baseline_commit")
     failure = read_kv("ci-failure-summary.txt")
     build_number = os.environ.get("BUILD_NUMBER", "?")
     node = os.environ.get("NODE_NAME", "")
@@ -317,6 +318,11 @@ def build_report(args):
     finished = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     meta.append("**Run:** {} build #{} on {}, finished {}".format(
         code(args.platform), build_number, code(node), finished))
+    if preflight:
+        behind = first(preflight, "behind_by", "?")
+        override = first(preflight, "override", "false")
+        state = "override enabled" if override == "true" else "verified"
+        meta.append("**Baseline preflight:** {} ({} commit(s) behind)".format(state, behind))
     parts.append("  \n".join(meta))
 
     stage = first(failure, "stage", "unknown")

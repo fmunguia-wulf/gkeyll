@@ -111,6 +111,8 @@ PR number or both candidate and baseline references.
 Confirm the token file is user-owned and mode 600, Jenkins is running, and the
 user can read/build `gkeyll-ci-personal`. `follow` and `status` accept queue or
 build IDs; `abort --queue` cancels waiting work and `abort --build` stops it.
+CI rejects a candidate that does not contain its baseline before building. Use
+`--allow-behind-candidate` only for an intentional historical comparison.
 
 ## Numerical regression differences
 

@@ -187,6 +187,15 @@ either `CANDIDATE_PR` or both `CANDIDATE_REF` and `BASELINE_REF`.
 
 # Troubleshooting
 
+## Candidate freshness
+
+Before dependency builds or Slurm submission, CI resolves both references to
+commits and rejects a candidate that does not contain its baseline. Merge or
+rebase the baseline into the candidate before rerunning. For an intentional
+historical comparison, use `--allow-behind-candidate` or enable `ALLOW_BEHIND_CANDIDATE` in
+**Build with Parameters**; the resulting artifact
+and GitHub report record the override.
+
 ## Numerical regression differences
 
 An unlisted numerical regression difference fails CI. Review a genuine change

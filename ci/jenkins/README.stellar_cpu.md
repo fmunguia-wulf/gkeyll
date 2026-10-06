@@ -180,7 +180,8 @@ being tested.
 Leave **This project is parameterized** unchecked: the trusted Pipeline
 declares the parameters itself. On a newly created job, click **Build Now**
 once. The expected initial build stops immediately because no selector is set,
-but it registers `CANDIDATE_PR`, `CANDIDATE_REF`, and `BASELINE_REF` with
+but it registers `CANDIDATE_PR`, `CANDIDATE_REF`, `BASELINE_REF`, and
+`ALLOW_BEHIND_CANDIDATE` with
 Jenkins. The page then offers **Build with Parameters**. This initial build
 does not submit a Slurm job.
 
@@ -232,6 +233,15 @@ login node, and submits separate unit and C-regression Slurm jobs. Use the
 build page to inspect its console and artifacts, or **Abort** to stop it.
 
 # Troubleshooting
+
+## Candidate freshness
+
+Before dependency builds or Slurm submission, CI resolves both references to
+commits and rejects a candidate that does not contain its baseline. Merge or
+rebase the baseline into the candidate before rerunning. For an intentional
+historical comparison, use `--allow-behind-candidate` or enable `ALLOW_BEHIND_CANDIDATE` in
+**Build with Parameters**; the resulting artifact
+and GitHub report record the override.
 
 ## Controller and Jenkins API
 

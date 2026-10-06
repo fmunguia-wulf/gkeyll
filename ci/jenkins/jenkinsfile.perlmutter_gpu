@@ -30,6 +30,11 @@ properties([
             defaultValue: '',
             trim: true,
             description: 'Baseline branch name or full 40-character commit SHA for CANDIDATE_REF runs.'
+        ),
+        booleanParam(
+            name: 'ALLOW_BEHIND_CANDIDATE',
+            defaultValue: false,
+            description: 'Allow a candidate that does not contain the baseline commit.'
         )
     ])
 ])
@@ -123,6 +128,33 @@ def checkoutRef(String selector, String localRef) {
             url: 'https://github.com/gkeyllorg/gkeyll.git'
         ]]
     ])
+}
+
+def resolveRefCommit(String selector) {
+    if (isCommitSha(selector)) return selector.toLowerCase()
+    def commit = sh(returnStdout: true, script: "git ls-remote https://github.com/gkeyllorg/gkeyll.git refs/heads/${selector} | cut -f1 | head -n 1").trim()
+    if (!(commit ==~ /[0-9a-f]{40}/)) error("Could not resolve baseline ref '${selector}' to a commit SHA.")
+    return commit
+}
+
+def baselineBehindCount(String statusCredentialsId, String baseline, String candidate) {
+    withCredentials([usernamePassword(
+        credentialsId: statusCredentialsId,
+        usernameVariable: 'GITHUB_STATUS_USERNAME',
+        passwordVariable: 'GITHUB_STATUS_TOKEN'
+    )]) {
+        withEnv(["CI_BASELINE_COMMIT=${baseline}", "CI_CANDIDATE_COMMIT=${candidate}"]) {
+            return sh(returnStdout: true, script: '''#!/bin/bash
+                set -euo pipefail
+                curl --fail --silent --show-error \
+                    --retry 2 --connect-timeout 15 --max-time 45 \
+                    --header 'Accept: application/vnd.github+json' \
+                    --header "Authorization: Bearer $GITHUB_STATUS_TOKEN" \
+                    "https://api.github.com/repos/gkeyllorg/gkeyll/compare/$CI_BASELINE_COMMIT...$CI_CANDIDATE_COMMIT" \
+                    | python3 -c 'import json,sys; print(json.load(sys.stdin)["behind_by"])'
+            ''').trim().toInteger()
+        }
+    }
 }
 
 def resolvePullRequestBase(String statusCredentialsId, String prNumber) {
@@ -567,6 +599,7 @@ if (candidateRef) {
     candidateRef = validateRefSelector('CANDIDATE_REF', candidateRef)
     requestedBaselineRef = validateRefSelector('BASELINE_REF', requestedBaselineRef)
 }
+def allowBehindCandidate = params.ALLOW_BEHIND_CANDIDATE || env.CI_ALLOW_BEHIND_CANDIDATE == 'true'
 
 def nodeLabel = (env.PERLMUTTER_GPU_NODE_LABEL ?: 'perlmutter_gpu').trim()
 def gkeyllCiRoot = requireValue('GKEYLL_CI_ROOT', env.GKEYLL_CI_ROOT)
@@ -574,6 +607,7 @@ def workspaceRoot = "${gkeyllCiRoot}/workspaces"
 def statusCredentialsId = requireValue('PERLMUTTER_GPU_GITHUB_CREDENTIAL_ID', env.PERLMUTTER_GPU_GITHUB_CREDENTIAL_ID)
 def candidateSelector = ''
 def baselineSelector = ''
+def baselineCommit = ''
 def candidateCommit = ''
 def terminalStatus = 'failure'
 def terminalDescription = 'Perlmutter GPU CI failed.'
@@ -617,8 +651,17 @@ node(nodeLabel) {
                 candidateCommit = sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
                 writeFile file: 'ci-candidate-commit.txt', text: "${candidateCommit}\n"
                 currentBuild.description += " @ ${candidateCommit.take(7)}"
-                writeFile file: 'ci-selection.txt', text: "candidate_selector=${candidateSelector}\nbaseline_selector=${baselineSelector}\n"
                 sh 'git status --short'
+            }
+            ciStage('Verify candidate contains baseline') {
+                baselineCommit = resolveRefCommit(baselineSelector)
+                def behind = baselineBehindCount(statusCredentialsId, baselineCommit, candidateCommit)
+                writeFile file: 'ci-baseline-preflight.txt', text: "candidate_commit=${candidateCommit}\nbaseline_selector=${baselineSelector}\nbaseline_commit=${baselineCommit}\nbehind_by=${behind}\noverride=${allowBehindCandidate}\n"
+                writeFile file: 'ci-selection.txt', text: "candidate_selector=${candidateSelector}\nbaseline_selector=${baselineSelector}\ncandidate_commit=${candidateCommit}\nbaseline_commit=${baselineCommit}\nallow_behind=${allowBehindCandidate}\n"
+                if (behind > 0 && !allowBehindCandidate) {
+                    error("Candidate ${candidateCommit.take(7)} is behind baseline ${baselineCommit.take(7)} by ${behind} commit(s); merge or rebase the baseline, or set ALLOW_BEHIND_CANDIDATE for an intentional historical comparison.")
+                }
+                if (behind > 0) echo("WARNING: allowing candidate behind baseline by ${behind} commit(s).")
             }
             ciStage('Report pending to GitHub') {
                 publishGitHubCommitStatus(
@@ -686,7 +729,7 @@ node(nodeLabel) {
             ciStage('Checkout Perlmutter GPU baseline') {
                 dir('_baseline') {
                     deleteDir()
-                    checkoutRef(baselineSelector, 'baseline')
+                    checkoutRef(baselineCommit, 'baseline')
                     sh 'git rev-parse HEAD | tee ../ci-baseline-commit.txt'
                 }
             }
@@ -791,7 +834,7 @@ node(nodeLabel) {
                         }
                     }
                     archiveArtifacts allowEmptyArchive: true,
-                        artifacts: 'ci-selection.txt,ci-candidate-commit.txt,ci-baseline-commit.txt,ci-report.md,*-unit-results.txt,*-c-compile-seconds.txt,ci-timing-summary.txt,ci-regression-summary.txt,ci-failure-summary.txt,slurm-*.out,slurm-*-job-id.txt,slurm-*-job-status.txt,build/**/*.log,gkylsoft/gkeyll-results/**/regressiondb,gkylsoft/gkeyll-results/**/_rr_failures.txt,_baseline/gkylsoft/gkeyll-results/**/regressiondb,_baseline/gkylsoft/gkeyll-results/**/_rr_failures.txt'
+                        artifacts: 'ci-selection.txt,ci-baseline-preflight.txt,ci-candidate-commit.txt,ci-baseline-commit.txt,ci-report.md,*-unit-results.txt,*-c-compile-seconds.txt,ci-timing-summary.txt,ci-regression-summary.txt,ci-failure-summary.txt,slurm-*.out,slurm-*-job-id.txt,slurm-*-job-status.txt,build/**/*.log,gkylsoft/gkeyll-results/**/regressiondb,gkylsoft/gkeyll-results/**/_rr_failures.txt,_baseline/gkylsoft/gkeyll-results/**/regressiondb,_baseline/gkylsoft/gkeyll-results/**/_rr_failures.txt'
                 } catch (err) {
                     terminalStatus = 'error'
                     terminalDescription = 'Perlmutter GPU CI artifact archival failed.'

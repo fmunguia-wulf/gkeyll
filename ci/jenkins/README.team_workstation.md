@@ -224,6 +224,15 @@ comparisons.
 
 # Troubleshooting
 
+## Candidate freshness
+
+The automatic PR jobs and explicit comparisons resolve both references to
+commits and reject a candidate that does not contain its baseline before any
+expensive build work. Update the candidate with its baseline before rerunning.
+For an intentional historical comparison through the trusted `main` child, use
+`--allow-behind-candidate` or enable `ALLOW_BEHIND_CANDIDATE` in **Build with
+Parameters**; the artifact and GitHub report record the override.
+
 ## Jenkins API and builds
 
 If a PR child does not appear, run `team scan` and inspect the multibranch
