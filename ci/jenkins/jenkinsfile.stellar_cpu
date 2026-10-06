@@ -396,7 +396,7 @@ def submitUnitTests() {
     )
 }
 
-def submitRegressionTests() {
+def submitRegressionTests(String mode, String baselineDir) {
     def jobs = regressionJobs()
     def timeout = regressionTestTimeout()
     submitSlurmJob(
@@ -405,25 +405,27 @@ def submitRegressionTests() {
         '8',
         (env.STELLAR_CPU_REGRESSION_TIME ?: '04:00:00').trim(),
         [
-            "CI_BASELINE_DIR=${env.WORKSPACE}/_baseline",
-            "CI_BASELINE_PREFIX=${env.WORKSPACE}/_baseline/gkylsoft",
+            "CI_BASELINE_DIR=${baselineDir}",
+            "CI_BASELINE_PREFIX=${baselineDir}/gkylsoft",
             "CI_CANDIDATE_PREFIX=${env.WORKSPACE}/gkylsoft",
+            "CI_REGRESSION_MODE=${mode}",
             "CI_REGRESSION_JOBS=${jobs}",
             "CI_REGRESSION_TEST_TIMEOUT=${timeout}"
         ]
     )
 }
 
-def submitParallelRegressionTests() {
+def submitParallelRegressionTests(String mode, String baselineDir) {
     submitSlurmJob(
         'parallel-regression',
         'ci/jenkins/slurm-parallel-regression-tests.stellar_cpu.sh',
         '1',
         (env.STELLAR_CPU_REGRESSION_TIME ?: '04:00:00').trim(),
         [
-            "CI_BASELINE_DIR=${env.WORKSPACE}/_baseline",
-            "CI_BASELINE_PREFIX=${env.WORKSPACE}/_baseline/gkylsoft",
-            "CI_CANDIDATE_PREFIX=${env.WORKSPACE}/gkylsoft"
+            "CI_BASELINE_DIR=${baselineDir}",
+            "CI_BASELINE_PREFIX=${baselineDir}/gkylsoft",
+            "CI_CANDIDATE_PREFIX=${env.WORKSPACE}/gkylsoft",
+            "CI_REGRESSION_MODE=${mode}"
         ],
         '4'
     )
@@ -530,6 +532,8 @@ def writeCiTimingSummary() {
         c_passed="$(metric ci-regression-summary.txt c_regression_passed)"
         c_acknowledged="$(metric ci-regression-summary.txt c_regression_acknowledged)"
         c_unacknowledged="$(metric ci-regression-summary.txt c_regression_unacknowledged)"
+        baseline_cache_status="$(awk -F= '$1 == "status" {print $2; exit}' ci-baseline-cache.txt 2>/dev/null || true)"
+        baseline_cache_status="${baseline_cache_status:-not-recorded}"
 
         compile_total='not-recorded'
         if [[ "$candidate_compile" =~ ^[0-9]+$ && "$baseline_compile" =~ ^[0-9]+$ ]]; then
@@ -537,6 +541,7 @@ def writeCiTimingSummary() {
         fi
 
         {
+            printf 'baseline_cache_status=%s\n' "$baseline_cache_status"
             printf 'candidate_c_compile_seconds=%s\n' "$candidate_compile"
             printf 'baseline_c_compile_seconds=%s\n' "$baseline_compile"
             printf 'candidate_parallel_c_compile_seconds=%s\n' "$candidate_parallel_compile"
@@ -614,6 +619,9 @@ def candidateCommit = ''
 def terminalStatus = 'failure'
 def terminalDescription = 'Stellar CPU CPU CI failed.'
 def failureMessage = ''
+def baselineDir = ''
+def baselineStage = ''
+def baselineCacheHit = false
 
 def ciStage(String stageName, Closure body) {
     env.CI_FAILURE_STAGE = stageName
@@ -655,6 +663,9 @@ node(nodeLabel) {
                 currentBuild.description += " @ ${candidateCommit.take(7)}"
                 sh 'git status --short'
             }
+            ciStage('Prepare candidate-result cache') {
+                sh "ci/jenkins/baseline_cache.sh clear-candidate '${gkeyllCiRoot}' 'stellar-cpu'"
+            }
             ciStage('Verify candidate contains baseline') {
                 baselineCommit = resolveRefCommit(baselineSelector)
                 def behind = baselineBehindCount(statusCredentialsId, baselineCommit, candidateCommit)
@@ -664,6 +675,12 @@ node(nodeLabel) {
                     error("Candidate ${candidateCommit.take(7)} is behind baseline ${baselineCommit.take(7)} by ${behind} commit(s); merge or rebase the baseline, or set ALLOW_BEHIND_CANDIDATE for an intentional historical comparison.")
                 }
                 if (behind > 0) echo("WARNING: allowing candidate behind baseline by ${behind} commit(s).")
+            }
+            ciStage('Resolve baseline cache') {
+                baselineDir = sh(returnStdout: true, script: "ci/jenkins/baseline_cache.sh baseline-path '${gkeyllCiRoot}' 'stellar-cpu' '${baselineCommit}'").trim()
+                baselineCacheHit = sh(returnStatus: true, script: "ci/jenkins/baseline_cache.sh valid '${gkeyllCiRoot}' 'stellar-cpu' '${baselineCommit}'") == 0
+                if (!baselineCacheHit) baselineStage = sh(returnStdout: true, script: "ci/jenkins/baseline_cache.sh prepare-baseline '${gkeyllCiRoot}' 'stellar-cpu' '${baselineCommit}'").trim()
+                writeFile file: 'ci-baseline-cache.txt', text: "status=${baselineCacheHit ? 'hit' : 'miss'}\nplatform=stellar-cpu\nbaseline_commit=${baselineCommit}\npath=${baselineCacheHit ? baselineDir : baselineStage}\n"
             }
             ciStage('Report pending to GitHub') {
                 publishGitHubCommitStatus(
@@ -728,52 +745,70 @@ node(nodeLabel) {
                     'machines/module_load.stellar-intel.sh'
                 )
             }
-            ciStage('Checkout Stellar CPU baseline') {
-                dir('_baseline') {
-                    deleteDir()
-                    checkoutRef(baselineCommit, 'baseline')
-                    sh 'git rev-parse HEAD | tee ../ci-baseline-commit.txt'
+            if (!baselineCacheHit) {
+                ciStage('Checkout Stellar CPU baseline') {
+                    dir(baselineStage) { checkoutRef(baselineCommit, 'baseline') }
                 }
-            }
-            ciStage('Build Stellar CPU baseline') {
-                withEnv(["PREFIX=${env.WORKSPACE}/_baseline/gkylsoft"]) {
-                    dir('_baseline') {
+                ciStage('Build Stellar CPU baseline') {
+                    withEnv(["PREFIX=${baselineStage}/gkylsoft"]) {
+                        dir(baselineStage) {
                         sh '''#!/bin/bash -l
                             set -euo pipefail
-                            . ../machines/module_load.stellar-intel.sh
+                            . machines/module_load.stellar-intel.sh
                             ./machines/mkdeps.stellar-intel.sh
                             ./machines/configure.stellar-intel.sh
                         '''
                     }
                 }
-            }
-            ciStage('Install Stellar CPU baseline') {
+                }
+                ciStage('Install Stellar CPU baseline') {
                 def jobs = buildJobs()
-                dir('_baseline') {
+                dir(baselineStage) {
                     sh """#!/bin/bash -l
                         set -euo pipefail
-                        . ../machines/module_load.stellar-intel.sh
+                        . machines/module_load.stellar-intel.sh
                         started=\$(date +%s)
                         make -j${jobs} install
                         elapsed=\$(( \$(date +%s) - started ))
-                        printf '%s\\n' "\$elapsed" > ../baseline-install-seconds.txt
+                        printf '%s\\n' "\$elapsed" > "${env.WORKSPACE}/baseline-install-seconds.txt"
                         echo "Baseline install time: \$elapsed seconds"
                     """
                 }
-            }
-            ciStage('Compile Stellar CPU baseline C regressions') {
+                }
+                ciStage('Compile Stellar CPU baseline C regressions') {
                 configureAndCompileCRegressions(
                     'baseline',
-                    "${env.WORKSPACE}/_baseline/gkylsoft/gkeyll/bin/gkeyll",
-                    "${env.WORKSPACE}/_baseline",
-                    "${env.WORKSPACE}/_baseline/gkylsoft",
+                    "${baselineStage}/gkylsoft/gkeyll/bin/gkeyll",
+                    baselineStage,
+                    "${baselineStage}/gkylsoft",
                     'machines/module_load.stellar-intel.sh'
                 )
+                }
+                ciStage('Run baseline C regressions (SLURM)') { submitRegressionTests('baseline-create', baselineStage) }
+                ciStage('Compile baseline parallel C regressions') {
+                    configureAndCompileCRegressions(
+                        'baseline-parallel', "${baselineStage}/gkylsoft/gkeyll/bin/gkeyll", baselineStage,
+                        "${baselineStage}/gkylsoft", 'machines/module_load.stellar-intel.sh',
+                        '--parallel', '--results-subdir parallel-c-4 --mpiexec srun'
+                    )
+                }
+                ciStage('Run baseline parallel C regressions (SLURM)') { submitParallelRegressionTests('baseline-create', baselineStage) }
+                ciStage('Publish baseline cache') {
+                    sh """cat > '${baselineStage}/cache-manifest.txt' <<EOF
+format_version=1
+platform=stellar-cpu
+baseline_commit=${baselineCommit}
+created_utc=\$(date -u +%Y-%m-%dT%H:%M:%SZ)
+serial_c_results=present
+parallel_c_4_results=present
+EOF"""
+                    baselineDir = sh(returnStdout: true, script: "ci/jenkins/baseline_cache.sh publish-baseline '${gkeyllCiRoot}' 'stellar-cpu' '${baselineCommit}' '${baselineStage}'").trim()
+                    writeFile file: 'ci-baseline-cache.txt', text: "status=miss\nplatform=stellar-cpu\nbaseline_commit=${baselineCommit}\npath=${baselineDir}\n"
+                }
             }
-            ciStage('Run C regressions (SLURM)') {
-                submitRegressionTests()
-            }
-            ciStage('Compile parallel C regressions') {
+            ciStage('Record baseline cache') { sh "git -C '${baselineDir}' rev-parse HEAD | tee ci-baseline-commit.txt" }
+            ciStage('Run candidate C regressions (SLURM)') { submitRegressionTests('candidate-check', baselineDir) }
+            ciStage('Compile candidate parallel C regressions') {
                 configureAndCompileCRegressions(
                     'candidate-parallel',
                     "${env.WORKSPACE}/gkylsoft/gkeyll/bin/gkeyll",
@@ -782,18 +817,8 @@ node(nodeLabel) {
                     'machines/module_load.stellar-intel.sh',
                     '--parallel', '--results-subdir parallel-c-4 --mpiexec srun'
                 )
-                configureAndCompileCRegressions(
-                    'baseline-parallel',
-                    "${env.WORKSPACE}/_baseline/gkylsoft/gkeyll/bin/gkeyll",
-                    "${env.WORKSPACE}/_baseline",
-                    "${env.WORKSPACE}/_baseline/gkylsoft",
-                    'machines/module_load.stellar-intel.sh',
-                    '--parallel', '--results-subdir parallel-c-4 --mpiexec srun'
-                )
             }
-            ciStage('Run parallel C regressions (SLURM)') {
-                submitParallelRegressionTests()
-            }
+            ciStage('Run candidate parallel C regressions (SLURM)') { submitParallelRegressionTests('candidate-check', baselineDir) }
             terminalStatus = 'success'
             terminalDescription = 'Stellar CPU CPU unit and C regression tests passed.'
         } catch (err) {
@@ -836,13 +861,16 @@ node(nodeLabel) {
                         }
                     }
                     archiveArtifacts allowEmptyArchive: true,
-                        artifacts: 'ci-selection.txt,ci-baseline-preflight.txt,ci-candidate-commit.txt,ci-baseline-commit.txt,ci-report.md,*-unit-results.txt,*-c-compile-seconds.txt,ci-timing-summary.txt,ci-regression-summary.txt,ci-failure-summary.txt,slurm-*.out,slurm-*-job-id.txt,slurm-*-job-status.txt,build/**/*.log,gkylsoft/gkeyll-results/**/regressiondb,gkylsoft/gkeyll-results/**/_rr_failures.txt,_baseline/gkylsoft/gkeyll-results/**/regressiondb,_baseline/gkylsoft/gkeyll-results/**/_rr_failures.txt'
+                        artifacts: 'ci-selection.txt,ci-baseline-preflight.txt,ci-baseline-cache.txt,ci-candidate-commit.txt,ci-baseline-commit.txt,ci-report.md,*-unit-results.txt,*-c-compile-seconds.txt,ci-timing-summary.txt,ci-regression-summary.txt,ci-failure-summary.txt,slurm-*.out,slurm-*-job-id.txt,slurm-*-job-status.txt,build/**/*.log,gkylsoft/gkeyll-results/**/regressiondb,gkylsoft/gkeyll-results/**/_rr_failures.txt'
                 } catch (err) {
                     terminalStatus = 'error'
                     terminalDescription = 'Stellar CPU CPU CI artifact archival failed.'
                     throw err
                 } finally {
                     try {
+                        if (candidateCommit) {
+                            sh "ci/jenkins/baseline_cache.sh retain-candidate '${gkeyllCiRoot}' 'stellar-cpu' '${candidateCommit}' '${env.WORKSPACE}/gkylsoft/gkeyll-results' '${terminalStatus}' '${env.CI_FAILURE_STAGE ?: ''}'"
+                        }
                         if (candidateCommit) {
                             publishGitHubCommitStatus(
                                 statusCredentialsId,

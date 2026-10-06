@@ -296,6 +296,7 @@ def timing_section():
 def build_report(args):
     selection = read_kv("ci-selection.txt")
     preflight = read_kv("ci-baseline-preflight.txt")
+    cache = read_kv("ci-baseline-cache.txt")
     candidate = read_text("ci-candidate-commit.txt").strip() or first(preflight, "candidate_commit")
     baseline = read_text("ci-baseline-commit.txt").strip() or first(preflight, "baseline_commit")
     failure = read_kv("ci-failure-summary.txt")
@@ -323,6 +324,9 @@ def build_report(args):
         override = first(preflight, "override", "false")
         state = "override enabled" if override == "true" else "verified"
         meta.append("**Baseline preflight:** {} ({} commit(s) behind)".format(state, behind))
+    if cache:
+        meta.append("**Baseline cache:** {} ({})".format(
+            first(cache, "status", "unknown"), code(short(first(cache, "baseline_commit", baseline)))))
     parts.append("  \n".join(meta))
 
     stage = first(failure, "stage", "unknown")

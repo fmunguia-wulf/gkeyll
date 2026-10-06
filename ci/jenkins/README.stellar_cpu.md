@@ -162,6 +162,8 @@ set the following values. Paste an expanded scratch path, not a literal `$USER`.
 Do not set a broad global `PATH` to an interactive shell configuration. The
 Pipeline initializes Stellar modules for each build and Slurm job. Its
 `GKEYLL_CI_ROOT` must exactly match the controller's root.
+It retains SHA-addressed baseline and candidate-result directories; remove
+`baseline-cache/stellar-cpu` manually after an intentional toolchain change.
 
 ### Create the one parameterized Pipeline job
 

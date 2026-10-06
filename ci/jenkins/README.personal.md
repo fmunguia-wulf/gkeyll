@@ -64,6 +64,7 @@ and Python with NumPy. Set these global environment variables:
 | `PERSONAL_MPI_HOME` | Optional MPI installation path for both trees; default is each tree's `gkylsoft/openmpi` |
 | `PERSONAL_MPIEXEC` | Optional launcher override for both trees; default is `bin/mpiexec` under the selected MPI installation |
 | `PERSONAL_STATUS_CONTEXT` | Optional GitHub status context; default `continuous-integration/jenkins/personal-<hostname>` so each computer's status and report stay distinct |
+| `GKEYLL_CI_ROOT` | Required persistent writable root for baseline and retained candidate regression data |
 | `GKEYLL_CI_TRUSTED_REF` | Optional branch or full SHA to fetch `github_report.py` from; default `main`. Set it only while staging a CI change |
 
 The selected dependency script must pass `--build-adas=yes` to

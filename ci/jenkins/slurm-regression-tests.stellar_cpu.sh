@@ -10,7 +10,7 @@ set -euo pipefail
 : "${CI_WORKSPACE:?CI_WORKSPACE must name the shared Jenkins workspace}"
 : "${CI_BASELINE_DIR:?CI_BASELINE_DIR must name the trusted baseline checkout}"
 : "${CI_BASELINE_PREFIX:?CI_BASELINE_PREFIX must name the baseline install prefix}"
-: "${CI_CANDIDATE_PREFIX:?CI_CANDIDATE_PREFIX must name the candidate install prefix}"
+: "${CI_REGRESSION_MODE:?CI_REGRESSION_MODE must be baseline-create or candidate-check}"
 : "${CI_REGRESSION_JOBS:?CI_REGRESSION_JOBS must be set}"
 : "${CI_REGRESSION_TEST_TIMEOUT:?CI_REGRESSION_TEST_TIMEOUT must be set}"
 
@@ -18,19 +18,25 @@ cd "$CI_WORKSPACE"
 . machines/module_load.stellar-intel.sh
 
 baseline_gkeyll="$CI_BASELINE_PREFIX/gkeyll/bin/gkeyll"
-candidate_gkeyll="$CI_CANDIDATE_PREFIX/gkeyll/bin/gkeyll"
 
 test -x "$baseline_gkeyll"
-test -x "$candidate_gkeyll"
 
-cd "$CI_BASELINE_DIR"
-started="$(date +%s)"
-"$baseline_gkeyll" runregression run -c --execute-only create \
-  --jobs "$CI_REGRESSION_JOBS" \
-  --timeout "$CI_REGRESSION_TEST_TIMEOUT"
-elapsed="$(( $(date +%s) - started ))"
-printf '%s\n' "$elapsed" > "$CI_WORKSPACE/baseline-c-regression-create-seconds.txt"
-echo "Baseline C-regression create runtime: $elapsed seconds"
+if [[ "$CI_REGRESSION_MODE" == baseline-create ]]; then
+  cd "$CI_BASELINE_DIR"
+  started="$(date +%s)"
+  "$baseline_gkeyll" runregression run -c --execute-only create \
+    --jobs "$CI_REGRESSION_JOBS" \
+    --timeout "$CI_REGRESSION_TEST_TIMEOUT"
+  elapsed="$(( $(date +%s) - started ))"
+  printf '%s\n' "$elapsed" > "$CI_WORKSPACE/baseline-c-regression-create-seconds.txt"
+  echo "Baseline C-regression create runtime: $elapsed seconds"
+  exit 0
+fi
+
+[[ "$CI_REGRESSION_MODE" == candidate-check ]] || { echo "Unknown CI_REGRESSION_MODE: $CI_REGRESSION_MODE" >&2; exit 2; }
+: "${CI_CANDIDATE_PREFIX:?CI_CANDIDATE_PREFIX must name the candidate install prefix}"
+candidate_gkeyll="$CI_CANDIDATE_PREFIX/gkeyll/bin/gkeyll"
+test -x "$candidate_gkeyll"
 
 cd "$CI_WORKSPACE"
 # Use only C accepted output from the fixed baseline. Do not carry Lua
@@ -40,7 +46,7 @@ for layer in moments vlasov gyrokinetic pkpm; do
   candidate_accepted="$CI_CANDIDATE_PREFIX/gkeyll-results/$layer/creg-accepted"
   rm -rf "$candidate_accepted"
   if [[ -d "$baseline_accepted" ]]; then
-    mv "$baseline_accepted" "$candidate_accepted"
+    ln -s "$baseline_accepted" "$candidate_accepted"
   fi
 done
 

@@ -73,6 +73,16 @@ baseline before rerunning. For an intentional historical comparison, pass
 `--allow-behind-candidate` (or enable `ALLOW_BEHIND_CANDIDATE` in Jenkins); the
 CI artifact and GitHub report record that override.
 
+## Persistent regression data
+
+Every Jenkins controller requires a writable, agent-visible `GKEYLL_CI_ROOT`.
+CI retains one complete baseline per platform in
+`$GKEYLL_CI_ROOT/baseline-cache/<platform>/<baseline-sha>/`. A repeated run
+against the same resolved baseline SHA reuses that tree; a changed SHA rebuilds
+and replaces it. The most recent candidate regression output is retained in
+`$GKEYLL_CI_ROOT/candidate-cache/<platform>/<candidate-sha>/` for inspection
+and is removed when that platform's next CI build begins.
+
 It can be used with any of the machines listed above, for example:
 
 ```sh
