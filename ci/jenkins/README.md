@@ -40,6 +40,10 @@ Pipeline runs `github_report.py` only from reviewed code (the trusted
 team-workstation checkout, otherwise `main`, or `GKEYLL_CI_TRUSTED_REF` when
 staging a CI change), never from the candidate checkout, because the GitHub
 token is bound while it runs.
+The regression-result checker also comes from the reviewed trusted CI commit,
+recorded in `ci-trusted-checker-commit.txt`. CI runs it with the baseline
+executable from the baseline source directory, using `-S` because this Lua
+check does not require MPI.
 
 ## Numerical regression differences
 
