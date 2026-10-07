@@ -211,7 +211,8 @@ def runCandidateRegressions(String candidateDir, String baselineDir, String regr
         elapsed=\$(( \$(date +%s) - started ))
         printf '%s\\n' "\$elapsed" > "${env.WORKSPACE}/candidate-c-regression-check-seconds.txt"
         echo "Candidate C-regression check runtime: \$elapsed seconds"
-        \"${baselineGkeyll}\" \"${baselineDir}/gkeyll/ci/jenkins/check_regression_results.lua\" \\
+        cd \"${baselineDir}/gkeyll\"
+        \"${baselineGkeyll}\" -S \"${baselineDir}/gkeyll/ci/jenkins/check_regression_results.lua\" \\
           \"${results}\" \"${candidateDir}/gkeyll/ci/jenkins/expected_regression_diffs.txt\" \"${env.WORKSPACE}/ci-regression-summary.txt\" \\
           \"${baselineDir}/gkeyll/ci/jenkins/expected_regression_diffs.txt\" \"${baseline}\"
     """
@@ -247,7 +248,8 @@ def runParallelRegressions(String candidateDir, String baselineDir, String mpiEx
         "${gkeyll}" runregression run --c-only --parallel --execute-only check
         elapsed=\$(( \$(date +%s) - started ))
         printf '%s\\n' "\$elapsed" > "${env.WORKSPACE}/candidate-parallel-c-regression-check-seconds.txt"
-        "${baselineGkeyll}" "${baselineDir}/gkeyll/ci/jenkins/check_regression_results.lua" \\
+        cd "${baselineDir}/gkeyll"
+        "${baselineGkeyll}" -S "${baselineDir}/gkeyll/ci/jenkins/check_regression_results.lua" \\
           "${results}" "${candidateDir}/gkeyll/ci/jenkins/expected_regression_diffs.txt" "${env.WORKSPACE}/ci-parallel-regression-summary.txt" \\
           "${baselineDir}/gkeyll/ci/jenkins/expected_regression_diffs.txt" "${baselineResults}"
     """
