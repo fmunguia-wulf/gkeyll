@@ -108,7 +108,7 @@ toolchain, `cmake`, and Python/NumPy. Set these global environment variables:
 | `WORKSTATION_MPI_HOME` | Optional MPI installation path for both trees; default is each tree's `gkylsoft/openmpi` |
 | `TEAM_WORKSTATION_MPIEXEC` | Optional launcher override for both trees; default is `bin/mpiexec` under the selected MPI installation |
 | `TEAM_WORKSTATION_STATUS_CONTEXT` | Optional status context; default team-workstation |
-| `GKEYLL_CI_ROOT` | Required persistent writable root visible to the workstation agent; stores baseline and retained candidate regression data |
+| `GKEYLL_CI_ROOT` | Required persistent writable root visible to the workstation agent; stores baseline and candidate source, build, and regression data |
 | `TEAM_WORKSTATION_TRUSTED_CI_REF` | Trusted workflow branch/SHA; production value `main`. The CI report tool is loaded from this same checkout |
 
 The selected dependency script must pass `--build-adas=yes` to

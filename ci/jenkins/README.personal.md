@@ -64,14 +64,14 @@ and Python with NumPy. Set these global environment variables:
 | `PERSONAL_MPI_HOME` | Optional MPI installation path for both trees; default is each tree's `gkylsoft/openmpi` |
 | `PERSONAL_MPIEXEC` | Optional launcher override for both trees; default is `bin/mpiexec` under the selected MPI installation |
 | `PERSONAL_STATUS_CONTEXT` | Optional GitHub status context; default `continuous-integration/jenkins/personal-<hostname>` so each computer's status and report stay distinct |
-| `GKEYLL_CI_ROOT` | Required persistent writable root for baseline and retained candidate regression data |
+| `GKEYLL_CI_ROOT` | Required persistent writable root for baseline and candidate source, build, and regression data |
 | `GKEYLL_CI_TRUSTED_REF` | Optional branch or full SHA to fetch `github_report.py` from; default `main`. Set it only while staging a CI change |
 
 The selected dependency script must pass `--build-adas=yes` to
 `install-deps/mkdeps.sh` so ADAS data is available before unit tests run.
 
 The workflow sets `MPI_HOME` to `PERSONAL_MPI_HOME` while building each tree.
-If `PERSONAL_MPI_HOME` is unset or blank, it uses that tree's workspace-local
+If `PERSONAL_MPI_HOME` is unset or blank, it uses that tree's SHA-local
 `gkylsoft/openmpi`. Set `PERSONAL_MPI_HOME` (for example, `/opt/openmpi`) to use
 an existing MPI installation for both builds and parallel regressions.
 An ambient `MPI_HOME` does not select the CI installation.

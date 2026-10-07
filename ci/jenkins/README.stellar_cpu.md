@@ -162,7 +162,7 @@ set the following values. Paste an expanded scratch path, not a literal `$USER`.
 Do not set a broad global `PATH` to an interactive shell configuration. The
 Pipeline initializes Stellar modules for each build and Slurm job. Its
 `GKEYLL_CI_ROOT` must exactly match the controller's root.
-It retains SHA-addressed baseline and candidate-result directories; remove
+It retains SHA-addressed baseline and candidate build/result directories; remove
 `baseline-cache/stellar-cpu` manually after an intentional toolchain change.
 
 ### Create the one parameterized Pipeline job
@@ -293,21 +293,27 @@ values used for your Jenkins job.
 export GKEYLL_CI_ROOT=/scratch/gpfs/$USER/gkeyll_ci
 mkdir -p "$GKEYLL_CI_ROOT"
 cd "$GKEYLL_CI_ROOT"
-git clone --branch main --single-branch https://github.com/gkeyllorg/gkeyll.git gkeyll
-git clone --branch main --single-branch https://github.com/gkeyllorg/gkeyll.git gkeyll-baseline
+sha="$(git ls-remote https://github.com/gkeyllorg/gkeyll.git refs/heads/main | cut -f1)"
+candidate_root="$GKEYLL_CI_ROOT/manual-candidate/$sha"
+baseline_root="$GKEYLL_CI_ROOT/manual-baseline/$sha"
+mkdir -p "$candidate_root" "$baseline_root"
+git clone --branch main --single-branch https://github.com/gkeyllorg/gkeyll.git "$candidate_root/gkeyll"
+git clone --branch main --single-branch https://github.com/gkeyllorg/gkeyll.git "$baseline_root/gkeyll"
+test "$(git -C "$candidate_root/gkeyll" rev-parse HEAD)" = "$sha"
+test "$(git -C "$baseline_root/gkeyll" rev-parse HEAD)" = "$sha"
 ```
 
 Build and install the candidate, then submit its unit-test Slurm script:
 
 ```sh
-cd "$GKEYLL_CI_ROOT/gkeyll"
+cd "$candidate_root/gkeyll"
 PREFIX="$PWD/../gkylsoft" ./machines/mkdeps.stellar-intel.sh
 PREFIX="$PWD/../gkylsoft" ./machines/configure.stellar-intel.sh
 . ./machines/module_load.stellar-intel.sh
 make -j32 unit
 make -j32 install
 sbatch --wait --qos <qos> --nodes 1 --ntasks 1 --cpus-per-task 4 \
-  --time 00:30:00 --chdir "$PWD" --export=ALL,CI_WORKSPACE="$PWD" \
+  --time 00:30:00 --chdir "$PWD" --export=ALL,CI_WORKSPACE="$PWD",CI_CANDIDATE_DIR="$PWD" \
   ci/jenkins/slurm-unit-tests.stellar_cpu.sh
 ```
 
@@ -316,30 +322,30 @@ install the baseline with its own prefix, then configure and compile C
 regressions in both checkouts:
 
 ```sh
-cd "$GKEYLL_CI_ROOT/gkeyll-baseline"
-PREFIX="$PWD/gkylsoft" ./machines/mkdeps.stellar-intel.sh
-PREFIX="$PWD/gkylsoft" ./machines/configure.stellar-intel.sh
-. ../gkeyll/machines/module_load.stellar-intel.sh
-make -j32 install
-"$PWD/gkylsoft/gkeyll/bin/gkeyll" runregression configure --source-dir "$PWD" --prefix "$PWD/gkylsoft"
-"$PWD/gkylsoft/gkeyll/bin/gkeyll" runregression run -c compile
-
-cd "$GKEYLL_CI_ROOT/gkeyll"
+cd "$baseline_root/gkeyll"
+PREFIX="$PWD/../gkylsoft" ./machines/mkdeps.stellar-intel.sh
+PREFIX="$PWD/../gkylsoft" ./machines/configure.stellar-intel.sh
 . machines/module_load.stellar-intel.sh
 make -j32 install
-"$PWD/gkylsoft/gkeyll/bin/gkeyll" runregression configure --source-dir "$PWD" --prefix "$PWD/gkylsoft"
-"$PWD/gkylsoft/gkeyll/bin/gkeyll" runregression run -c compile
+"$PWD/../gkylsoft/gkeyll/bin/gkeyll" runregression configure --source-dir "$PWD" --prefix "$PWD/../gkylsoft"
+"$PWD/../gkylsoft/gkeyll/bin/gkeyll" runregression run -c compile
+
+cd "$candidate_root/gkeyll"
+. machines/module_load.stellar-intel.sh
+make -j32 install
+"$PWD/../gkylsoft/gkeyll/bin/gkeyll" runregression configure --source-dir "$PWD" --prefix "$PWD/../gkylsoft"
+"$PWD/../gkylsoft/gkeyll/bin/gkeyll" runregression run -c compile
 ```
 
 Finally submit the execution-only comparison:
 
 ```sh
-cd "$GKEYLL_CI_ROOT/gkeyll"
+cd "$candidate_root/gkeyll"
 sbatch --wait --qos <qos> --nodes 1 --ntasks 1 --cpus-per-task 8 \
   --time 04:00:00 --chdir "$PWD" \
-  --export=ALL,CI_WORKSPACE="$PWD",CI_BASELINE_DIR="$GKEYLL_CI_ROOT/gkeyll-baseline",CI_BASELINE_PREFIX="$GKEYLL_CI_ROOT/gkeyll-baseline/gkylsoft",CI_CANDIDATE_PREFIX="$GKEYLL_CI_ROOT/gkeyll/gkylsoft",CI_REGRESSION_JOBS=4,CI_REGRESSION_TEST_TIMEOUT=900 \
+  --export=ALL,CI_WORKSPACE="$PWD",CI_CANDIDATE_DIR="$PWD",CI_BASELINE_DIR="$baseline_root/gkeyll",CI_BASELINE_PREFIX="$baseline_root/gkylsoft",CI_CANDIDATE_PREFIX="$candidate_root/gkylsoft",CI_REGRESSION_MODE=candidate-check,CI_REGRESSION_JOBS=4,CI_REGRESSION_TEST_TIMEOUT=900 \
   ci/jenkins/slurm-regression-tests.stellar_cpu.sh
 ```
 
-The baseline's accepted C-regression output is copied into the candidate
-results tree and is disposable. Do not use a persistent accepted-output cache.
+The baseline's accepted C-regression output is linked into the candidate
+results tree for checking. These manual checkouts are disposable.

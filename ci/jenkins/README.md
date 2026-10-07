@@ -79,9 +79,23 @@ Every Jenkins controller requires a writable, agent-visible `GKEYLL_CI_ROOT`.
 CI retains one complete baseline per platform in
 `$GKEYLL_CI_ROOT/baseline-cache/<platform>/<baseline-sha>/`. A repeated run
 against the same resolved baseline SHA reuses that tree; a changed SHA rebuilds
-and replaces it. The most recent candidate regression output is retained in
-`$GKEYLL_CI_ROOT/candidate-cache/<platform>/<candidate-sha>/` for inspection
-and is removed when that platform's next CI build begins.
+and replaces it. The candidate source, build, installed executable, and
+regression results are kept together in
+`$GKEYLL_CI_ROOT/candidate-cache/<platform>/<candidate-sha>/`. CI rebuilds the
+candidate from scratch on every run, even when its SHA is unchanged, and keeps
+only the latest candidate tree per platform.
+Within either SHA directory, `gkeyll/` is the source checkout and `gkylsoft/`
+is its sibling install and results directory. For example, the executable is
+`<sha>/gkylsoft/gkeyll/bin/gkeyll` and regression output is under
+`<sha>/gkylsoft/gkeyll-results/`.
+
+Both trees are built at their final paths so installed libraries retain valid
+absolute paths. An incomplete baseline build has no valid cache manifest and
+is rebuilt on the next run. Jenkins keeps summaries and small diagnostic
+artifacts in its workspace for reporting, then removes that workspace; the
+complete candidate build and results remain under `candidate-cache`.
+The `<platform>` directory is `personal`, `team-workstation`, `stellar-cpu`,
+or `perlmutter-gpu`, depending on the Jenkins job.
 
 It can be used with any of the machines listed above, for example:
 

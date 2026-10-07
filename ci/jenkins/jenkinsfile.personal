@@ -171,16 +171,16 @@ def buildTree(String label, String prefix, String mkdeps, String configure, Stri
 }
 
 def createBaseline(String baseline, String baselineDir, String mkdeps, String configure, String jobs, String regressionJobs, String mpiExec) {
-    dir(baselineDir) {
+    dir("${baselineDir}/gkeyll") {
         checkoutRef(baseline, 'baseline')
         buildTree('baseline', "${baselineDir}/gkylsoft", mkdeps, configure, jobs, "${env.WORKSPACE}/")
-        sh "\"${baselineDir}/gkylsoft/gkeyll/bin/gkeyll\" runregression configure --source-dir \"${baselineDir}\" --prefix \"${baselineDir}/gkylsoft\""
+        sh "\"${baselineDir}/gkylsoft/gkeyll/bin/gkeyll\" runregression configure --source-dir \"${baselineDir}/gkeyll\" --prefix \"${baselineDir}/gkylsoft\""
         timeCommand("${env.WORKSPACE}/baseline-c-regression-create-seconds.txt", "\"${baselineDir}/gkylsoft/gkeyll/bin/gkeyll\" runregression run --c-only create --timeout 900 --jobs ${regressionJobs}")
         def baselineMpiExec = mpiExec ?: "${baselineDir}/gkylsoft/openmpi/bin/mpiexec"
         sh """#!/bin/bash
             set -euo pipefail
             test -x "${baselineMpiExec}"
-            "${baselineDir}/gkylsoft/gkeyll/bin/gkeyll" runregression configure --source-dir "${baselineDir}" --prefix "${baselineDir}/gkylsoft" --results-subdir parallel-c-4 --mpiexec "${baselineMpiExec}"
+            "${baselineDir}/gkylsoft/gkeyll/bin/gkeyll" runregression configure --source-dir "${baselineDir}/gkeyll" --prefix "${baselineDir}/gkylsoft" --results-subdir parallel-c-4 --mpiexec "${baselineMpiExec}"
             started=\$(date +%s)
             "${baselineDir}/gkylsoft/gkeyll/bin/gkeyll" runregression run --c-only --parallel compile
             elapsed=\$(( \$(date +%s) - started ))
@@ -193,12 +193,12 @@ def createBaseline(String baseline, String baselineDir, String mkdeps, String co
     }
 }
 
-def runCandidateRegressions(String baselineDir, String regressionJobs) {
-    def gkeyll = "${env.WORKSPACE}/gkylsoft/gkeyll/bin/gkeyll"
+def runCandidateRegressions(String candidateDir, String baselineDir, String regressionJobs) {
+    def gkeyll = "${candidateDir}/gkylsoft/gkeyll/bin/gkeyll"
     def baselineGkeyll = "${baselineDir}/gkylsoft/gkeyll/bin/gkeyll"
-    def results = "${env.WORKSPACE}/gkylsoft/gkeyll-results"
+    def results = "${candidateDir}/gkylsoft/gkeyll-results"
     def baseline = "${baselineDir}/gkylsoft/gkeyll-results"
-    sh "\"${gkeyll}\" runregression configure --source-dir \"${env.WORKSPACE}\" --prefix \"${env.WORKSPACE}/gkylsoft\""
+    sh "\"${gkeyll}\" runregression configure --source-dir \"${candidateDir}/gkeyll\" --prefix \"${candidateDir}/gkylsoft\""
     sh """set -euo pipefail
         for layer in moments vlasov gyrokinetic pkpm; do
             if [ -d \"${baseline}/\$layer/creg-accepted\" ]; then
@@ -209,33 +209,33 @@ def runCandidateRegressions(String baselineDir, String regressionJobs) {
         started=\$(date +%s)
         \"${gkeyll}\" runregression run --c-only check --timeout 900 --jobs ${regressionJobs}
         elapsed=\$(( \$(date +%s) - started ))
-        printf '%s\\n' "\$elapsed" > candidate-c-regression-check-seconds.txt
+        printf '%s\\n' "\$elapsed" > "${env.WORKSPACE}/candidate-c-regression-check-seconds.txt"
         echo "Candidate C-regression check runtime: \$elapsed seconds"
-        \"${baselineGkeyll}\" \"${baselineDir}/ci/jenkins/check_regression_results.lua\" \\
-          \"${results}\" \"${env.WORKSPACE}/ci/jenkins/expected_regression_diffs.txt\" ci-regression-summary.txt \\
-          \"${baselineDir}/ci/jenkins/expected_regression_diffs.txt\" \"${baseline}\"
+        \"${baselineGkeyll}\" \"${baselineDir}/gkeyll/ci/jenkins/check_regression_results.lua\" \\
+          \"${results}\" \"${candidateDir}/gkeyll/ci/jenkins/expected_regression_diffs.txt\" \"${env.WORKSPACE}/ci-regression-summary.txt\" \\
+          \"${baselineDir}/gkeyll/ci/jenkins/expected_regression_diffs.txt\" \"${baseline}\"
     """
 }
 
-def runParallelRegressions(String baselineDir, String mpiExec) {
+def runParallelRegressions(String candidateDir, String baselineDir, String mpiExec) {
     def mpiHome = env.PERSONAL_MPI_HOME?.trim()
     mpiExec = mpiExec ?: (mpiHome ? "${mpiHome}/bin/mpiexec" : '')
-    def candidateMpiExec = mpiExec ?: "${env.WORKSPACE}/gkylsoft/openmpi/bin/mpiexec"
+    def candidateMpiExec = mpiExec ?: "${candidateDir}/gkylsoft/openmpi/bin/mpiexec"
     def baselineMpiExec = mpiExec ?: "${baselineDir}/gkylsoft/openmpi/bin/mpiexec"
-    def gkeyll = "${env.WORKSPACE}/gkylsoft/gkeyll/bin/gkeyll"
+    def gkeyll = "${candidateDir}/gkylsoft/gkeyll/bin/gkeyll"
     def baselineGkeyll = "${baselineDir}/gkylsoft/gkeyll/bin/gkeyll"
-    def results = "${env.WORKSPACE}/gkylsoft/gkeyll-results/parallel-c-4"
+    def results = "${candidateDir}/gkylsoft/gkeyll-results/parallel-c-4"
     def baselineResults = "${baselineDir}/gkylsoft/gkeyll-results/parallel-c-4"
     sh """#!/bin/bash
         set -euo pipefail
         test -x "${candidateMpiExec}"
         test -x "${baselineMpiExec}"
 
-        "${gkeyll}" runregression configure --source-dir "${env.WORKSPACE}" --prefix "${env.WORKSPACE}/gkylsoft" --results-subdir parallel-c-4 --mpiexec "${candidateMpiExec}"
+        "${gkeyll}" runregression configure --source-dir "${candidateDir}/gkeyll" --prefix "${candidateDir}/gkylsoft" --results-subdir parallel-c-4 --mpiexec "${candidateMpiExec}"
         started=\$(date +%s)
         "${gkeyll}" runregression run --c-only --parallel compile
         elapsed=\$(( \$(date +%s) - started ))
-        printf '%s\\n' "\$elapsed" > candidate-parallel-c-compile-seconds.txt
+        printf '%s\\n' "\$elapsed" > "${env.WORKSPACE}/candidate-parallel-c-compile-seconds.txt"
 
         for layer in moments vlasov gyrokinetic pkpm; do
             if [ -d "${baselineResults}/\$layer/creg-accepted" ]; then
@@ -246,10 +246,10 @@ def runParallelRegressions(String baselineDir, String mpiExec) {
         started=\$(date +%s)
         "${gkeyll}" runregression run --c-only --parallel --execute-only check
         elapsed=\$(( \$(date +%s) - started ))
-        printf '%s\\n' "\$elapsed" > candidate-parallel-c-regression-check-seconds.txt
-        "${baselineGkeyll}" "${baselineDir}/ci/jenkins/check_regression_results.lua" \\
-          "${results}" "${env.WORKSPACE}/ci/jenkins/expected_regression_diffs.txt" ci-parallel-regression-summary.txt \\
-          "${baselineDir}/ci/jenkins/expected_regression_diffs.txt" "${baselineResults}"
+        printf '%s\\n' "\$elapsed" > "${env.WORKSPACE}/candidate-parallel-c-regression-check-seconds.txt"
+        "${baselineGkeyll}" "${baselineDir}/gkeyll/ci/jenkins/check_regression_results.lua" \\
+          "${results}" "${candidateDir}/gkeyll/ci/jenkins/expected_regression_diffs.txt" "${env.WORKSPACE}/ci-parallel-regression-summary.txt" \\
+          "${baselineDir}/gkeyll/ci/jenkins/expected_regression_diffs.txt" "${baselineResults}"
     """
 }
 
@@ -347,6 +347,7 @@ def runCi = {
     def cachePlatform = platform == 'team' ? 'team-workstation' : platform
     def baselineDir = ''
     def baselineStage = ''
+    def candidateDir = ''
     def baselineCacheHit = false
     // Every controller needs its own status context, otherwise two machines
     // testing the same commit overwrite each other's status on GitHub.
@@ -372,9 +373,6 @@ def runCi = {
                 writeFile file: 'ci-trusted-ci-commit.txt', text: "${env.CI_TRUSTED_CI_COMMIT.trim()}\n"
             }
         }
-        ciStage('Prepare candidate-result cache') {
-            sh "ci/jenkins/baseline_cache.sh clear-candidate '${gkeyllCiRoot}' '${cachePlatform}'"
-        }
         ciStage('Verify candidate contains baseline') {
             baselineCommit = resolveRefCommit(requestedBaseline)
             def behind = baselineBehindCount(statusCredentialsId, baselineCommit, commit)
@@ -386,8 +384,11 @@ def runCi = {
             if (behind > 0) echo("WARNING: allowing candidate behind baseline by ${behind} commit(s).")
             requestedBaseline = baselineCommit
         }
+        ciStage('Prepare candidate build') {
+            candidateDir = sh(returnStdout: true, script: "ci/jenkins/baseline_cache.sh prepare-candidate '${gkeyllCiRoot}' '${cachePlatform}' '${commit}' '${env.WORKSPACE}' '${baselineCommit}'").trim()
+        }
         ciStage('Report pending') { publishStatus(statusCredentialsId, statusContext, commit, 'pending', 'Gkeyll CI is running.') }
-        ciStage('Build candidate') { buildTree('candidate', "${env.WORKSPACE}/gkylsoft", mkdeps, configure, jobs) }
+        ciStage('Build candidate') { dir("${candidateDir}/gkeyll") { buildTree('candidate', "${candidateDir}/gkylsoft", mkdeps, configure, jobs, "${env.WORKSPACE}/") } }
         ciStage('Resolve baseline cache') {
             baselineDir = sh(returnStdout: true, script: "ci/jenkins/baseline_cache.sh baseline-path '${gkeyllCiRoot}' '${cachePlatform}' '${baselineCommit}'").trim()
             baselineCacheHit = sh(returnStatus: true, script: "ci/jenkins/baseline_cache.sh valid '${gkeyllCiRoot}' '${cachePlatform}' '${baselineCommit}'") == 0
@@ -412,9 +413,9 @@ EOF
                 writeFile file: 'ci-baseline-cache.txt', text: "status=miss\nplatform=${cachePlatform}\nbaseline_commit=${baselineCommit}\npath=${baselineDir}\n"
             }
         }
-        ciStage('Record baseline cache') { sh "git -C '${baselineDir}' rev-parse HEAD | tee ci-baseline-commit.txt" }
-        ciStage('C regressions') { runCandidateRegressions(baselineDir, regressionJobs) }
-        ciStage('Parallel C regressions') { runParallelRegressions(baselineDir, mpiExec); status = 'success'; description = 'Personal CI passed.' }
+        ciStage('Record baseline cache') { sh "git -C '${baselineDir}/gkeyll' rev-parse HEAD | tee ci-baseline-commit.txt" }
+        ciStage('C regressions') { dir("${candidateDir}/gkeyll") { runCandidateRegressions(candidateDir, baselineDir, regressionJobs) } }
+        ciStage('Parallel C regressions') { dir("${candidateDir}/gkeyll") { runParallelRegressions(candidateDir, baselineDir, mpiExec) }; status = 'success'; description = 'Personal CI passed.' }
     } catch (err) {
         failureMessage = err.toString()
         if (currentBuild.currentResult == 'ABORTED' || err.toString().contains('FlowInterruptedException')) { status = 'error'; description = 'Personal CI was aborted.' }
@@ -442,11 +443,14 @@ EOF
                     echo "WARNING: could not publish the GitHub CI report: ${reportError}"
                 }
             }
+            if (candidateDir) sh "ci/jenkins/baseline_cache.sh stage-candidate-artifacts '${gkeyllCiRoot}' '${cachePlatform}' '${commit}' '${env.WORKSPACE}'"
             archiveArtifacts allowEmptyArchive: true, artifacts: 'ci-selection.txt,ci-baseline-preflight.txt,ci-baseline-cache.txt,ci-trusted-ci-commit.txt,ci-candidate-commit.txt,ci-baseline-commit.txt,*-seconds.txt,*-unit-results.txt,candidate-*.log,baseline-*.log,ci-failure-detail.txt,ci-report.md,ci-timing-summary.txt,ci-regression-summary.txt,ci-parallel-regression-summary.txt,ci-failure-summary.txt,build/**/*.log,gkylsoft/gkeyll-results/**/regressiondb,gkylsoft/gkeyll-results/**/_rr_failures.txt'
             if (reportError) description = "${description} (report not posted)".take(140)
         }
+        if (candidateDir && baselineCommit) {
+            sh "ci/jenkins/baseline_cache.sh finalize-candidate '${gkeyllCiRoot}' '${cachePlatform}' '${commit}' '${baselineCommit}' '${status}' '${env.CI_FAILURE_STAGE ?: ''}' '${env.WORKSPACE}'"
+        }
         if (commit) {
-            sh "ci/jenkins/baseline_cache.sh retain-candidate '${gkeyllCiRoot}' '${cachePlatform}' '${commit}' '${env.WORKSPACE}/gkylsoft/gkeyll-results' '${status}' '${env.CI_FAILURE_STAGE ?: ''}'"
             publishStatus(statusCredentialsId, statusContext, commit, status, description)
         }
         deleteDir()

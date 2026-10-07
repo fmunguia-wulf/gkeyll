@@ -154,7 +154,7 @@ System → Global properties → Environment variables**, set:
 | `PERLMUTTER_GPU_REGRESSION_TEST_TIMEOUT` | Optional; default `900` |
 | `GKEYLL_CI_TRUSTED_REF` | Optional branch or full SHA to fetch `github_report.py` from; default `main`. Set it only while staging a CI change |
 
-`GKEYLL_CI_ROOT` retains SHA-addressed baseline and candidate-result directories
+`GKEYLL_CI_ROOT` retains SHA-addressed baseline and candidate build/result directories
 visible to GPU nodes. Remove `baseline-cache/perlmutter-gpu` manually after an
 intentional toolchain change that must force baseline regeneration.
 
