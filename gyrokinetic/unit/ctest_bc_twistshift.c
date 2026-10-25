@@ -54,9 +54,12 @@ struct ts_setup {
 };
 
 static void
-ts_setup_init(struct ts_setup *s, enum gkyl_edge_loc edge)
+ts_setup_init_grid(
+  struct ts_setup *s, enum gkyl_edge_loc edge, const double *lower, const double *upper,
+  const int *cells
+)
 {
-  gkyl_rect_grid_init(&s->grid, ts_ndim, ts_lower, ts_upper, ts_cells);
+  gkyl_rect_grid_init(&s->grid, ts_ndim, lower, upper, cells);
   gkyl_cart_modal_serendip(&s->basis, ts_ndim, 1);
 
   for (int d = 0; d < ts_ndim; d++) {
@@ -88,6 +91,12 @@ ts_setup_init(struct ts_setup *s, enum gkyl_edge_loc edge)
     slo[ts_bc_dir] = sup[ts_bc_dir] = s->local.lower[ts_bc_dir];
   }
   gkyl_sub_range_init(&s->skin_r, &s->local_ext, slo, sup);
+}
+
+static void
+ts_setup_init(struct ts_setup *s, enum gkyl_edge_loc edge)
+{
+  ts_setup_init_grid(s, edge, ts_lower, ts_upper, ts_cells);
 }
 
 // Project the donor and apply periodicity along bc_dir.
@@ -294,6 +303,31 @@ test_bc_twistshift_upsample_no_shear_matches_plain_ho(void)
     gkyl_array_release(f_plain);
     gkyl_array_release(f_up);
   }
+}
+
+void
+test_bc_twistshift_upsample_six_cbc_grid_ho(void)
+{
+  // The CBC radial extent and 48 cells give dx_coarse/dx_fine slightly above
+  // six in floating point, despite an exact integer cell-count ratio.
+  double lower[] = {-0.13360368663594469, -1.5, -3.0};
+  double upper[] = {0.13360368663594469, 1.5, 3.0};
+  int cells[] = {48, 8, 4};
+  struct ts_setup s;
+  ts_setup_init_grid(&s, GKYL_LOWER_EDGE, lower, upper, cells);
+
+  struct ts_ctx tctx = {.offset = 0.75, .shear = 0.25};
+  double dx = s.grid.dx[0];
+  struct gkyl_array *f = ts_run(&s, GKYL_LOWER_EDGE, 6, 4, 2.0 * dx, NULL, &tctx);
+  struct gkyl_range_iter iter;
+  gkyl_range_iter_init(&iter, &s.ghost_r);
+  while (gkyl_range_iter_next(&iter)) {
+    const double *fc = gkyl_array_cfetch(f, gkyl_range_idx(&s.ghost_r, iter.idx));
+    for (int k = 0; k < s.basis.num_basis; k++) {
+      TEST_CHECK(isfinite(fc[k]));
+    }
+  }
+  gkyl_array_release(f);
 }
 
 void
@@ -596,6 +630,7 @@ TEST_LIST = {
    test_bc_twistshift_identity_filter_matches_plain_ho},
   {"test_bc_twistshift_upsample_no_shear_matches_plain_ho",
    test_bc_twistshift_upsample_no_shear_matches_plain_ho},
+  {"test_bc_twistshift_upsample_six_cbc_grid_ho", test_bc_twistshift_upsample_six_cbc_grid_ho},
   {"test_bc_twistshift_shift_dg_matches_shift_func_ho",
    test_bc_twistshift_shift_dg_matches_shift_func_ho},
   {"test_bc_twistshift_dealiasing_smooths_shear_direction_ho",
