@@ -1126,11 +1126,19 @@ struct gyrokinetic_field_lw {
   struct gkyl_gyrokinetic_field gk_field; // Input struct to construct field.
 };
 
+static void
+gyrokinetic_field_ts_fem_perproj_lw_read(lua_State *L, struct gkyl_gyrokinetic_field *field)
+{
+  field->ts_fem_perproj = glua_tbl_get_bool(L, "tsFemPerproj", false);
+}
+
 static int
 gyrokinetic_field_lw_new(lua_State *L)
 {
   int vdim = 0;
   struct gkyl_gyrokinetic_field gk_field = {};
+
+  gyrokinetic_field_ts_fem_perproj_lw_read(L, &gk_field);
 
   gk_field.gkfield_id = glua_tbl_get_integer(L, "fieldID", 0);
   gk_field.electron_mass = glua_tbl_get_number(L, "electronMass", 0.0);

@@ -580,6 +580,12 @@ struct gkyl_gyrokinetic_field {
 
   bool time_rate_diagnostics; // Writes the time rate of change of field energy.
 
+  // Project the lower twist-shift potential boundary field onto the perpendicular FEM basis
+  // using the unweighted dx dy inner product (default false). Currently supports
+  // electrostatic 3D p1 flux tubes with periodic y, constant Dirichlet x, no FLR
+  // or internal bias lines, and parallel decomposition only.
+  bool ts_fem_perproj;
+
   // Initial potential used to compute the total polarization density.
   void (*polarization_potential)(double t, const double *xn, double *out, void *ctx);
   void *polarization_potential_ctx;
