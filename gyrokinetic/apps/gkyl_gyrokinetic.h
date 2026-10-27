@@ -236,6 +236,7 @@ struct gkyl_gyrokinetic_bc {
 
 // Parameters for BCs in closed flux surfaces.
 struct gkyl_gyrokinetic_core_parallel_bcs {
+  bool ts_field_dg; // Keep the shifted potential ghost field discontinuous in x-y (default false).
   int ts_upsample_factor; // Twist-shift supersampling factor (default 4), set to -1 to disable filter.
   int ts_filter_half_width; // Twist-shift filter stencil half-width in cells of the simulation grid (default 1), set to -1 to disable filter.
   double
@@ -579,12 +580,6 @@ struct gkyl_gyrokinetic_field {
   struct gkyl_gyrokinetic_bc poisson_bcs[2 * GKYL_MAX_CDIM];
 
   bool time_rate_diagnostics; // Writes the time rate of change of field energy.
-
-  // Project the lower twist-shift potential boundary field onto the perpendicular FEM basis
-  // using the unweighted dx dy inner product (default false). Currently supports
-  // electrostatic 3D p1 flux tubes with periodic y, constant Dirichlet x, no FLR
-  // or internal bias lines, and parallel decomposition only.
-  bool ts_fem_perproj;
 
   // Initial potential used to compute the total polarization density.
   void (*polarization_potential)(double t, const double *xn, double *out, void *ctx);

@@ -14,6 +14,14 @@ struct gk_field_ts_fem_perproj {
   struct gkyl_fem_poisson *projector;
 };
 
+// Apply the default projection only when the field uses twist-shift boundaries.
+static bool
+gk_field_ts_fem_perproj_requested(const gkyl_gyrokinetic_app *app, const struct gk_field *field)
+{
+  return !app->core_parallel_bcs.ts_field_dg && (field->bc_par_phi == GKYL_BC_GK_FIELD_TWISTSHIFT ||
+                                                 (app->cdim == 3 && app->gk_geom->has_LCFS));
+}
+
 static void
 gk_field_ts_fem_perproj_disabled(
   const gkyl_gyrokinetic_app *app, struct gk_field *field, struct gkyl_array *potential
@@ -24,14 +32,14 @@ gk_field_ts_fem_perproj_disabled(
 void
 gk_field_ts_fem_perproj_check_input(const gkyl_gyrokinetic_app *app, const struct gk_field *field)
 {
-  if (!field->info.ts_fem_perproj) {
+  if (!gk_field_ts_fem_perproj_requested(app, field)) {
     return;
   }
   if (app->cdim != 3 || app->poly_order != 1 || app->basis.b_type != GKYL_BASIS_MODAL_SERENDIPITY) {
-    gkyl_exit("ts_fem_perproj requires a 3D p1 serendipity configuration basis.");
+    gkyl_exit("ts_field_dg=false requires a 3D p1 serendipity configuration basis.");
   }
   if (field->gkfield_id != GKYL_GK_FIELD_ES) {
-    gkyl_exit("ts_fem_perproj requires an electrostatic field.");
+    gkyl_exit("ts_field_dg=false requires an electrostatic field.");
   }
 }
 
@@ -39,20 +47,21 @@ static void
 gk_field_ts_fem_perproj_validate(const gkyl_gyrokinetic_app *app, const struct gk_field *field)
 {
   if (app->gk_geom->has_LCFS || field->bc_par_phi != GKYL_BC_GK_FIELD_TWISTSHIFT) {
-    gkyl_exit("ts_fem_perproj requires an electrostatic twist-shift flux tube without an LCFS.");
+    gkyl_exit("ts_field_dg=false requires an electrostatic twist-shift flux tube without an LCFS.");
   }
   if (field->use_flr || (field->info.bias_line_list && field->info.bias_line_list->num_bias_line)) {
-    gkyl_exit("ts_fem_perproj does not support FLR or internal bias lines.");
+    gkyl_exit("ts_field_dg=false does not support FLR or internal bias lines.");
   }
   const struct gkyl_poisson_bc *bcs = &field->poisson_bcs;
   if (bcs->lo_type[0] != GKYL_POISSON_DIRICHLET || bcs->up_type[0] != GKYL_POISSON_DIRICHLET ||
       bcs->lo_type[1] != GKYL_POISSON_PERIODIC || bcs->up_type[1] != GKYL_POISSON_PERIODIC) {
-    gkyl_exit("ts_fem_perproj requires constant Dirichlet x and periodic y boundary conditions.");
+    gkyl_exit("ts_field_dg=false requires constant Dirichlet x and periodic y boundary conditions."
+    );
   }
   for (int d = 0; d < 2; d++) {
     if (app->local.lower[d] != app->global.lower[d] ||
         app->local.upper[d] != app->global.upper[d]) {
-      gkyl_exit("ts_fem_perproj supports decomposition only along z.");
+      gkyl_exit("ts_field_dg=false supports decomposition only along z.");
     }
   }
 }
@@ -81,7 +90,7 @@ gk_field_ts_fem_perproj_new(const gkyl_gyrokinetic_app *app, struct gk_field *fi
 {
   field->ts_fem_perproj = NULL;
   field->ts_fem_perproj_func = gk_field_ts_fem_perproj_disabled;
-  if (!field->info.ts_fem_perproj) {
+  if (!gk_field_ts_fem_perproj_requested(app, field)) {
     return;
   }
 

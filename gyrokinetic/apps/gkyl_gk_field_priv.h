@@ -15,7 +15,7 @@
 
 /** FEM Initialization Functions **/
 
-// Reject unsupported opt-ins at the start of the 2x/3x FEM field constructor.
+// Check projection support after selecting the parallel field boundary conditions.
 void gk_field_ts_fem_perproj_check_input(
   const gkyl_gyrokinetic_app *app, const struct gk_field *field
 );

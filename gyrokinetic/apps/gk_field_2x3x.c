@@ -539,8 +539,6 @@ gk_field_fem_release_2x3x(const gkyl_gyrokinetic_app *app, struct gk_field *gkf)
 void
 gk_field_fem_new_2x3x(struct gkyl_gyrokinetic_app *app, struct gk_field *gkf)
 {
-  gk_field_ts_fem_perproj_check_input(app, gkf);
-
   // Create global subrange we'll copy the field solver solution from (into local).
   gkyl_sub_range_intersect(&gkf->global_sub_range, &app->global, &app->local);
 
@@ -715,6 +713,8 @@ gk_field_fem_new_2x3x(struct gkyl_gyrokinetic_app *app, struct gk_field *gkf)
       break;
     }
   }
+
+  gk_field_ts_fem_perproj_check_input(app, gkf);
 
   if (app->gk_geom->has_LCFS) {
     // Updaters to enforce twist-and-shift and sheath BCs.
