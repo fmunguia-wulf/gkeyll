@@ -1,5 +1,5 @@
 #include <gkyl_deflate_zsurf.h>
-#include <gkyl_fem_poisson.h>
+#include <gkyl_fem_proj.h>
 #include <gkyl_gyrokinetic_priv.h>
 #include <gkyl_gk_field_priv.h>
 #include <gkyl_translate_dim.h>
@@ -8,10 +8,10 @@ struct gk_field_ts_fem_perpproj {
   struct gkyl_rect_grid grid;
   struct gkyl_basis basis;
   struct gkyl_range local, local_ext;
-  struct gkyl_array *buff_dg, *buff_fem, *epsilon, *ksq;
+  struct gkyl_array *buff_dg, *buff_fem;
   struct gkyl_deflate_zsurf *deflate;
   struct gkyl_translate_dim *inflate;
-  struct gkyl_fem_poisson *projector;
+  struct gkyl_fem_proj *projector;
 };
 
 // Apply the default projection only when the field uses twist-shift boundaries.
@@ -77,8 +77,8 @@ gk_field_ts_fem_perpproj_enabled(
     proj->deflate, app->global.lower[2] - 1, &app->global_ext, &proj->local, potential,
     proj->buff_dg, 1
   );
-  gkyl_fem_poisson_set_rhs(proj->projector, proj->buff_dg, NULL);
-  gkyl_fem_poisson_solve(proj->projector, proj->buff_fem);
+  gkyl_fem_proj_set_rhs(proj->projector, proj->buff_dg, NULL);
+  gkyl_fem_proj_solve(proj->projector, proj->buff_fem);
   // Constant-in-z inflation supplies the corrected boundary value without touching the RHS.
   gkyl_translate_dim_advance(
     proj->inflate, &proj->local, &app->global_lower_ghost[2], proj->buff_fem, 1, potential
@@ -108,18 +108,21 @@ gk_field_ts_fem_perpproj_new(const gkyl_gyrokinetic_app *app, struct gk_field *f
   proj->buff_dg = mkarr(app->use_gpu, proj->basis.num_basis, proj->local_ext.volume);
   proj->buff_fem = mkarr(app->use_gpu, proj->basis.num_basis, proj->local_ext.volume);
 
-  // epsilon=0 and ksq=-1 inputs to fem_poisson.
-  proj->epsilon = mkarr(app->use_gpu, proj->basis.num_basis, proj->local_ext.volume);
-  proj->ksq = mkarr(app->use_gpu, proj->basis.num_basis, proj->local_ext.volume);
-  gkyl_array_clear(proj->epsilon, 0.0);
-  gkyl_array_clear(proj->ksq, 0.0);
-  gkyl_array_shiftc(proj->ksq, -2.0, 0);
-
-  // Initialize operator to project onto FEM.
-  struct gkyl_poisson_bc bcs = field->poisson_bcs;
-  proj->projector = gkyl_fem_poisson_new(
-    &proj->local, &proj->grid, proj->basis, &bcs, NULL, proj->epsilon, proj->ksq, true, app->use_gpu
-  );
+  // Consistent mass projection; NULL weights give the unweighted dx dy inner product.
+  struct gkyl_fem_proj_inp inp = {
+    .grid = &proj->grid,
+    .solve_range = &proj->local,
+    .basis = &proj->basis,
+    .bcs =
+      {
+        .lo_type = {GKYL_FEM_PROJ_DIRICHLET, GKYL_FEM_PROJ_PERIODIC},
+        .up_type = {GKYL_FEM_PROJ_DIRICHLET, GKYL_FEM_PROJ_PERIODIC},
+        .lo_value = {field->poisson_bcs.lo_value[0].v[0]},
+        .up_value = {field->poisson_bcs.up_value[0].v[0]},
+      },
+    .use_gpu = app->use_gpu,
+  };
+  proj->projector = gkyl_fem_proj_inew(&inp);
 
   // Inflation and deflation operators.
   proj->deflate = gkyl_deflate_zsurf_new(&app->basis, &proj->basis, 1, app->use_gpu);
@@ -146,12 +149,10 @@ gk_field_ts_fem_perpproj_release(struct gk_field *field)
   if (!proj) {
     return;
   }
-  gkyl_fem_poisson_release(proj->projector);
+  gkyl_fem_proj_release(proj->projector);
   gkyl_deflate_zsurf_release(proj->deflate);
   gkyl_translate_dim_release(proj->inflate);
   gkyl_array_release(proj->buff_dg);
   gkyl_array_release(proj->buff_fem);
-  gkyl_array_release(proj->epsilon);
-  gkyl_array_release(proj->ksq);
   gkyl_free(proj);
 }

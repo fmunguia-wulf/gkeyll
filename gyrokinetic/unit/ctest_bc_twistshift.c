@@ -1,6 +1,6 @@
 #include <gkyl_deflate_zsurf.h>
 #include <gkyl_translate_dim.h>
-#include <gkyl_fem_poisson.h>
+#include <gkyl_fem_proj.h>
 #include <gkyl_fem_parproj.h>
 #include <gkyl_eval_on_nodes.h>
 // Test the bc_twistshift orchestrator: the twist-shift BC on its own, and the
@@ -791,18 +791,20 @@ ts_field_projection_case(int cells, bool use_gpu, bool zero_shift, bool constant
   gkyl_bc_twistshift_advance(ts, input, input);
   struct gkyl_array *boundary_field = mkarr(use_gpu, 4, ext.volume);
   struct gkyl_array *projected = mkarr(use_gpu, 4, ext.volume);
-  struct gkyl_array *epsilon = mkarr(use_gpu, 4, ext.volume);
-  struct gkyl_array *ksq = mkarr(use_gpu, 4, ext.volume);
-  gkyl_array_clear(epsilon, 0.0);
-  gkyl_array_clear(ksq, 0.0);
-  gkyl_array_shiftc(ksq, -2.0, 0);
-  struct gkyl_poisson_bc bcs = {
-    .lo_type = {GKYL_POISSON_DIRICHLET, GKYL_POISSON_PERIODIC},
-    .up_type = {GKYL_POISSON_DIRICHLET, GKYL_POISSON_PERIODIC},
+  struct gkyl_fem_proj_inp inp = {
+    .grid = &grid,
+    .solve_range = &local,
+    .basis = &basis,
+    .bcs =
+      {
+        .lo_type = {GKYL_FEM_PROJ_DIRICHLET, GKYL_FEM_PROJ_PERIODIC},
+        .up_type = {GKYL_FEM_PROJ_DIRICHLET, GKYL_FEM_PROJ_PERIODIC},
+        .lo_value = {constant ? 1.0 : 0.0},
+        .up_value = {constant ? 1.0 : 0.0},
+      },
+    .use_gpu = use_gpu,
   };
-  bcs.lo_value[0].v[0] = bcs.up_value[0].v[0] = constant ? 1.0 : 0.0;
-  struct gkyl_fem_poisson *proj =
-    gkyl_fem_poisson_new(&local, &grid, basis, &bcs, NULL, epsilon, ksq, true, use_gpu);
+  struct gkyl_fem_proj *proj = gkyl_fem_proj_inew(&inp);
   struct gkyl_deflate_zsurf *deflate = gkyl_deflate_zsurf_new(&setup.basis, &basis, 1, use_gpu);
   struct gkyl_translate_dim *inflate =
     gkyl_translate_dim_new(2, basis, 3, setup.basis, 2, GKYL_UPPER_EDGE, use_gpu);
@@ -819,8 +821,8 @@ ts_field_projection_case(int cells, bool use_gpu, bool zero_shift, bool constant
     TEST_CHECK(before > 1e-7);
   }
   gkyl_deflate_zsurf_advance(deflate, 0, &setup.local_ext, &local, input, boundary_field, 1);
-  gkyl_fem_poisson_set_rhs(proj, boundary_field, NULL);
-  gkyl_fem_poisson_solve(proj, projected);
+  gkyl_fem_proj_set_rhs(proj, boundary_field, NULL);
+  gkyl_fem_proj_solve(proj, projected);
   gkyl_translate_dim_advance(inflate, &local, &setup.ghost_r, projected, 1, input);
   gkyl_array_copy(host, input);
   double error_sq = 0.0;
@@ -869,7 +871,7 @@ ts_field_projection_case(int cells, bool use_gpu, bool zero_shift, bool constant
     TEST_MSG("nx=%d gpu=%d dir=%d jump=%.3e", cells, use_gpu, dir, jump);
   }
   gkyl_fem_parproj_release(parproj);
-  gkyl_fem_poisson_release(proj);
+  gkyl_fem_proj_release(proj);
   gkyl_deflate_zsurf_release(deflate);
   gkyl_translate_dim_release(inflate);
   gkyl_bc_twistshift_release(ts);
@@ -880,8 +882,6 @@ ts_field_projection_case(int cells, bool use_gpu, bool zero_shift, bool constant
   gkyl_array_release(output);
   gkyl_array_release(boundary_field);
   gkyl_array_release(projected);
-  gkyl_array_release(epsilon);
-  gkyl_array_release(ksq);
   return sqrt(error_sq);
 }
 
