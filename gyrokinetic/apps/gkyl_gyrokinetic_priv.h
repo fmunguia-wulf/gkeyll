@@ -1637,8 +1637,8 @@ struct gk_field_adiabatic {
 };
 
 struct gk_field {
-  struct gk_field_ts_fem_perproj *ts_fem_perproj; // Optional boundary projection resources.
-  void (*ts_fem_perproj_func)(
+  struct gk_field_ts_fem_perpproj *ts_fem_perpproj; // Optional boundary projection resources.
+  void (*ts_fem_perpproj_func)(
     const gkyl_gyrokinetic_app *app, struct gk_field *field, struct gkyl_array *potential
   );
   struct gkyl_gyrokinetic_field info; // Data for field.

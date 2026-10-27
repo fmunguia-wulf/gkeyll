@@ -4,7 +4,7 @@
 #include <gkyl_gk_field_priv.h>
 #include <gkyl_translate_dim.h>
 
-struct gk_field_ts_fem_perproj {
+struct gk_field_ts_fem_perpproj {
   struct gkyl_rect_grid grid;
   struct gkyl_basis basis;
   struct gkyl_range local, local_ext;
@@ -16,23 +16,23 @@ struct gk_field_ts_fem_perproj {
 
 // Apply the default projection only when the field uses twist-shift boundaries.
 static bool
-gk_field_ts_fem_perproj_requested(const gkyl_gyrokinetic_app *app, const struct gk_field *field)
+gk_field_ts_fem_perpproj_requested(const gkyl_gyrokinetic_app *app, const struct gk_field *field)
 {
   return !app->core_parallel_bcs.ts_field_dg && (field->bc_par_phi == GKYL_BC_GK_FIELD_TWISTSHIFT ||
                                                  (app->cdim == 3 && app->gk_geom->has_LCFS));
 }
 
 static void
-gk_field_ts_fem_perproj_disabled(
+gk_field_ts_fem_perpproj_disabled(
   const gkyl_gyrokinetic_app *app, struct gk_field *field, struct gkyl_array *potential
 )
 {
 }
 
 void
-gk_field_ts_fem_perproj_check_input(const gkyl_gyrokinetic_app *app, const struct gk_field *field)
+gk_field_ts_fem_perpproj_check_input(const gkyl_gyrokinetic_app *app, const struct gk_field *field)
 {
-  if (!gk_field_ts_fem_perproj_requested(app, field)) {
+  if (!gk_field_ts_fem_perpproj_requested(app, field)) {
     return;
   }
   if (app->cdim != 3 || app->poly_order != 1 || app->basis.b_type != GKYL_BASIS_MODAL_SERENDIPITY) {
@@ -44,7 +44,7 @@ gk_field_ts_fem_perproj_check_input(const gkyl_gyrokinetic_app *app, const struc
 }
 
 static void
-gk_field_ts_fem_perproj_validate(const gkyl_gyrokinetic_app *app, const struct gk_field *field)
+gk_field_ts_fem_perpproj_validate(const gkyl_gyrokinetic_app *app, const struct gk_field *field)
 {
   if (app->gk_geom->has_LCFS || field->bc_par_phi != GKYL_BC_GK_FIELD_TWISTSHIFT) {
     gkyl_exit("ts_field_dg=false requires an electrostatic twist-shift flux tube without an LCFS.");
@@ -67,11 +67,11 @@ gk_field_ts_fem_perproj_validate(const gkyl_gyrokinetic_app *app, const struct g
 }
 
 static void
-gk_field_ts_fem_perproj_enabled(
+gk_field_ts_fem_perpproj_enabled(
   const gkyl_gyrokinetic_app *app, struct gk_field *field, struct gkyl_array *potential
 )
 {
-  struct gk_field_ts_fem_perproj *proj = field->ts_fem_perproj;
+  struct gk_field_ts_fem_perpproj *proj = field->ts_fem_perpproj;
   // The physical lower boundary is the UPPER face of the lower ghost cell.
   gkyl_deflate_zsurf_advance(
     proj->deflate, app->global.lower[2] - 1, &app->global_ext, &proj->local, potential,
@@ -86,18 +86,18 @@ gk_field_ts_fem_perproj_enabled(
 }
 
 void
-gk_field_ts_fem_perproj_new(const gkyl_gyrokinetic_app *app, struct gk_field *field)
+gk_field_ts_fem_perpproj_new(const gkyl_gyrokinetic_app *app, struct gk_field *field)
 {
-  field->ts_fem_perproj = NULL;
-  field->ts_fem_perproj_func = gk_field_ts_fem_perproj_disabled;
-  if (!gk_field_ts_fem_perproj_requested(app, field)) {
+  field->ts_fem_perpproj = NULL;
+  field->ts_fem_perpproj_func = gk_field_ts_fem_perpproj_disabled;
+  if (!gk_field_ts_fem_perpproj_requested(app, field)) {
     return;
   }
 
   // Abort if it's for a simulation not yet supported.
-  gk_field_ts_fem_perproj_validate(app, field);
+  gk_field_ts_fem_perpproj_validate(app, field);
 
-  struct gk_field_ts_fem_perproj *proj = gkyl_malloc(sizeof(*proj));
+  struct gk_field_ts_fem_perpproj *proj = gkyl_malloc(sizeof(*proj));
 
   // Perpendicular grid, basis and range.
   gkyl_rect_grid_init(&proj->grid, 2, app->grid.lower, app->grid.upper, app->grid.cells);
@@ -127,22 +127,22 @@ gk_field_ts_fem_perproj_new(const gkyl_gyrokinetic_app *app, struct gk_field *fi
     gkyl_translate_dim_new(2, proj->basis, 3, app->basis, 2, GKYL_UPPER_EDGE, app->use_gpu);
 
   // Set function pointers.
-  field->ts_fem_perproj = proj;
-  field->ts_fem_perproj_func = gk_field_ts_fem_perproj_enabled;
+  field->ts_fem_perpproj = proj;
+  field->ts_fem_perpproj_func = gk_field_ts_fem_perpproj_enabled;
 }
 
 void
-gk_field_ts_fem_perproj_advance(
+gk_field_ts_fem_perpproj_advance(
   const gkyl_gyrokinetic_app *app, struct gk_field *field, struct gkyl_array *potential
 )
 {
-  field->ts_fem_perproj_func(app, field, potential);
+  field->ts_fem_perpproj_func(app, field, potential);
 }
 
 void
-gk_field_ts_fem_perproj_release(struct gk_field *field)
+gk_field_ts_fem_perpproj_release(struct gk_field *field)
 {
-  struct gk_field_ts_fem_perproj *proj = field->ts_fem_perproj;
+  struct gk_field_ts_fem_perpproj *proj = field->ts_fem_perpproj;
   if (!proj) {
     return;
   }

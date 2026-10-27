@@ -78,7 +78,7 @@ gk_field_fem_projection_par_phi_ts_3x(
     &app->global_upper_skin[par_dir]
   );
   gkyl_bc_twistshift_advance(field->bc_ts_lo, field->rho_c_global_dg, field->rho_c_global_dg);
-  gk_field_ts_fem_perproj_advance(app, field, field->rho_c_global_dg);
+  gk_field_ts_fem_perpproj_advance(app, field, field->rho_c_global_dg);
   // Fill upper parallel boundary ghost with skin boundary value.
   gkyl_bc_basic_gyrokinetic_advance(
     field->gfss_bc_op_core_up, field->bc_buffer, field->rho_c_global_dg
@@ -473,7 +473,7 @@ static void
 gk_field_fem_release_2x3x(const gkyl_gyrokinetic_app *app, struct gk_field *gkf)
 {
   // Release perpendicular smoother.
-  gk_field_ts_fem_perproj_release(gkf);
+  gk_field_ts_fem_perpproj_release(gkf);
 
   gkyl_array_release(gkf->rho_c);
   gkyl_array_release(gkf->rho_c_global_dg);
@@ -714,7 +714,7 @@ gk_field_fem_new_2x3x(struct gkyl_gyrokinetic_app *app, struct gk_field *gkf)
     }
   }
 
-  gk_field_ts_fem_perproj_check_input(app, gkf);
+  gk_field_ts_fem_perpproj_check_input(app, gkf);
 
   if (app->gk_geom->has_LCFS) {
     // Updaters to enforce twist-and-shift and sheath BCs.
@@ -725,7 +725,7 @@ gk_field_fem_new_2x3x(struct gkyl_gyrokinetic_app *app, struct gk_field *gkf)
   }
 
   // Initialize perpendicular smoother.
-  gk_field_ts_fem_perproj_new(app, gkf);
+  gk_field_ts_fem_perpproj_new(app, gkf);
 
   // Set the pointer to the function that computes phi.
   gkf->rhs_phi_func = gk_field_rhs_poisson_perp_2x3x;
