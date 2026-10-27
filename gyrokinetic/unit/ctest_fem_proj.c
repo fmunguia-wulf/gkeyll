@@ -15,29 +15,53 @@ mkarr(bool gpu, int nb, long size)
   return gpu ? gkyl_array_cu_dev_new(GKYL_DOUBLE, nb, size) : gkyl_array_new(GKYL_DOUBLE, nb, size);
 }
 
-// A continuous nodal field compatible with every constant Dirichlet face.
-// Distinct-values cases vary in one direction and are periodic in the other.
-static double
-fproj_boundary_function(
-  const struct gkyl_rect_grid *grid, const struct gkyl_fem_proj_bc *bcs, const double *point,
-  int distinct
-)
-{
-  if (distinct) {
-    return 0.5 + 0.3 * point[(distinct - 1) / 3];
-  }
+// Shared storage for one projection test; reference indices use physical node matching.
+struct fproj_case {
+  struct gkyl_rect_grid grid;
+  struct gkyl_range ext, local;
+  struct gkyl_basis basis;
+  struct gkyl_fem_proj_bc bcs;
+  bool use_gpu; // Execution backend for the projector arrays.
+  int direction; // Direction of the distinct-value affine boundary field.
+  bool has_left, has_right, has_dirichlet;
+  int num_ref_nodes, ids[9][8]; // Independent global numbering for the test checks.
+  double nodes[16], shape_coeff[8][8];
+  double prescribed[64]; // Expected values at constrained reference nodes.
+  bool constrained[64];
+  struct gkyl_array *input_ho, *weight_left_ho, *weight_right_ho, *boundary_ho;
+  struct gkyl_array *result_ho, *previous_ho; // Host copies used by the checks.
+  struct gkyl_array *rhs, *out, *weight_left, *weight_right, *boundary;
+  struct gkyl_fem_proj *up;
+};
 
+enum fproj_boundary_pair {
+  FPROJ_CONSTANT_VARYING,
+  FPROJ_VARYING_CONSTANT,
+  FPROJ_CONSTANT_CONSTANT
+};
+
+// A continuous nodal field compatible with every constant Dirichlet face.
+static double
+fproj_boundary_function(const struct fproj_case *ctx, const double *point)
+{
   double variation = 0.2;
-  for (int d = 0; d < grid->ndim; d++) {
-    if (bcs->lo_type[d] == GKYL_FEM_PROJ_DIRICHLET) {
-      variation *= point[d] - grid->lower[d];
+  for (int d = 0; d < ctx->grid.ndim; d++) {
+    if (ctx->bcs.lo_type[d] == GKYL_FEM_PROJ_DIRICHLET) {
+      variation *= point[d] - ctx->grid.lower[d];
     }
-    if (bcs->up_type[d] == GKYL_FEM_PROJ_DIRICHLET) {
-      variation *= point[d] - grid->upper[d];
+    if (ctx->bcs.up_type[d] == GKYL_FEM_PROJ_DIRICHLET) {
+      variation *= point[d] - ctx->grid.upper[d];
     }
     variation *= 0.7 + 0.1 * point[d];
   }
   return 1.25 + variation;
+}
+
+// An affine field with different end values and no transverse variation.
+static double
+fproj_distinct_boundary_function(const struct fproj_case *ctx, const double *point)
+{
+  return 0.5 + 0.3 * point[ctx->direction];
 }
 
 // Enumerate the nine ordered nonperiodic pairs and the paired-periodic case.
@@ -60,288 +84,391 @@ fproj_boundary_conditions(int ndim, int code)
   return bcs;
 }
 
-// Reference node matching uses physical coordinates, independently of the generated indexing formulas.
+// Allocate one case's grid, basis, host reference arrays, and CPU/GPU solver arrays.
+// Each test family supplies its own boundary conditions before creating the projector.
 static void
-fproj_projection_case(
-  int ndim, int poly_order, int scenario, int weights, int single_mask, int distinct, bool use_gpu
+fproj_case_init(
+  struct fproj_case *ctx, int ndim, int poly_order, int weights, int single_mask, bool use_gpu
 )
 {
-  // Four-point quadrature integrates all weighted p2 products exactly.
-  const double *quad_x = gkyl_gauss_ordinates[4], *quad_w = gkyl_gauss_weights[4];
-  TEST_CASE_(
-    "dim=%d p=%d bc=%d weights=%d single_mask=%d distinct=%d use_gpu=%d", ndim, poly_order,
-    scenario, weights, single_mask, distinct, use_gpu
-  );
-
+  *ctx = (struct fproj_case){
+    .use_gpu = use_gpu,
+    .has_left = weights && weights != 4,
+    .has_right = weights && weights != 5,
+  };
   int cells[] = {(single_mask & 1) ? 1 : 3, (single_mask & 2) ? 1 : 3};
-
-  struct gkyl_rect_grid grid;
-  gkyl_rect_grid_init(&grid, ndim, (double[]){-0.2, -0.5}, (double[]){1.3, 0.5}, cells);
+  gkyl_rect_grid_init(&ctx->grid, ndim, (double[]){-0.2, -0.5}, (double[]){1.3, 0.5}, cells);
 
   // Non-unit lower indices and an embedded range catch incorrect flat indexing.
   int lower[] = {-1, 5}, upper[] = {cells[0] - 2, cells[1] + 4};
   int extlo[] = {-2, 4}, extup[] = {cells[0] - 1, cells[1] + 5};
+  gkyl_range_init(&ctx->ext, ndim, extlo, extup);
+  gkyl_sub_range_init(&ctx->local, &ctx->ext, lower, upper);
 
-  struct gkyl_range ext, local;
-  gkyl_range_init(&ext, ndim, extlo, extup);
-  gkyl_sub_range_init(&local, &ext, lower, upper);
+  gkyl_cart_modal_serendip(&ctx->basis, ndim, poly_order);
 
-  struct gkyl_basis basis;
-  gkyl_cart_modal_serendip(&basis, ndim, poly_order);
-  int nb = basis.num_basis;
-
-  double nodes[16];
-  basis.node_list(nodes);
-
-  double shape_coeff[8][8] = {{0}};
+  int nb = ctx->basis.num_basis;
+  ctx->basis.node_list(ctx->nodes);
   for (int n = 0; n < nb; n++) {
     double values[8] = {0};
     values[n] = 1;
-    basis.nodal_to_modal(values, shape_coeff[n]);
+    ctx->basis.nodal_to_modal(values, ctx->shape_coeff[n]);
   }
 
-  struct gkyl_fem_proj_inp inp = {
-    .grid = &grid,
-    .basis = &basis,
-    .solve_range = &local,
-    .use_gpu = use_gpu,
-    .bcs = fproj_boundary_conditions(ndim, scenario),
-  };
-  if (distinct) {
-    for (int d = 0; d < ndim; d++) {
-      inp.bcs.lo_type[d] = inp.bcs.up_type[d] = GKYL_FEM_PROJ_PERIODIC;
-    }
-    int direction = (distinct - 1) / 3, pair = (distinct - 1) % 3;
-    inp.bcs.lo_type[direction] = pair == 1 ? GKYL_FEM_PROJ_DIRICHLET_VARYING :
-                                             GKYL_FEM_PROJ_DIRICHLET;
-    inp.bcs.up_type[direction] = pair == 0 ? GKYL_FEM_PROJ_DIRICHLET_VARYING :
-                                             GKYL_FEM_PROJ_DIRICHLET;
-    inp.bcs.lo_value[direction] = 0.5 + 0.3 * grid.lower[direction];
-    inp.bcs.up_value[direction] = 0.5 + 0.3 * grid.upper[direction];
-  }
+  ctx->input_ho = mkarr(false, nb, ctx->ext.volume);
+  ctx->weight_left_ho = mkarr(false, nb, ctx->ext.volume);
+  ctx->weight_right_ho = mkarr(false, nb, ctx->ext.volume);
+  ctx->boundary_ho = mkarr(false, nb, ctx->ext.volume);
+  ctx->result_ho = mkarr(false, nb, ctx->ext.volume);
+  ctx->previous_ho = mkarr(false, nb, ctx->ext.volume);
+  ctx->rhs = mkarr(use_gpu, nb, ctx->ext.volume);
+  ctx->out = mkarr(use_gpu, nb, ctx->ext.volume);
+  ctx->weight_left = mkarr(use_gpu, nb, ctx->ext.volume);
+  ctx->weight_right = mkarr(use_gpu, nb, ctx->ext.volume);
+  ctx->boundary = mkarr(use_gpu, nb, ctx->ext.volume);
 
-  struct gkyl_array *input = mkarr(false, nb, ext.volume), *left = mkarr(false, nb, ext.volume);
-  struct gkyl_array *right = mkarr(false, nb, ext.volume), *bc = mkarr(false, nb, ext.volume);
-  struct gkyl_array *result = mkarr(false, nb, ext.volume), *first = mkarr(false, nb, ext.volume);
-  struct gkyl_array *rhs = mkarr(use_gpu, nb, ext.volume), *out = mkarr(use_gpu, nb, ext.volume);
-  struct gkyl_array *wl = mkarr(use_gpu, nb, ext.volume), *wr = mkarr(use_gpu, nb, ext.volume),
-                    *bcd = mkarr(use_gpu, nb, ext.volume);
-
-  int count = 0, ids[9][8];
-  bool has_dirichlet = false;
-  double coords[64][2] = {{0}}, prescribed[64] = {0};
-  bool constrained[64] = {0};
   struct gkyl_range_iter iter;
   int cell = 0;
-
-  gkyl_range_iter_init(&iter, &local);
+  gkyl_range_iter_init(&iter, &ctx->local);
   while (gkyl_range_iter_next(&iter)) {
-    long loc = gkyl_range_idx(&local, iter.idx);
+    long loc = gkyl_range_idx(&ctx->local, iter.idx);
+    double *input_coeff = gkyl_array_fetch(ctx->input_ho, loc),
+           *left_coeff = gkyl_array_fetch(ctx->weight_left_ho, loc),
+           *right_coeff = gkyl_array_fetch(ctx->weight_right_ho, loc);
 
-    double *f = gkyl_array_fetch(input, loc), *l = gkyl_array_fetch(left, loc),
-           *r = gkyl_array_fetch(right, loc);
-
-    l[0] = (weights == 1 ? 1.0 : 2.0) * pow(sqrt(2.0), ndim);
+    left_coeff[0] = (weights == 1 ? 1.0 : 2.0) * pow(sqrt(2.0), ndim);
     if (weights >= 2) {
       for (int k = 1; k < nb; k++) {
-        l[k] = 0.015 * cos(k + cell);
+        left_coeff[k] = 0.015 * cos(k + cell);
       }
     }
     for (int k = 0; k < nb; k++) {
-      f[k] = sin(0.7 * (cell + 1) * (k + 1));
-      r[k] = weights == 3 ? 0.6 * l[k] : l[k];
+      input_coeff[k] = sin(0.7 * (cell + 1) * (k + 1));
+      right_coeff[k] = weights == 3 ? 0.6 * left_coeff[k] : left_coeff[k];
     }
 
+    cell++;
+  }
+}
+
+// Match physical nodes independently of the production indexing kernels, evaluate
+// this family's boundary field, and create the projector with its fixed weights.
+static void
+fproj_case_init_projector(
+  struct fproj_case *ctx, double (*boundary_function)(const struct fproj_case *, const double *)
+)
+{
+  int ndim = ctx->grid.ndim, nb = ctx->basis.num_basis;
+  double coords[64][2] = {{0}};
+  struct gkyl_range_iter iter;
+  int cell = 0;
+
+  gkyl_range_iter_init(&iter, &ctx->local);
+  while (gkyl_range_iter_next(&iter)) {
+    long loc = gkyl_range_idx(&ctx->local, iter.idx);
     double values[8];
     for (int n = 0; n < nb; n++) {
       double xy[2] = {0, 0};
       for (int d = 0; d < ndim; d++) {
-        xy[d] = grid.lower[d] +
-                (iter.idx[d] - local.lower[d] + 0.5 * (nodes[n * ndim + d] + 1)) * grid.dx[d];
-        if (inp.bcs.lo_type[d] == GKYL_FEM_PROJ_PERIODIC && fabs(xy[d] - grid.upper[d]) < 1e-13) {
-          xy[d] = grid.lower[d];
+        xy[d] = ctx->grid.lower[d] +
+                (iter.idx[d] - ctx->local.lower[d] + 0.5 * (ctx->nodes[n * ndim + d] + 1)) *
+                  ctx->grid.dx[d];
+        if (ctx->bcs.lo_type[d] == GKYL_FEM_PROJ_PERIODIC &&
+            fabs(xy[d] - ctx->grid.upper[d]) < 1e-13) {
+          xy[d] = ctx->grid.lower[d];
         }
       }
 
       int global = 0;
-      while (global < count &&
+      while (global < ctx->num_ref_nodes &&
              (fabs(coords[global][0] - xy[0]) > 1e-12 || fabs(coords[global][1] - xy[1]) > 1e-12)) {
         global++;
       }
 
-      if (global == count) {
-        coords[count][0] = xy[0];
-        coords[count++][1] = xy[1];
+      if (global == ctx->num_ref_nodes) {
+        TEST_ASSERT(ctx->num_ref_nodes < 64);
+        coords[ctx->num_ref_nodes][0] = xy[0];
+        coords[ctx->num_ref_nodes++][1] = xy[1];
       }
 
-      ids[cell][n] = global;
-      values[n] = fproj_boundary_function(&grid, &inp.bcs, xy, distinct);
+      ctx->ids[cell][n] = global;
+      values[n] = boundary_function(ctx, xy);
       for (int d = 0; d < ndim; d++) {
         for (int side = 0; side < 2; side++) {
-          int type = side ? inp.bcs.up_type[d] : inp.bcs.lo_type[d];
-          bool at = iter.idx[d] == (side ? local.upper[d] : local.lower[d]) &&
-                    nodes[n * ndim + d] == (side ? 1 : -1);
+          int type = side ? ctx->bcs.up_type[d] : ctx->bcs.lo_type[d];
+          bool at = iter.idx[d] == (side ? ctx->local.upper[d] : ctx->local.lower[d]) &&
+                    ctx->nodes[n * ndim + d] == (side ? 1 : -1);
           if (at && (type == GKYL_FEM_PROJ_DIRICHLET || type == GKYL_FEM_PROJ_DIRICHLET_VARYING)) {
-            has_dirichlet = true;
-            constrained[global] = true;
-            prescribed[global] = values[n];
+            ctx->has_dirichlet = true;
+            ctx->constrained[global] = true;
+            ctx->prescribed[global] = values[n];
           }
         }
       }
     }
 
-    basis.nodal_to_modal(values, gkyl_array_fetch(bc, loc));
+    ctx->basis.nodal_to_modal(values, gkyl_array_fetch(ctx->boundary_ho, loc));
     cell++;
   }
 
-  gkyl_array_copy(wl, left);
-  gkyl_array_copy(wr, right);
-  gkyl_array_copy(bcd, bc);
+  gkyl_array_copy(ctx->weight_left, ctx->weight_left_ho);
+  gkyl_array_copy(ctx->weight_right, ctx->weight_right_ho);
+  gkyl_array_copy(ctx->boundary, ctx->boundary_ho);
 
-  bool has_left = weights && weights != 4, has_right = weights && weights != 5;
-  inp.weight_left = has_left ? wl : NULL;
-  inp.weight_right = has_right ? wr : NULL;
+  struct gkyl_fem_proj_inp inp = {
+    .grid = &ctx->grid,
+    .basis = &ctx->basis,
+    .solve_range = &ctx->local,
+    .use_gpu = ctx->use_gpu,
+    .bcs = ctx->bcs,
+    .weight_left = ctx->has_left ? ctx->weight_left : NULL,
+    .weight_right = ctx->has_right ? ctx->weight_right : NULL,
+  };
+  ctx->up = gkyl_fem_proj_inew(&inp);
+}
 
-  // Create projection operator.
-  struct gkyl_fem_proj *up = gkyl_fem_proj_inew(&inp);
+// Check weak residuals, boundary values, continuity, conservation, and ghost cells.
+// Also check field preservation when the input is continuous and the weights match.
+static void
+fproj_check_solution(struct fproj_case *ctx, bool check_preservation)
+{
+  int ndim = ctx->grid.ndim, nb = ctx->basis.num_basis;
+  // Four-point quadrature integrates all weighted p2 products exactly.
+  const double *quad_x = gkyl_gauss_ordinates[4], *quad_w = gkyl_gauss_weights[4];
+  gkyl_array_copy(ctx->result_ho, ctx->out);
+  int cell = 0;
+  struct gkyl_range_iter iter;
+  double seen[64], residual[64] = {0}, residual_scale[64] = {0};
+  bool visited[64] = {0};
+  double source_integral = 0, output_integral = 0;
 
-  // Random DG input, a compatible continuous field, and a constant field.
-  for (int trial = 0; trial < (distinct ? 2 : 3); trial++) {
-    if (trial == 1) {
-      gkyl_array_copy(input, bc);
-    }
-    if (trial == 2) {
-      gkyl_array_clear(input, 0);
-      gkyl_array_shiftc(input, 1.25 * pow(sqrt(2.0), ndim), 0);
-      gkyl_array_clear(bc, 0);
-      gkyl_array_shiftc(bc, 1.25 * pow(sqrt(2.0), ndim), 0);
-      gkyl_array_copy(bcd, bc);
-      for (int n = 0; n < count; n++) {
-        if (constrained[n]) {
-          prescribed[n] = 1.25;
-        }
+  gkyl_range_iter_init(&iter, &ctx->local);
+  while (gkyl_range_iter_next(&iter)) {
+    long loc = gkyl_range_idx(&ctx->local, iter.idx);
+
+    const double *got = gkyl_array_cfetch(ctx->result_ho, loc);
+    for (int n = 0; n < nb; n++) {
+      double at_node = ctx->basis.eval_expand(&ctx->nodes[n * ndim], got);
+      int global = ctx->ids[cell][n];
+      if (ctx->constrained[global]) {
+        TEST_CHECK(
+          fabs(at_node - ctx->prescribed[global]) < 1e-11 * (1 + fabs(ctx->prescribed[global]))
+        );
       }
+      if (visited[global]) {
+        TEST_CHECK(fabs(at_node - seen[global]) < 1e-11);
+      }
+      seen[global] = at_node;
+      visited[global] = true;
     }
 
-    gkyl_array_copy(rhs, input);
-    gkyl_array_clear(out, 12345.0);
-
-    // Perform FEM projection.
-    gkyl_fem_proj_set_rhs(up, rhs, bcd);
-    gkyl_fem_proj_solve(up, out);
-
-    // Check results.
-    gkyl_array_copy(result, out);
-    cell = 0;
-    double seen[64], residual[64] = {0}, residual_scale[64] = {0};
-    bool visited[64] = {0};
-    double source_integral = 0, output_integral = 0;
-
-    gkyl_range_iter_init(&iter, &local);
-    while (gkyl_range_iter_next(&iter)) {
-      long loc = gkyl_range_idx(&local, iter.idx);
-
-      const double *got = gkyl_array_cfetch(result, loc);
+    if (check_preservation) {
+      const double *input_coeff = gkyl_array_cfetch(ctx->input_ho, loc);
       for (int n = 0; n < nb; n++) {
-        double at_node = basis.eval_expand(&nodes[n * ndim], got);
-        int global = ids[cell][n];
-        if (constrained[global]) {
-          TEST_CHECK(fabs(at_node - prescribed[global]) < 1e-11 * (1 + fabs(prescribed[global])));
-        }
-        if (visited[global]) {
-          TEST_CHECK(fabs(at_node - seen[global]) < 1e-11);
-        }
-        seen[global] = at_node;
-        visited[global] = true;
+        TEST_CHECK(fabs(got[n] - input_coeff[n]) < 1e-11);
       }
+    }
 
-      if (trial > 0 && weights <= 2) {
-        const double *f = gkyl_array_cfetch(input, loc);
+    for (int qx = 0; qx < 4; qx++) {
+      for (int qy = 0; qy < (ndim == 2 ? 4 : 1); qy++) {
+        double point[] = {quad_x[qx], quad_x[qy]};
+
+        double left_weight =
+          ctx->has_left ?
+            ctx->basis.eval_expand(point, gkyl_array_cfetch(ctx->weight_left_ho, loc)) :
+            1;
+        double right_weight =
+          ctx->has_right ?
+            ctx->basis.eval_expand(point, gkyl_array_cfetch(ctx->weight_right_ho, loc)) :
+            1;
+
+        double input_value = ctx->basis.eval_expand(point, gkyl_array_cfetch(ctx->input_ho, loc));
+        double projected = ctx->basis.eval_expand(point, got);
+
+        double measure = quad_w[qx] * (ndim == 2 ? quad_w[qy] : 1);
+        source_integral += measure * right_weight * input_value;
+        output_integral += measure * left_weight * projected;
+
+        // Assemble the weak residual using coordinate-based node matching.
+        // The uniform cell Jacobian is common to every contribution and cancels.
         for (int n = 0; n < nb; n++) {
-          TEST_CHECK(fabs(got[n] - f[n]) < 1e-11);
-        }
-      }
-
-      for (int qx = 0; qx < 4; qx++) {
-        for (int qy = 0; qy < (ndim == 2 ? 4 : 1); qy++) {
-          double point[] = {quad_x[qx], quad_x[qy]};
-
-          double l = has_left ? basis.eval_expand(point, gkyl_array_cfetch(left, loc)) : 1;
-          double r = has_right ? basis.eval_expand(point, gkyl_array_cfetch(right, loc)) : 1;
-
-          double f = basis.eval_expand(point, gkyl_array_cfetch(input, loc));
-          double projected = basis.eval_expand(point, got);
-
-          double measure = quad_w[qx] * (ndim == 2 ? quad_w[qy] : 1);
-          source_integral += measure * r * f;
-          output_integral += measure * l * projected;
-
-          // Assemble the weak residual using coordinate-based node matching.
-          // The uniform cell Jacobian is common to every contribution and cancels.
-          for (int n = 0; n < nb; n++) {
-            double shape = basis.eval_expand(point, shape_coeff[n]);
-            int global = ids[cell][n];
-            residual[global] += measure * shape * (l * projected - r * f);
-            residual_scale[global] += measure * fabs(shape) * (fabs(l * projected) + fabs(r * f));
-          }
-        }
-      }
-      cell++;
-    }
-
-    // Dirichlet nodes satisfy prescribed values; all other nodes satisfy the projection equation.
-    for (int n = 0; n < count; n++) {
-      if (!constrained[n]) {
-        TEST_CHECK(fabs(residual[n]) < 1e-11 * (1 + residual_scale[n]));
-        TEST_MSG("node=%d residual=%.17g scale=%.17g", n, residual[n], residual_scale[n]);
-      }
-    }
-    if (!has_dirichlet) {
-      TEST_CHECK(fabs(output_integral - source_integral) < 1e-10);
-    }
-
-    gkyl_range_iter_init(&iter, &ext);
-    while (gkyl_range_iter_next(&iter)) {
-      if (!gkyl_range_contains_idx(&local, iter.idx)) {
-        const double *v = gkyl_array_cfetch(result, gkyl_range_idx(&ext, iter.idx));
-        for (int n = 0; n < nb; n++) {
-          TEST_CHECK(v[n] == 12345.0);
+          double shape = ctx->basis.eval_expand(point, ctx->shape_coeff[n]);
+          int global = ctx->ids[cell][n];
+          residual[global] +=
+            measure * shape * (left_weight * projected - right_weight * input_value);
+          residual_scale[global] +=
+            measure * fabs(shape) *
+            (fabs(left_weight * projected) + fabs(right_weight * input_value));
         }
       }
     }
+    cell++;
+  }
 
-    if (weights <= 2) {
-      gkyl_array_copy(first, result);
-      // Here we check that in-place projection is supported. Also checks that
-      // this is indeed a projection operator (idempotence): that projecting a
-      // second time leaves the answer unchanged.
-      gkyl_fem_proj_set_rhs(up, out, bcd);
-      gkyl_fem_proj_solve(up, out);
+  // Dirichlet nodes satisfy prescribed values; all other nodes satisfy the projection equation.
+  for (int n = 0; n < ctx->num_ref_nodes; n++) {
+    if (!ctx->constrained[n]) {
+      TEST_CHECK(fabs(residual[n]) < 1e-11 * (1 + residual_scale[n]));
+      TEST_MSG("node=%d residual=%.17g scale=%.17g", n, residual[n], residual_scale[n]);
+    }
+  }
+  if (!ctx->has_dirichlet) {
+    TEST_CHECK(fabs(output_integral - source_integral) < 1e-10);
+  }
 
-      gkyl_array_copy(result, out);
-      gkyl_range_iter_init(&iter, &local);
-      while (gkyl_range_iter_next(&iter)) {
-        long loc = gkyl_range_idx(&local, iter.idx);
-        const double *a = gkyl_array_cfetch(first, loc), *b = gkyl_array_cfetch(result, loc);
-        for (int n = 0; n < nb; n++) {
-          TEST_CHECK(fabs(a[n] - b[n]) < 1e-11);
-        }
+  gkyl_range_iter_init(&iter, &ctx->ext);
+  while (gkyl_range_iter_next(&iter)) {
+    if (!gkyl_range_contains_idx(&ctx->local, iter.idx)) {
+      const double *v = gkyl_array_cfetch(ctx->result_ho, gkyl_range_idx(&ctx->ext, iter.idx));
+      for (int n = 0; n < nb; n++) {
+        TEST_CHECK(v[n] == 12345.0);
       }
     }
   }
+}
 
-  gkyl_fem_proj_release(up);
-  gkyl_array_release(input);
-  gkyl_array_release(left);
-  gkyl_array_release(right);
-  gkyl_array_release(bc);
-  gkyl_array_release(result);
-  gkyl_array_release(first);
-  gkyl_array_release(rhs);
-  gkyl_array_release(out);
-  gkyl_array_release(wl);
-  gkyl_array_release(wr);
-  gkyl_array_release(bcd);
+// Project the previous solution in place and check that it is unchanged.
+// Call only when the left and right weights match.
+static void
+fproj_check_idempotence(struct fproj_case *ctx)
+{
+  int nb = ctx->basis.num_basis;
+  gkyl_array_copy(ctx->previous_ho, ctx->result_ho);
+
+  // Here we check that in-place projection is supported. Also checks that
+  // this is indeed a projection operator (idempotence): that projecting a
+  // second time leaves the answer unchanged.
+  gkyl_fem_proj_set_rhs(ctx->up, ctx->out, ctx->boundary);
+  gkyl_fem_proj_solve(ctx->up, ctx->out);
+
+  gkyl_array_copy(ctx->result_ho, ctx->out);
+
+  struct gkyl_range_iter iter;
+  gkyl_range_iter_init(&iter, &ctx->local);
+  while (gkyl_range_iter_next(&iter)) {
+    long loc = gkyl_range_idx(&ctx->local, iter.idx);
+    const double *a = gkyl_array_cfetch(ctx->previous_ho, loc),
+                 *b = gkyl_array_cfetch(ctx->result_ho, loc);
+    for (int n = 0; n < nb; n++) {
+      TEST_CHECK(fabs(a[n] - b[n]) < 1e-11);
+    }
+  }
+}
+
+// Release the projector before releasing its weight arrays and the test buffers.
+static void
+fproj_case_release(struct fproj_case *ctx)
+{
+  gkyl_fem_proj_release(ctx->up);
+  gkyl_array_release(ctx->input_ho);
+  gkyl_array_release(ctx->weight_left_ho);
+  gkyl_array_release(ctx->weight_right_ho);
+  gkyl_array_release(ctx->boundary_ho);
+  gkyl_array_release(ctx->result_ho);
+  gkyl_array_release(ctx->previous_ho);
+  gkyl_array_release(ctx->rhs);
+  gkyl_array_release(ctx->out);
+  gkyl_array_release(ctx->weight_left);
+  gkyl_array_release(ctx->weight_right);
+  gkyl_array_release(ctx->boundary);
+}
+
+// General solver case: irregular DG, compatible continuous, and constant inputs.
+static void
+fproj_solver_case(int ndim, int poly_order, int scenario, int weights, int single_mask, bool use_gpu)
+{
+  TEST_CASE_(
+    "dim=%d p=%d bc=%d weights=%d single_mask=%d use_gpu=%d", ndim, poly_order, scenario, weights,
+    single_mask, use_gpu
+  );
+  struct fproj_case ctx;
+  fproj_case_init(&ctx, ndim, poly_order, weights, single_mask, use_gpu);
+
+  ctx.bcs = fproj_boundary_conditions(ndim, scenario);
+  fproj_case_init_projector(&ctx, fproj_boundary_function);
+
+  for (int trial = 0; trial < 3; trial++) {
+    if (trial == 1) {
+      gkyl_array_copy(ctx.input_ho, ctx.boundary_ho);
+    }
+    if (trial == 2) {
+      gkyl_array_clear(ctx.input_ho, 0);
+      gkyl_array_shiftc(ctx.input_ho, 1.25 * pow(sqrt(2.0), ndim), 0);
+      gkyl_array_clear(ctx.boundary_ho, 0);
+      gkyl_array_shiftc(ctx.boundary_ho, 1.25 * pow(sqrt(2.0), ndim), 0);
+      gkyl_array_copy(ctx.boundary, ctx.boundary_ho);
+      for (int n = 0; n < ctx.num_ref_nodes; n++) {
+        if (ctx.constrained[n]) {
+          ctx.prescribed[n] = 1.25;
+        }
+      }
+    }
+    gkyl_array_copy(ctx.rhs, ctx.input_ho);
+    gkyl_array_clear(ctx.out, 12345.0);
+
+    // Perform projection.
+    gkyl_fem_proj_set_rhs(ctx.up, ctx.rhs, ctx.boundary);
+    gkyl_fem_proj_solve(ctx.up, ctx.out);
+
+    // Check result.
+    fproj_check_solution(&ctx, trial > 0 && weights <= 2);
+    if (weights <= 2) {
+      fproj_check_idempotence(&ctx);
+    }
+  }
+
+  fproj_case_release(&ctx);
+}
+
+// Distinct-value case: irregular DG and compatible affine inputs. A constant
+// input cannot satisfy the different prescribed values on the two end faces.
+static void
+fproj_distinct_boundary_case(
+  int ndim, int poly_order, int direction, enum fproj_boundary_pair boundary_pair, int weights,
+  int single_mask, bool use_gpu
+)
+{
+  TEST_CASE_(
+    "dim=%d p=%d direction=%d boundary_pair=%d weights=%d single_mask=%d use_gpu=%d", ndim,
+    poly_order, direction, boundary_pair, weights, single_mask, use_gpu
+  );
+  struct fproj_case ctx;
+  fproj_case_init(&ctx, ndim, poly_order, weights, single_mask, use_gpu);
+
+  ctx.direction = direction;
+  for (int d = 0; d < ndim; d++) {
+    ctx.bcs.lo_type[d] = ctx.bcs.up_type[d] = GKYL_FEM_PROJ_PERIODIC;
+  }
+  ctx.bcs.lo_type[direction] = boundary_pair == FPROJ_VARYING_CONSTANT ?
+                                 GKYL_FEM_PROJ_DIRICHLET_VARYING :
+                                 GKYL_FEM_PROJ_DIRICHLET;
+  ctx.bcs.up_type[direction] = boundary_pair == FPROJ_CONSTANT_VARYING ?
+                                 GKYL_FEM_PROJ_DIRICHLET_VARYING :
+                                 GKYL_FEM_PROJ_DIRICHLET;
+  ctx.bcs.lo_value[direction] = 0.5 + 0.3 * ctx.grid.lower[direction];
+  ctx.bcs.up_value[direction] = 0.5 + 0.3 * ctx.grid.upper[direction];
+
+  fproj_case_init_projector(&ctx, fproj_distinct_boundary_function);
+
+  for (int trial = 0; trial < 2; trial++) {
+    if (trial == 1) {
+      gkyl_array_copy(ctx.input_ho, ctx.boundary_ho);
+    }
+    gkyl_array_copy(ctx.rhs, ctx.input_ho);
+    gkyl_array_clear(ctx.out, 12345.0);
+
+    // Perform projection.
+    gkyl_fem_proj_set_rhs(ctx.up, ctx.rhs, ctx.boundary);
+    gkyl_fem_proj_solve(ctx.up, ctx.out);
+
+    // Check result.
+    fproj_check_solution(&ctx, trial > 0 && weights <= 2);
+    if (weights <= 2) {
+      fproj_check_idempotence(&ctx);
+    }
+  }
+
+  fproj_case_release(&ctx);
 }
 
 // Test projection for a fixed dimension, polynomial order, and CPU/GPU backend.
@@ -350,14 +477,14 @@ fproj_projection_case(
 // these with all six weight settings (implicit/explicit unity, equal/unequal
 // varying weights, and either side weighted alone) and one or three cells per
 // direction. Each configuration checks an irregular DG input, a compatible
-// continuous field, and a constant field using fproj_projection_case.
+// continuous field, and a constant field using fproj_solver_case.
 static void
 fproj_solver_combos(int ndim, int poly_order, bool use_gpu)
 {
   for (int bc = 0; bc < (ndim == 1 ? 10 : 100); bc++) {
     for (int weights = 0; weights < 6; weights++) {
       for (int single_mask = 0; single_mask < (1 << ndim); single_mask++) {
-        fproj_projection_case(ndim, poly_order, bc, weights, single_mask, 0, use_gpu);
+        fproj_solver_case(ndim, poly_order, bc, weights, single_mask, use_gpu);
       }
     }
   }
@@ -375,33 +502,39 @@ static void
 fproj_distinct_boundary_combos(int ndim, int poly_order, bool use_gpu)
 {
   for (int single_mask = 0; single_mask < (1 << ndim); single_mask++) {
-    for (int distinct = 1; distinct <= 3 * ndim; distinct++) {
-      fproj_projection_case(ndim, poly_order, 0, 0, single_mask, distinct, use_gpu);
-      fproj_projection_case(ndim, poly_order, 0, 3, single_mask, distinct, use_gpu);
+    for (int direction = 0; direction < ndim; direction++) {
+      for (int pair = FPROJ_CONSTANT_VARYING; pair <= FPROJ_CONSTANT_CONSTANT; pair++) {
+        fproj_distinct_boundary_case(
+          ndim, poly_order, direction, (enum fproj_boundary_pair)pair, 0, single_mask, use_gpu
+        );
+        fproj_distinct_boundary_case(
+          ndim, poly_order, direction, (enum fproj_boundary_pair)pair, 3, single_mask, use_gpu
+        );
+      }
     }
   }
 }
 
 static void
-test_fem_proj_projection_1x_p1_ho(void)
+test_fem_proj_solver_1x_p1_ho(void)
 {
   fproj_solver_combos(1, 1, false);
 }
 
 static void
-test_fem_proj_projection_1x_p2_ho(void)
+test_fem_proj_solver_1x_p2_ho(void)
 {
   fproj_solver_combos(1, 2, false);
 }
 
 static void
-test_fem_proj_projection_2x_p1_ho(void)
+test_fem_proj_solver_2x_p1_ho(void)
 {
   fproj_solver_combos(2, 1, false);
 }
 
 static void
-test_fem_proj_projection_2x_p2_ho(void)
+test_fem_proj_solver_2x_p2_ho(void)
 {
   fproj_solver_combos(2, 2, false);
 }
@@ -432,25 +565,25 @@ test_fem_proj_distinct_boundary_2x_p2_ho(void)
 
 #ifdef GKYL_HAVE_CUDA
 static void
-test_fem_proj_projection_1x_p1_dev(void)
+test_fem_proj_solver_1x_p1_dev(void)
 {
   fproj_solver_combos(1, 1, true);
 }
 
 static void
-test_fem_proj_projection_1x_p2_dev(void)
+test_fem_proj_solver_1x_p2_dev(void)
 {
   fproj_solver_combos(1, 2, true);
 }
 
 static void
-test_fem_proj_projection_2x_p1_dev(void)
+test_fem_proj_solver_2x_p1_dev(void)
 {
   fproj_solver_combos(2, 1, true);
 }
 
 static void
-test_fem_proj_projection_2x_p2_dev(void)
+test_fem_proj_solver_2x_p2_dev(void)
 {
   fproj_solver_combos(2, 2, true);
 }
@@ -711,10 +844,10 @@ test_fem_proj_node_indexing(void)
 
 TEST_LIST = {
   {"fem_proj_node_indexing", test_fem_proj_node_indexing},
-  {"fem_proj_projection_1x_p1_ho", test_fem_proj_projection_1x_p1_ho},
-  {"fem_proj_projection_1x_p2_ho", test_fem_proj_projection_1x_p2_ho},
-  {"fem_proj_projection_2x_p1_ho", test_fem_proj_projection_2x_p1_ho},
-  {"fem_proj_projection_2x_p2_ho", test_fem_proj_projection_2x_p2_ho},
+  {"fem_proj_solver_1x_p1_ho", test_fem_proj_solver_1x_p1_ho},
+  {"fem_proj_solver_1x_p2_ho", test_fem_proj_solver_1x_p2_ho},
+  {"fem_proj_solver_2x_p1_ho", test_fem_proj_solver_2x_p1_ho},
+  {"fem_proj_solver_2x_p2_ho", test_fem_proj_solver_2x_p2_ho},
   {"fem_proj_distinct_boundary_1x_p1_ho", test_fem_proj_distinct_boundary_1x_p1_ho},
   {"fem_proj_distinct_boundary_1x_p2_ho", test_fem_proj_distinct_boundary_1x_p2_ho},
   {"fem_proj_distinct_boundary_2x_p1_ho", test_fem_proj_distinct_boundary_2x_p1_ho},
@@ -722,10 +855,10 @@ TEST_LIST = {
   {"fem_proj_poisson_comparison_ho", test_fem_proj_poisson_ho},
   {"fem_proj_invalid_input", test_fem_proj_invalid_input},
 #ifdef GKYL_HAVE_CUDA
-  {"fem_proj_projection_1x_p1_dev", test_fem_proj_projection_1x_p1_dev},
-  {"fem_proj_projection_1x_p2_dev", test_fem_proj_projection_1x_p2_dev},
-  {"fem_proj_projection_2x_p1_dev", test_fem_proj_projection_2x_p1_dev},
-  {"fem_proj_projection_2x_p2_dev", test_fem_proj_projection_2x_p2_dev},
+  {"fem_proj_solver_1x_p1_dev", test_fem_proj_solver_1x_p1_dev},
+  {"fem_proj_solver_1x_p2_dev", test_fem_proj_solver_1x_p2_dev},
+  {"fem_proj_solver_2x_p1_dev", test_fem_proj_solver_2x_p1_dev},
+  {"fem_proj_solver_2x_p2_dev", test_fem_proj_solver_2x_p2_dev},
   {"fem_proj_distinct_boundary_1x_p1_dev", test_fem_proj_distinct_boundary_1x_p1_dev},
   {"fem_proj_distinct_boundary_1x_p2_dev", test_fem_proj_distinct_boundary_1x_p2_dev},
   {"fem_proj_distinct_boundary_2x_p1_dev", test_fem_proj_distinct_boundary_2x_p1_dev},
