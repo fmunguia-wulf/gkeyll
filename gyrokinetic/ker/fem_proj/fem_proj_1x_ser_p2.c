@@ -8,52 +8,464 @@ long fem_proj_1x_ser_p2_num_nodes(const int *cells, const bool *periodic) {
   return count;
 }
 
-void fem_proj_1x_ser_p2_local_to_global(const int *idx, const int *shape, long *global_idx) {
-  global_idx[0] = (long)((2*idx[0]+0)%shape[0]);
-  global_idx[1] = (long)((2*idx[0]+1)%shape[0]);
-  global_idx[2] = (long)((2*idx[0]+2)%shape[0]);
+GKYL_CU_DH void fem_proj_1x_ser_p2_local_to_global_inx_nonperiodicx(const int *num_cells, const int *idx, long *global_idx) {
+  long owner[1];
+  int upper[1];
+  owner[0] = idx[0];
+  upper[0] = owner[0] == num_cells[0]-1;
+  global_idx[0] = 2*owner[0];
+  owner[0] = idx[0];
+  upper[0] = owner[0] == num_cells[0]-1;
+  global_idx[1] = 2*owner[0]+1;
+  owner[0] = (long)idx[0]+1;
+  upper[0] = owner[0] == num_cells[0]-1;
+  global_idx[2] = 2*owner[0];
 }
 
-GKYL_CU_DH void fem_proj_1x_ser_p2_mass(const double *weight, double *out) {
-  out[0] = 0.26666666666666666; 
-  out[1] = 0.13333333333333333; 
-  out[2] = -0.06666666666666667; 
-  out[3] = 0.13333333333333333; 
-  out[4] = 1.0666666666666667; 
-  out[5] = 0.13333333333333333; 
-  out[6] = -0.06666666666666667; 
-  out[7] = 0.13333333333333333; 
-  out[8] = 0.26666666666666666; 
+GKYL_CU_DH void fem_proj_1x_ser_p2_local_to_global_upx_nonperiodicx(const int *num_cells, const int *idx, long *global_idx) {
+  long owner[1];
+  int upper[1];
+  owner[0] = idx[0];
+  upper[0] = owner[0] == num_cells[0]-1;
+  global_idx[0] = 2*owner[0];
+  owner[0] = idx[0];
+  upper[0] = owner[0] == num_cells[0]-1;
+  global_idx[1] = 2*owner[0]+1;
+  owner[0] = idx[0];
+  upper[0] = owner[0] == num_cells[0]-1;
+  global_idx[2] = 2*owner[0]+2;
 }
 
-GKYL_CU_DH void fem_proj_1x_ser_p2_src_noweight(const double *weight, const double *rhs, double *out) {
-  out[0] = 0.21081851067789195*rhs[2]-0.408248290463863*rhs[1]+0.2357022603955158*rhs[0]; 
-  out[1] = 0.9428090415820636*rhs[0]-0.421637021355784*rhs[2]; 
-  out[2] = 0.21081851067789195*rhs[2]+0.408248290463863*rhs[1]+0.2357022603955158*rhs[0]; 
+GKYL_CU_DH void fem_proj_1x_ser_p2_local_to_global_inx_periodicx(const int *num_cells, const int *idx, long *global_idx) {
+  long owner[1];
+  int upper[1];
+  owner[0] = idx[0];
+  upper[0] = 0;
+  global_idx[0] = 2*owner[0];
+  owner[0] = idx[0];
+  upper[0] = 0;
+  global_idx[1] = 2*owner[0]+1;
+  owner[0] = (long)idx[0]+1;
+  upper[0] = 0;
+  global_idx[2] = 2*owner[0];
 }
 
-GKYL_CU_DH void fem_proj_1x_ser_p2_mass_weighted(const double *weight, double *out) {
-  out[0] = 0.19576004562947108*weight[2]-0.2449489742783178*weight[1]+0.18856180831641273*weight[0]; 
-  out[1] = 0.030116930096841705*weight[2]-0.16329931618554525*weight[1]+0.09428090415820634*weight[0]; 
-  out[2] = -(0.015058465048420852*weight[2])-0.04714045207910316*weight[0]; 
-  out[3] = 0.030116930096841705*weight[2]-0.16329931618554525*weight[1]+0.09428090415820634*weight[0]; 
-  out[4] = 0.7542472332656511*weight[0]-0.48187088154946756*weight[2]; 
-  out[5] = 0.030116930096841705*weight[2]+0.16329931618554525*weight[1]+0.09428090415820634*weight[0]; 
-  out[6] = -(0.015058465048420852*weight[2])-0.04714045207910316*weight[0]; 
-  out[7] = 0.030116930096841705*weight[2]+0.16329931618554525*weight[1]+0.09428090415820634*weight[0]; 
-  out[8] = 0.19576004562947108*weight[2]+0.2449489742783178*weight[1]+0.18856180831641273*weight[0]; 
+GKYL_CU_DH void fem_proj_1x_ser_p2_local_to_global_upx_periodicx(const int *num_cells, const int *idx, long *global_idx) {
+  long owner[1];
+  int upper[1];
+  owner[0] = idx[0];
+  upper[0] = 0;
+  global_idx[0] = 2*owner[0];
+  owner[0] = idx[0];
+  upper[0] = 0;
+  global_idx[1] = 2*owner[0]+1;
+  owner[0] = 0;
+  upper[0] = 0;
+  global_idx[2] = 2*owner[0];
 }
 
-GKYL_CU_DH void fem_proj_1x_ser_p2_src_weighted(const double *weight, const double *rhs, double *out) {
-  out[0] = 0.2619047619047619*rhs[2]*weight[2]-0.25819888974716115*rhs[1]*weight[2]+0.14907119849998596*rhs[0]*weight[2]-0.25819888974716115*weight[1]*rhs[2]+0.14907119849998596*weight[0]*rhs[2]+0.3*rhs[1]*weight[1]-0.2886751345948129*rhs[0]*weight[1]-0.2886751345948129*weight[0]*rhs[1]+0.16666666666666666*rhs[0]*weight[0]; 
-  out[1] = 0.47619047619047616*rhs[2]*weight[2]-0.2981423969999719*rhs[0]*weight[2]-0.2981423969999719*weight[0]*rhs[2]+0.4*rhs[1]*weight[1]+0.6666666666666666*rhs[0]*weight[0]; 
-  out[2] = 0.2619047619047619*rhs[2]*weight[2]+0.25819888974716115*rhs[1]*weight[2]+0.14907119849998596*rhs[0]*weight[2]+0.25819888974716115*weight[1]*rhs[2]+0.14907119849998596*weight[0]*rhs[2]+0.3*rhs[1]*weight[1]+0.2886751345948129*rhs[0]*weight[1]+0.2886751345948129*weight[0]*rhs[1]+0.16666666666666666*rhs[0]*weight[0]; 
+void fem_proj_1x_ser_p2_mass_noweight_inx(const double *weight, const long *global_idx, gkyl_mat_triples *matrix) {
+  gkyl_mat_triples_accum(matrix, global_idx[0], global_idx[0], 0.26666666666666666);
+  gkyl_mat_triples_accum(matrix, global_idx[0], global_idx[1], 0.13333333333333333);
+  gkyl_mat_triples_accum(matrix, global_idx[0], global_idx[2], -0.06666666666666667);
+  gkyl_mat_triples_accum(matrix, global_idx[1], global_idx[0], 0.13333333333333333);
+  gkyl_mat_triples_accum(matrix, global_idx[1], global_idx[1], 1.0666666666666667);
+  gkyl_mat_triples_accum(matrix, global_idx[1], global_idx[2], 0.13333333333333333);
+  gkyl_mat_triples_accum(matrix, global_idx[2], global_idx[0], -0.06666666666666667);
+  gkyl_mat_triples_accum(matrix, global_idx[2], global_idx[1], 0.13333333333333333);
+  gkyl_mat_triples_accum(matrix, global_idx[2], global_idx[2], 0.26666666666666666);
 }
 
-GKYL_CU_DH void fem_proj_1x_ser_p2_eval(const double *input, double *out) {
-  out[0] = 1.5811388300841895*input[2]-1.224744871391589*input[1]+0.7071067811865475*input[0]; 
-  out[1] = 0.7071067811865475*input[0]-0.7905694150420947*input[2]; 
-  out[2] = 1.5811388300841895*input[2]+1.224744871391589*input[1]+0.7071067811865475*input[0]; 
+void fem_proj_1x_ser_p2_mass_noweight_lox_dirichletx(const double *weight, const long *global_idx, gkyl_mat_triples *matrix) {
+  gkyl_mat_triples_insert(matrix, global_idx[0], global_idx[0], 1.0);
+  gkyl_mat_triples_accum(matrix, global_idx[1], global_idx[0], 0.13333333333333333);
+  gkyl_mat_triples_accum(matrix, global_idx[1], global_idx[1], 1.0666666666666667);
+  gkyl_mat_triples_accum(matrix, global_idx[1], global_idx[2], 0.13333333333333333);
+  gkyl_mat_triples_accum(matrix, global_idx[2], global_idx[0], -0.06666666666666667);
+  gkyl_mat_triples_accum(matrix, global_idx[2], global_idx[1], 0.13333333333333333);
+  gkyl_mat_triples_accum(matrix, global_idx[2], global_idx[2], 0.26666666666666666);
+}
+
+void fem_proj_1x_ser_p2_mass_noweight_upx_dirichletx(const double *weight, const long *global_idx, gkyl_mat_triples *matrix) {
+  gkyl_mat_triples_accum(matrix, global_idx[0], global_idx[0], 0.26666666666666666);
+  gkyl_mat_triples_accum(matrix, global_idx[0], global_idx[1], 0.13333333333333333);
+  gkyl_mat_triples_accum(matrix, global_idx[0], global_idx[2], -0.06666666666666667);
+  gkyl_mat_triples_accum(matrix, global_idx[1], global_idx[0], 0.13333333333333333);
+  gkyl_mat_triples_accum(matrix, global_idx[1], global_idx[1], 1.0666666666666667);
+  gkyl_mat_triples_accum(matrix, global_idx[1], global_idx[2], 0.13333333333333333);
+  gkyl_mat_triples_insert(matrix, global_idx[2], global_idx[2], 1.0);
+}
+
+void fem_proj_1x_ser_p2_mass_noweight_lox_dirichletx_upx_dirichletx(const double *weight, const long *global_idx, gkyl_mat_triples *matrix) {
+  gkyl_mat_triples_insert(matrix, global_idx[0], global_idx[0], 1.0);
+  gkyl_mat_triples_accum(matrix, global_idx[1], global_idx[0], 0.13333333333333333);
+  gkyl_mat_triples_accum(matrix, global_idx[1], global_idx[1], 1.0666666666666667);
+  gkyl_mat_triples_accum(matrix, global_idx[1], global_idx[2], 0.13333333333333333);
+  gkyl_mat_triples_insert(matrix, global_idx[2], global_idx[2], 1.0);
+}
+
+GKYL_CU_DH void fem_proj_1x_ser_p2_src_noweight_inx(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[0]], 0.21081851067789195*rhs[2]-0.408248290463863*rhs[1]+0.2357022603955158*rhs[0]);
+#else
+  out[global_idx[0]] += 0.21081851067789195*rhs[2]-0.408248290463863*rhs[1]+0.2357022603955158*rhs[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[1]], 0.9428090415820636*rhs[0]-0.421637021355784*rhs[2]);
+#else
+  out[global_idx[1]] += 0.9428090415820636*rhs[0]-0.421637021355784*rhs[2];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[2]], 0.21081851067789195*rhs[2]+0.408248290463863*rhs[1]+0.2357022603955158*rhs[0]);
+#else
+  out[global_idx[2]] += 0.21081851067789195*rhs[2]+0.408248290463863*rhs[1]+0.2357022603955158*rhs[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_1x_ser_p2_src_noweight_lox_dirichletx(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[0]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[1]], 0.9428090415820636*rhs[0]-0.421637021355784*rhs[2]);
+#else
+  out[global_idx[1]] += 0.9428090415820636*rhs[0]-0.421637021355784*rhs[2];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[2]], 0.21081851067789195*rhs[2]+0.408248290463863*rhs[1]+0.2357022603955158*rhs[0]);
+#else
+  out[global_idx[2]] += 0.21081851067789195*rhs[2]+0.408248290463863*rhs[1]+0.2357022603955158*rhs[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_1x_ser_p2_src_noweight_lox_dirichletvarx(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5811388300841895*boundary_values[2]-1.224744871391589*boundary_values[1]+0.7071067811865475*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5811388300841895*boundary_values[2]-1.224744871391589*boundary_values[1]+0.7071067811865475*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[1]], 0.9428090415820636*rhs[0]-0.421637021355784*rhs[2]);
+#else
+  out[global_idx[1]] += 0.9428090415820636*rhs[0]-0.421637021355784*rhs[2];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[2]], 0.21081851067789195*rhs[2]+0.408248290463863*rhs[1]+0.2357022603955158*rhs[0]);
+#else
+  out[global_idx[2]] += 0.21081851067789195*rhs[2]+0.408248290463863*rhs[1]+0.2357022603955158*rhs[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_1x_ser_p2_src_noweight_upx_dirichletx(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[0]], 0.21081851067789195*rhs[2]-0.408248290463863*rhs[1]+0.2357022603955158*rhs[0]);
+#else
+  out[global_idx[0]] += 0.21081851067789195*rhs[2]-0.408248290463863*rhs[1]+0.2357022603955158*rhs[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[1]], 0.9428090415820636*rhs[0]-0.421637021355784*rhs[2]);
+#else
+  out[global_idx[1]] += 0.9428090415820636*rhs[0]-0.421637021355784*rhs[2];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[2]] = bc_values[1];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_1x_ser_p2_src_noweight_lox_dirichletx_upx_dirichletx(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[0]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[1]], 0.9428090415820636*rhs[0]-0.421637021355784*rhs[2]);
+#else
+  out[global_idx[1]] += 0.9428090415820636*rhs[0]-0.421637021355784*rhs[2];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[2]] = bc_values[1];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_1x_ser_p2_src_noweight_lox_dirichletvarx_upx_dirichletx(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5811388300841895*boundary_values[2]-1.224744871391589*boundary_values[1]+0.7071067811865475*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5811388300841895*boundary_values[2]-1.224744871391589*boundary_values[1]+0.7071067811865475*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[1]], 0.9428090415820636*rhs[0]-0.421637021355784*rhs[2]);
+#else
+  out[global_idx[1]] += 0.9428090415820636*rhs[0]-0.421637021355784*rhs[2];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[2]] = bc_values[1];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_1x_ser_p2_src_noweight_upx_dirichletvarx(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[0]], 0.21081851067789195*rhs[2]-0.408248290463863*rhs[1]+0.2357022603955158*rhs[0]);
+#else
+  out[global_idx[0]] += 0.21081851067789195*rhs[2]-0.408248290463863*rhs[1]+0.2357022603955158*rhs[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[1]], 0.9428090415820636*rhs[0]-0.421637021355784*rhs[2]);
+#else
+  out[global_idx[1]] += 0.9428090415820636*rhs[0]-0.421637021355784*rhs[2];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(1.5811388300841895*boundary_values[2]+1.224744871391589*boundary_values[1]+0.7071067811865475*boundary_values[0]));
+#else
+  out[global_idx[2]] = 1.5811388300841895*boundary_values[2]+1.224744871391589*boundary_values[1]+0.7071067811865475*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_1x_ser_p2_src_noweight_lox_dirichletx_upx_dirichletvarx(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[0]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[1]], 0.9428090415820636*rhs[0]-0.421637021355784*rhs[2]);
+#else
+  out[global_idx[1]] += 0.9428090415820636*rhs[0]-0.421637021355784*rhs[2];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(1.5811388300841895*boundary_values[2]+1.224744871391589*boundary_values[1]+0.7071067811865475*boundary_values[0]));
+#else
+  out[global_idx[2]] = 1.5811388300841895*boundary_values[2]+1.224744871391589*boundary_values[1]+0.7071067811865475*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_1x_ser_p2_src_noweight_lox_dirichletvarx_upx_dirichletvarx(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5811388300841895*boundary_values[2]-1.224744871391589*boundary_values[1]+0.7071067811865475*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5811388300841895*boundary_values[2]-1.224744871391589*boundary_values[1]+0.7071067811865475*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[1]], 0.9428090415820636*rhs[0]-0.421637021355784*rhs[2]);
+#else
+  out[global_idx[1]] += 0.9428090415820636*rhs[0]-0.421637021355784*rhs[2];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(1.5811388300841895*boundary_values[2]+1.224744871391589*boundary_values[1]+0.7071067811865475*boundary_values[0]));
+#else
+  out[global_idx[2]] = 1.5811388300841895*boundary_values[2]+1.224744871391589*boundary_values[1]+0.7071067811865475*boundary_values[0];
+#endif
+}
+
+void fem_proj_1x_ser_p2_mass_weighted_inx(const double *weight, const long *global_idx, gkyl_mat_triples *matrix) {
+  gkyl_mat_triples_accum(matrix, global_idx[0], global_idx[0], 0.19576004562947108*weight[2]-0.2449489742783178*weight[1]+0.18856180831641273*weight[0]);
+  gkyl_mat_triples_accum(matrix, global_idx[0], global_idx[1], 0.030116930096841705*weight[2]-0.16329931618554525*weight[1]+0.09428090415820634*weight[0]);
+  gkyl_mat_triples_accum(matrix, global_idx[0], global_idx[2], -(0.015058465048420852*weight[2])-0.04714045207910316*weight[0]);
+  gkyl_mat_triples_accum(matrix, global_idx[1], global_idx[0], 0.030116930096841705*weight[2]-0.16329931618554525*weight[1]+0.09428090415820634*weight[0]);
+  gkyl_mat_triples_accum(matrix, global_idx[1], global_idx[1], 0.7542472332656511*weight[0]-0.48187088154946756*weight[2]);
+  gkyl_mat_triples_accum(matrix, global_idx[1], global_idx[2], 0.030116930096841705*weight[2]+0.16329931618554525*weight[1]+0.09428090415820634*weight[0]);
+  gkyl_mat_triples_accum(matrix, global_idx[2], global_idx[0], -(0.015058465048420852*weight[2])-0.04714045207910316*weight[0]);
+  gkyl_mat_triples_accum(matrix, global_idx[2], global_idx[1], 0.030116930096841705*weight[2]+0.16329931618554525*weight[1]+0.09428090415820634*weight[0]);
+  gkyl_mat_triples_accum(matrix, global_idx[2], global_idx[2], 0.19576004562947108*weight[2]+0.2449489742783178*weight[1]+0.18856180831641273*weight[0]);
+}
+
+void fem_proj_1x_ser_p2_mass_weighted_lox_dirichletx(const double *weight, const long *global_idx, gkyl_mat_triples *matrix) {
+  gkyl_mat_triples_insert(matrix, global_idx[0], global_idx[0], 1.0);
+  gkyl_mat_triples_accum(matrix, global_idx[1], global_idx[0], 0.030116930096841705*weight[2]-0.16329931618554525*weight[1]+0.09428090415820634*weight[0]);
+  gkyl_mat_triples_accum(matrix, global_idx[1], global_idx[1], 0.7542472332656511*weight[0]-0.48187088154946756*weight[2]);
+  gkyl_mat_triples_accum(matrix, global_idx[1], global_idx[2], 0.030116930096841705*weight[2]+0.16329931618554525*weight[1]+0.09428090415820634*weight[0]);
+  gkyl_mat_triples_accum(matrix, global_idx[2], global_idx[0], -(0.015058465048420852*weight[2])-0.04714045207910316*weight[0]);
+  gkyl_mat_triples_accum(matrix, global_idx[2], global_idx[1], 0.030116930096841705*weight[2]+0.16329931618554525*weight[1]+0.09428090415820634*weight[0]);
+  gkyl_mat_triples_accum(matrix, global_idx[2], global_idx[2], 0.19576004562947108*weight[2]+0.2449489742783178*weight[1]+0.18856180831641273*weight[0]);
+}
+
+void fem_proj_1x_ser_p2_mass_weighted_upx_dirichletx(const double *weight, const long *global_idx, gkyl_mat_triples *matrix) {
+  gkyl_mat_triples_accum(matrix, global_idx[0], global_idx[0], 0.19576004562947108*weight[2]-0.2449489742783178*weight[1]+0.18856180831641273*weight[0]);
+  gkyl_mat_triples_accum(matrix, global_idx[0], global_idx[1], 0.030116930096841705*weight[2]-0.16329931618554525*weight[1]+0.09428090415820634*weight[0]);
+  gkyl_mat_triples_accum(matrix, global_idx[0], global_idx[2], -(0.015058465048420852*weight[2])-0.04714045207910316*weight[0]);
+  gkyl_mat_triples_accum(matrix, global_idx[1], global_idx[0], 0.030116930096841705*weight[2]-0.16329931618554525*weight[1]+0.09428090415820634*weight[0]);
+  gkyl_mat_triples_accum(matrix, global_idx[1], global_idx[1], 0.7542472332656511*weight[0]-0.48187088154946756*weight[2]);
+  gkyl_mat_triples_accum(matrix, global_idx[1], global_idx[2], 0.030116930096841705*weight[2]+0.16329931618554525*weight[1]+0.09428090415820634*weight[0]);
+  gkyl_mat_triples_insert(matrix, global_idx[2], global_idx[2], 1.0);
+}
+
+void fem_proj_1x_ser_p2_mass_weighted_lox_dirichletx_upx_dirichletx(const double *weight, const long *global_idx, gkyl_mat_triples *matrix) {
+  gkyl_mat_triples_insert(matrix, global_idx[0], global_idx[0], 1.0);
+  gkyl_mat_triples_accum(matrix, global_idx[1], global_idx[0], 0.030116930096841705*weight[2]-0.16329931618554525*weight[1]+0.09428090415820634*weight[0]);
+  gkyl_mat_triples_accum(matrix, global_idx[1], global_idx[1], 0.7542472332656511*weight[0]-0.48187088154946756*weight[2]);
+  gkyl_mat_triples_accum(matrix, global_idx[1], global_idx[2], 0.030116930096841705*weight[2]+0.16329931618554525*weight[1]+0.09428090415820634*weight[0]);
+  gkyl_mat_triples_insert(matrix, global_idx[2], global_idx[2], 1.0);
+}
+
+GKYL_CU_DH void fem_proj_1x_ser_p2_src_weighted_inx(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[0]], 0.2619047619047619*rhs[2]*weight[2]-0.25819888974716115*rhs[1]*weight[2]+0.14907119849998596*rhs[0]*weight[2]-0.25819888974716115*weight[1]*rhs[2]+0.14907119849998596*weight[0]*rhs[2]+0.3*rhs[1]*weight[1]-0.2886751345948129*rhs[0]*weight[1]-0.2886751345948129*weight[0]*rhs[1]+0.16666666666666666*rhs[0]*weight[0]);
+#else
+  out[global_idx[0]] += 0.2619047619047619*rhs[2]*weight[2]-0.25819888974716115*rhs[1]*weight[2]+0.14907119849998596*rhs[0]*weight[2]-0.25819888974716115*weight[1]*rhs[2]+0.14907119849998596*weight[0]*rhs[2]+0.3*rhs[1]*weight[1]-0.2886751345948129*rhs[0]*weight[1]-0.2886751345948129*weight[0]*rhs[1]+0.16666666666666666*rhs[0]*weight[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[1]], 0.47619047619047616*rhs[2]*weight[2]-0.2981423969999719*rhs[0]*weight[2]-0.2981423969999719*weight[0]*rhs[2]+0.4*rhs[1]*weight[1]+0.6666666666666666*rhs[0]*weight[0]);
+#else
+  out[global_idx[1]] += 0.47619047619047616*rhs[2]*weight[2]-0.2981423969999719*rhs[0]*weight[2]-0.2981423969999719*weight[0]*rhs[2]+0.4*rhs[1]*weight[1]+0.6666666666666666*rhs[0]*weight[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[2]], 0.2619047619047619*rhs[2]*weight[2]+0.25819888974716115*rhs[1]*weight[2]+0.14907119849998596*rhs[0]*weight[2]+0.25819888974716115*weight[1]*rhs[2]+0.14907119849998596*weight[0]*rhs[2]+0.3*rhs[1]*weight[1]+0.2886751345948129*rhs[0]*weight[1]+0.2886751345948129*weight[0]*rhs[1]+0.16666666666666666*rhs[0]*weight[0]);
+#else
+  out[global_idx[2]] += 0.2619047619047619*rhs[2]*weight[2]+0.25819888974716115*rhs[1]*weight[2]+0.14907119849998596*rhs[0]*weight[2]+0.25819888974716115*weight[1]*rhs[2]+0.14907119849998596*weight[0]*rhs[2]+0.3*rhs[1]*weight[1]+0.2886751345948129*rhs[0]*weight[1]+0.2886751345948129*weight[0]*rhs[1]+0.16666666666666666*rhs[0]*weight[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_1x_ser_p2_src_weighted_lox_dirichletx(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[0]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[1]], 0.47619047619047616*rhs[2]*weight[2]-0.2981423969999719*rhs[0]*weight[2]-0.2981423969999719*weight[0]*rhs[2]+0.4*rhs[1]*weight[1]+0.6666666666666666*rhs[0]*weight[0]);
+#else
+  out[global_idx[1]] += 0.47619047619047616*rhs[2]*weight[2]-0.2981423969999719*rhs[0]*weight[2]-0.2981423969999719*weight[0]*rhs[2]+0.4*rhs[1]*weight[1]+0.6666666666666666*rhs[0]*weight[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[2]], 0.2619047619047619*rhs[2]*weight[2]+0.25819888974716115*rhs[1]*weight[2]+0.14907119849998596*rhs[0]*weight[2]+0.25819888974716115*weight[1]*rhs[2]+0.14907119849998596*weight[0]*rhs[2]+0.3*rhs[1]*weight[1]+0.2886751345948129*rhs[0]*weight[1]+0.2886751345948129*weight[0]*rhs[1]+0.16666666666666666*rhs[0]*weight[0]);
+#else
+  out[global_idx[2]] += 0.2619047619047619*rhs[2]*weight[2]+0.25819888974716115*rhs[1]*weight[2]+0.14907119849998596*rhs[0]*weight[2]+0.25819888974716115*weight[1]*rhs[2]+0.14907119849998596*weight[0]*rhs[2]+0.3*rhs[1]*weight[1]+0.2886751345948129*rhs[0]*weight[1]+0.2886751345948129*weight[0]*rhs[1]+0.16666666666666666*rhs[0]*weight[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_1x_ser_p2_src_weighted_lox_dirichletvarx(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5811388300841895*boundary_values[2]-1.224744871391589*boundary_values[1]+0.7071067811865475*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5811388300841895*boundary_values[2]-1.224744871391589*boundary_values[1]+0.7071067811865475*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[1]], 0.47619047619047616*rhs[2]*weight[2]-0.2981423969999719*rhs[0]*weight[2]-0.2981423969999719*weight[0]*rhs[2]+0.4*rhs[1]*weight[1]+0.6666666666666666*rhs[0]*weight[0]);
+#else
+  out[global_idx[1]] += 0.47619047619047616*rhs[2]*weight[2]-0.2981423969999719*rhs[0]*weight[2]-0.2981423969999719*weight[0]*rhs[2]+0.4*rhs[1]*weight[1]+0.6666666666666666*rhs[0]*weight[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[2]], 0.2619047619047619*rhs[2]*weight[2]+0.25819888974716115*rhs[1]*weight[2]+0.14907119849998596*rhs[0]*weight[2]+0.25819888974716115*weight[1]*rhs[2]+0.14907119849998596*weight[0]*rhs[2]+0.3*rhs[1]*weight[1]+0.2886751345948129*rhs[0]*weight[1]+0.2886751345948129*weight[0]*rhs[1]+0.16666666666666666*rhs[0]*weight[0]);
+#else
+  out[global_idx[2]] += 0.2619047619047619*rhs[2]*weight[2]+0.25819888974716115*rhs[1]*weight[2]+0.14907119849998596*rhs[0]*weight[2]+0.25819888974716115*weight[1]*rhs[2]+0.14907119849998596*weight[0]*rhs[2]+0.3*rhs[1]*weight[1]+0.2886751345948129*rhs[0]*weight[1]+0.2886751345948129*weight[0]*rhs[1]+0.16666666666666666*rhs[0]*weight[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_1x_ser_p2_src_weighted_upx_dirichletx(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[0]], 0.2619047619047619*rhs[2]*weight[2]-0.25819888974716115*rhs[1]*weight[2]+0.14907119849998596*rhs[0]*weight[2]-0.25819888974716115*weight[1]*rhs[2]+0.14907119849998596*weight[0]*rhs[2]+0.3*rhs[1]*weight[1]-0.2886751345948129*rhs[0]*weight[1]-0.2886751345948129*weight[0]*rhs[1]+0.16666666666666666*rhs[0]*weight[0]);
+#else
+  out[global_idx[0]] += 0.2619047619047619*rhs[2]*weight[2]-0.25819888974716115*rhs[1]*weight[2]+0.14907119849998596*rhs[0]*weight[2]-0.25819888974716115*weight[1]*rhs[2]+0.14907119849998596*weight[0]*rhs[2]+0.3*rhs[1]*weight[1]-0.2886751345948129*rhs[0]*weight[1]-0.2886751345948129*weight[0]*rhs[1]+0.16666666666666666*rhs[0]*weight[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[1]], 0.47619047619047616*rhs[2]*weight[2]-0.2981423969999719*rhs[0]*weight[2]-0.2981423969999719*weight[0]*rhs[2]+0.4*rhs[1]*weight[1]+0.6666666666666666*rhs[0]*weight[0]);
+#else
+  out[global_idx[1]] += 0.47619047619047616*rhs[2]*weight[2]-0.2981423969999719*rhs[0]*weight[2]-0.2981423969999719*weight[0]*rhs[2]+0.4*rhs[1]*weight[1]+0.6666666666666666*rhs[0]*weight[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[2]] = bc_values[1];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_1x_ser_p2_src_weighted_lox_dirichletx_upx_dirichletx(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[0]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[1]], 0.47619047619047616*rhs[2]*weight[2]-0.2981423969999719*rhs[0]*weight[2]-0.2981423969999719*weight[0]*rhs[2]+0.4*rhs[1]*weight[1]+0.6666666666666666*rhs[0]*weight[0]);
+#else
+  out[global_idx[1]] += 0.47619047619047616*rhs[2]*weight[2]-0.2981423969999719*rhs[0]*weight[2]-0.2981423969999719*weight[0]*rhs[2]+0.4*rhs[1]*weight[1]+0.6666666666666666*rhs[0]*weight[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[2]] = bc_values[1];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_1x_ser_p2_src_weighted_lox_dirichletvarx_upx_dirichletx(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5811388300841895*boundary_values[2]-1.224744871391589*boundary_values[1]+0.7071067811865475*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5811388300841895*boundary_values[2]-1.224744871391589*boundary_values[1]+0.7071067811865475*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[1]], 0.47619047619047616*rhs[2]*weight[2]-0.2981423969999719*rhs[0]*weight[2]-0.2981423969999719*weight[0]*rhs[2]+0.4*rhs[1]*weight[1]+0.6666666666666666*rhs[0]*weight[0]);
+#else
+  out[global_idx[1]] += 0.47619047619047616*rhs[2]*weight[2]-0.2981423969999719*rhs[0]*weight[2]-0.2981423969999719*weight[0]*rhs[2]+0.4*rhs[1]*weight[1]+0.6666666666666666*rhs[0]*weight[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[2]] = bc_values[1];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_1x_ser_p2_src_weighted_upx_dirichletvarx(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[0]], 0.2619047619047619*rhs[2]*weight[2]-0.25819888974716115*rhs[1]*weight[2]+0.14907119849998596*rhs[0]*weight[2]-0.25819888974716115*weight[1]*rhs[2]+0.14907119849998596*weight[0]*rhs[2]+0.3*rhs[1]*weight[1]-0.2886751345948129*rhs[0]*weight[1]-0.2886751345948129*weight[0]*rhs[1]+0.16666666666666666*rhs[0]*weight[0]);
+#else
+  out[global_idx[0]] += 0.2619047619047619*rhs[2]*weight[2]-0.25819888974716115*rhs[1]*weight[2]+0.14907119849998596*rhs[0]*weight[2]-0.25819888974716115*weight[1]*rhs[2]+0.14907119849998596*weight[0]*rhs[2]+0.3*rhs[1]*weight[1]-0.2886751345948129*rhs[0]*weight[1]-0.2886751345948129*weight[0]*rhs[1]+0.16666666666666666*rhs[0]*weight[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[1]], 0.47619047619047616*rhs[2]*weight[2]-0.2981423969999719*rhs[0]*weight[2]-0.2981423969999719*weight[0]*rhs[2]+0.4*rhs[1]*weight[1]+0.6666666666666666*rhs[0]*weight[0]);
+#else
+  out[global_idx[1]] += 0.47619047619047616*rhs[2]*weight[2]-0.2981423969999719*rhs[0]*weight[2]-0.2981423969999719*weight[0]*rhs[2]+0.4*rhs[1]*weight[1]+0.6666666666666666*rhs[0]*weight[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(1.5811388300841895*boundary_values[2]+1.224744871391589*boundary_values[1]+0.7071067811865475*boundary_values[0]));
+#else
+  out[global_idx[2]] = 1.5811388300841895*boundary_values[2]+1.224744871391589*boundary_values[1]+0.7071067811865475*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_1x_ser_p2_src_weighted_lox_dirichletx_upx_dirichletvarx(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[0]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[1]], 0.47619047619047616*rhs[2]*weight[2]-0.2981423969999719*rhs[0]*weight[2]-0.2981423969999719*weight[0]*rhs[2]+0.4*rhs[1]*weight[1]+0.6666666666666666*rhs[0]*weight[0]);
+#else
+  out[global_idx[1]] += 0.47619047619047616*rhs[2]*weight[2]-0.2981423969999719*rhs[0]*weight[2]-0.2981423969999719*weight[0]*rhs[2]+0.4*rhs[1]*weight[1]+0.6666666666666666*rhs[0]*weight[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(1.5811388300841895*boundary_values[2]+1.224744871391589*boundary_values[1]+0.7071067811865475*boundary_values[0]));
+#else
+  out[global_idx[2]] = 1.5811388300841895*boundary_values[2]+1.224744871391589*boundary_values[1]+0.7071067811865475*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_1x_ser_p2_src_weighted_lox_dirichletvarx_upx_dirichletvarx(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5811388300841895*boundary_values[2]-1.224744871391589*boundary_values[1]+0.7071067811865475*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5811388300841895*boundary_values[2]-1.224744871391589*boundary_values[1]+0.7071067811865475*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[1]], 0.47619047619047616*rhs[2]*weight[2]-0.2981423969999719*rhs[0]*weight[2]-0.2981423969999719*weight[0]*rhs[2]+0.4*rhs[1]*weight[1]+0.6666666666666666*rhs[0]*weight[0]);
+#else
+  out[global_idx[1]] += 0.47619047619047616*rhs[2]*weight[2]-0.2981423969999719*rhs[0]*weight[2]-0.2981423969999719*weight[0]*rhs[2]+0.4*rhs[1]*weight[1]+0.6666666666666666*rhs[0]*weight[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(1.5811388300841895*boundary_values[2]+1.224744871391589*boundary_values[1]+0.7071067811865475*boundary_values[0]));
+#else
+  out[global_idx[2]] = 1.5811388300841895*boundary_values[2]+1.224744871391589*boundary_values[1]+0.7071067811865475*boundary_values[0];
+#endif
 }
 
 GKYL_CU_DH void fem_proj_1x_ser_p2_sol(const double *input, double *out) {

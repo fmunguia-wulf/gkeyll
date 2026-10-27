@@ -8,70 +8,4450 @@ long fem_proj_2x_ser_p1_num_nodes(const int *cells, const bool *periodic) {
   return count;
 }
 
-void fem_proj_2x_ser_p1_local_to_global(const int *idx, const int *shape, long *global_idx) {
-  global_idx[0] = (long)((1*idx[1]+0)%shape[1])*shape[0] + (long)((1*idx[0]+0)%shape[0]);
-  global_idx[1] = (long)((1*idx[1]+0)%shape[1])*shape[0] + (long)((1*idx[0]+1)%shape[0]);
-  global_idx[2] = (long)((1*idx[1]+1)%shape[1])*shape[0] + (long)((1*idx[0]+0)%shape[0]);
-  global_idx[3] = (long)((1*idx[1]+1)%shape[1])*shape[0] + (long)((1*idx[0]+1)%shape[0]);
+GKYL_CU_DH void fem_proj_2x_ser_p1_local_to_global_inx_nonperiodicx_iny_nonperiodicy(const int *num_cells, const int *idx, long *global_idx) {
+  long owner[2];
+  int upper[2];
+  owner[0] = idx[0];
+  upper[0] = owner[0] == num_cells[0]-1;
+  owner[1] = idx[1];
+  upper[1] = owner[1] == num_cells[1]-1;
+  global_idx[0] = upper[0]*owner[1]+owner[1]+owner[0]*num_cells[1]+owner[0];
+  owner[0] = (long)idx[0]+1;
+  upper[0] = owner[0] == num_cells[0]-1;
+  owner[1] = idx[1];
+  upper[1] = owner[1] == num_cells[1]-1;
+  global_idx[1] = upper[0]*owner[1]+owner[1]+owner[0]*num_cells[1]+owner[0];
+  owner[0] = idx[0];
+  upper[0] = owner[0] == num_cells[0]-1;
+  owner[1] = (long)idx[1]+1;
+  upper[1] = owner[1] == num_cells[1]-1;
+  global_idx[2] = upper[0]*owner[1]+owner[1]+owner[0]*num_cells[1]+owner[0];
+  owner[0] = (long)idx[0]+1;
+  upper[0] = owner[0] == num_cells[0]-1;
+  owner[1] = (long)idx[1]+1;
+  upper[1] = owner[1] == num_cells[1]-1;
+  global_idx[3] = upper[0]*owner[1]+owner[1]+owner[0]*num_cells[1]+owner[0];
 }
 
-GKYL_CU_DH void fem_proj_2x_ser_p1_mass(const double *weight, double *out) {
-  out[0] = 0.4444444444444444; 
-  out[1] = 0.2222222222222222; 
-  out[2] = 0.2222222222222222; 
-  out[3] = 0.1111111111111111; 
-  out[4] = 0.2222222222222222; 
-  out[5] = 0.4444444444444444; 
-  out[6] = 0.1111111111111111; 
-  out[7] = 0.2222222222222222; 
-  out[8] = 0.2222222222222222; 
-  out[9] = 0.1111111111111111; 
-  out[10] = 0.4444444444444444; 
-  out[11] = 0.2222222222222222; 
-  out[12] = 0.1111111111111111; 
-  out[13] = 0.2222222222222222; 
-  out[14] = 0.2222222222222222; 
-  out[15] = 0.4444444444444444; 
+GKYL_CU_DH void fem_proj_2x_ser_p1_local_to_global_upx_nonperiodicx_iny_nonperiodicy(const int *num_cells, const int *idx, long *global_idx) {
+  long owner[2];
+  int upper[2];
+  owner[0] = idx[0];
+  upper[0] = owner[0] == num_cells[0]-1;
+  owner[1] = idx[1];
+  upper[1] = owner[1] == num_cells[1]-1;
+  global_idx[0] = upper[0]*owner[1]+owner[1]+owner[0]*num_cells[1]+owner[0];
+  owner[0] = idx[0];
+  upper[0] = owner[0] == num_cells[0]-1;
+  owner[1] = idx[1];
+  upper[1] = owner[1] == num_cells[1]-1;
+  global_idx[1] = upper[0]*owner[1]+owner[1]+owner[0]*num_cells[1]+owner[0]+1;
+  owner[0] = idx[0];
+  upper[0] = owner[0] == num_cells[0]-1;
+  owner[1] = (long)idx[1]+1;
+  upper[1] = owner[1] == num_cells[1]-1;
+  global_idx[2] = upper[0]*owner[1]+owner[1]+owner[0]*num_cells[1]+owner[0];
+  owner[0] = idx[0];
+  upper[0] = owner[0] == num_cells[0]-1;
+  owner[1] = (long)idx[1]+1;
+  upper[1] = owner[1] == num_cells[1]-1;
+  global_idx[3] = upper[0]*owner[1]+owner[1]+owner[0]*num_cells[1]+owner[0]+1;
 }
 
-GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight(const double *weight, const double *rhs, double *out) {
-  out[0] = 0.16666666666666666*rhs[3]-0.2886751345948129*rhs[2]-0.2886751345948129*rhs[1]+0.5*rhs[0]; 
-  out[1] = -(0.16666666666666666*rhs[3])-0.2886751345948129*rhs[2]+0.2886751345948129*rhs[1]+0.5*rhs[0]; 
-  out[2] = -(0.16666666666666666*rhs[3])+0.2886751345948129*rhs[2]-0.2886751345948129*rhs[1]+0.5*rhs[0]; 
-  out[3] = 0.16666666666666666*rhs[3]+0.2886751345948129*rhs[2]+0.2886751345948129*rhs[1]+0.5*rhs[0]; 
+GKYL_CU_DH void fem_proj_2x_ser_p1_local_to_global_inx_nonperiodicx_upy_nonperiodicy(const int *num_cells, const int *idx, long *global_idx) {
+  long owner[2];
+  int upper[2];
+  owner[0] = idx[0];
+  upper[0] = owner[0] == num_cells[0]-1;
+  owner[1] = idx[1];
+  upper[1] = owner[1] == num_cells[1]-1;
+  global_idx[0] = upper[0]*owner[1]+owner[1]+owner[0]*num_cells[1]+owner[0];
+  owner[0] = (long)idx[0]+1;
+  upper[0] = owner[0] == num_cells[0]-1;
+  owner[1] = idx[1];
+  upper[1] = owner[1] == num_cells[1]-1;
+  global_idx[1] = upper[0]*owner[1]+owner[1]+owner[0]*num_cells[1]+owner[0];
+  owner[0] = idx[0];
+  upper[0] = owner[0] == num_cells[0]-1;
+  owner[1] = idx[1];
+  upper[1] = owner[1] == num_cells[1]-1;
+  global_idx[2] = upper[0]*owner[1]+owner[1]+owner[0]*num_cells[1]+upper[0]+owner[0]+1;
+  owner[0] = (long)idx[0]+1;
+  upper[0] = owner[0] == num_cells[0]-1;
+  owner[1] = idx[1];
+  upper[1] = owner[1] == num_cells[1]-1;
+  global_idx[3] = upper[0]*owner[1]+owner[1]+owner[0]*num_cells[1]+upper[0]+owner[0]+1;
 }
 
-GKYL_CU_DH void fem_proj_2x_ser_p1_mass_weighted(const double *weight, double *out) {
-  out[0] = 0.16666666666666666*weight[3]-0.1924500897298753*weight[2]-0.1924500897298753*weight[1]+0.2222222222222222*weight[0]; 
-  out[1] = 0.1111111111111111*weight[0]-0.09622504486493764*weight[2]; 
-  out[2] = 0.1111111111111111*weight[0]-0.09622504486493764*weight[1]; 
-  out[3] = 0.05555555555555555*weight[0]; 
-  out[4] = 0.1111111111111111*weight[0]-0.09622504486493764*weight[2]; 
-  out[5] = -(0.16666666666666666*weight[3])-0.1924500897298753*weight[2]+0.1924500897298753*weight[1]+0.2222222222222222*weight[0]; 
-  out[6] = 0.05555555555555555*weight[0]; 
-  out[7] = 0.09622504486493764*weight[1]+0.1111111111111111*weight[0]; 
-  out[8] = 0.1111111111111111*weight[0]-0.09622504486493764*weight[1]; 
-  out[9] = 0.05555555555555555*weight[0]; 
-  out[10] = -(0.16666666666666666*weight[3])+0.1924500897298753*weight[2]-0.1924500897298753*weight[1]+0.2222222222222222*weight[0]; 
-  out[11] = 0.09622504486493764*weight[2]+0.1111111111111111*weight[0]; 
-  out[12] = 0.05555555555555555*weight[0]; 
-  out[13] = 0.09622504486493764*weight[1]+0.1111111111111111*weight[0]; 
-  out[14] = 0.09622504486493764*weight[2]+0.1111111111111111*weight[0]; 
-  out[15] = 0.16666666666666666*weight[3]+0.1924500897298753*weight[2]+0.1924500897298753*weight[1]+0.2222222222222222*weight[0]; 
+GKYL_CU_DH void fem_proj_2x_ser_p1_local_to_global_upx_nonperiodicx_upy_nonperiodicy(const int *num_cells, const int *idx, long *global_idx) {
+  long owner[2];
+  int upper[2];
+  owner[0] = idx[0];
+  upper[0] = owner[0] == num_cells[0]-1;
+  owner[1] = idx[1];
+  upper[1] = owner[1] == num_cells[1]-1;
+  global_idx[0] = upper[0]*owner[1]+owner[1]+owner[0]*num_cells[1]+owner[0];
+  owner[0] = idx[0];
+  upper[0] = owner[0] == num_cells[0]-1;
+  owner[1] = idx[1];
+  upper[1] = owner[1] == num_cells[1]-1;
+  global_idx[1] = upper[0]*owner[1]+owner[1]+owner[0]*num_cells[1]+owner[0]+1;
+  owner[0] = idx[0];
+  upper[0] = owner[0] == num_cells[0]-1;
+  owner[1] = idx[1];
+  upper[1] = owner[1] == num_cells[1]-1;
+  global_idx[2] = upper[0]*owner[1]+owner[1]+owner[0]*num_cells[1]+upper[0]+owner[0]+1;
+  owner[0] = idx[0];
+  upper[0] = owner[0] == num_cells[0]-1;
+  owner[1] = idx[1];
+  upper[1] = owner[1] == num_cells[1]-1;
+  global_idx[3] = upper[1]+upper[0]*owner[1]+owner[1]+owner[0]*num_cells[1]+upper[0]+owner[0]+1;
 }
 
-GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted(const double *weight, const double *rhs, double *out) {
-  out[0] = 0.25*rhs[3]*weight[3]-0.14433756729740646*rhs[2]*weight[3]-0.14433756729740646*rhs[1]*weight[3]+0.08333333333333333*rhs[0]*weight[3]-0.14433756729740646*weight[2]*rhs[3]-0.14433756729740646*weight[1]*rhs[3]+0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]+0.08333333333333333*rhs[1]*weight[2]-0.14433756729740646*rhs[0]*weight[2]+0.08333333333333333*weight[1]*rhs[2]-0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]-0.14433756729740646*rhs[0]*weight[1]-0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0]; 
-  out[1] = 0.25*rhs[3]*weight[3]+0.14433756729740646*rhs[2]*weight[3]-0.14433756729740646*rhs[1]*weight[3]-0.08333333333333333*rhs[0]*weight[3]+0.14433756729740646*weight[2]*rhs[3]-0.14433756729740646*weight[1]*rhs[3]-0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]-0.08333333333333333*rhs[1]*weight[2]-0.14433756729740646*rhs[0]*weight[2]-0.08333333333333333*weight[1]*rhs[2]-0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]+0.14433756729740646*rhs[0]*weight[1]+0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0]; 
-  out[2] = 0.25*rhs[3]*weight[3]-0.14433756729740646*rhs[2]*weight[3]+0.14433756729740646*rhs[1]*weight[3]-0.08333333333333333*rhs[0]*weight[3]-0.14433756729740646*weight[2]*rhs[3]+0.14433756729740646*weight[1]*rhs[3]-0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]-0.08333333333333333*rhs[1]*weight[2]+0.14433756729740646*rhs[0]*weight[2]-0.08333333333333333*weight[1]*rhs[2]+0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]-0.14433756729740646*rhs[0]*weight[1]-0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0]; 
-  out[3] = 0.25*rhs[3]*weight[3]+0.14433756729740646*rhs[2]*weight[3]+0.14433756729740646*rhs[1]*weight[3]+0.08333333333333333*rhs[0]*weight[3]+0.14433756729740646*weight[2]*rhs[3]+0.14433756729740646*weight[1]*rhs[3]+0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]+0.08333333333333333*rhs[1]*weight[2]+0.14433756729740646*rhs[0]*weight[2]+0.08333333333333333*weight[1]*rhs[2]+0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]+0.14433756729740646*rhs[0]*weight[1]+0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0]; 
+GKYL_CU_DH void fem_proj_2x_ser_p1_local_to_global_inx_periodicx_iny_nonperiodicy(const int *num_cells, const int *idx, long *global_idx) {
+  long owner[2];
+  int upper[2];
+  owner[0] = idx[0];
+  upper[0] = 0;
+  owner[1] = idx[1];
+  upper[1] = owner[1] == num_cells[1]-1;
+  global_idx[0] = upper[0]*owner[1]+owner[1]+owner[0]*num_cells[1]+owner[0];
+  owner[0] = (long)idx[0]+1;
+  upper[0] = 0;
+  owner[1] = idx[1];
+  upper[1] = owner[1] == num_cells[1]-1;
+  global_idx[1] = upper[0]*owner[1]+owner[1]+owner[0]*num_cells[1]+owner[0];
+  owner[0] = idx[0];
+  upper[0] = 0;
+  owner[1] = (long)idx[1]+1;
+  upper[1] = owner[1] == num_cells[1]-1;
+  global_idx[2] = upper[0]*owner[1]+owner[1]+owner[0]*num_cells[1]+owner[0];
+  owner[0] = (long)idx[0]+1;
+  upper[0] = 0;
+  owner[1] = (long)idx[1]+1;
+  upper[1] = owner[1] == num_cells[1]-1;
+  global_idx[3] = upper[0]*owner[1]+owner[1]+owner[0]*num_cells[1]+owner[0];
 }
 
-GKYL_CU_DH void fem_proj_2x_ser_p1_eval(const double *input, double *out) {
-  out[0] = 1.5*input[3]-0.8660254037844386*input[2]-0.8660254037844386*input[1]+0.5*input[0]; 
-  out[1] = -(1.5*input[3])-0.8660254037844386*input[2]+0.8660254037844386*input[1]+0.5*input[0]; 
-  out[2] = -(1.5*input[3])+0.8660254037844386*input[2]-0.8660254037844386*input[1]+0.5*input[0]; 
-  out[3] = 1.5*input[3]+0.8660254037844386*input[2]+0.8660254037844386*input[1]+0.5*input[0]; 
+GKYL_CU_DH void fem_proj_2x_ser_p1_local_to_global_upx_periodicx_iny_nonperiodicy(const int *num_cells, const int *idx, long *global_idx) {
+  long owner[2];
+  int upper[2];
+  owner[0] = idx[0];
+  upper[0] = 0;
+  owner[1] = idx[1];
+  upper[1] = owner[1] == num_cells[1]-1;
+  global_idx[0] = upper[0]*owner[1]+owner[1]+owner[0]*num_cells[1]+owner[0];
+  owner[0] = 0;
+  upper[0] = 0;
+  owner[1] = idx[1];
+  upper[1] = owner[1] == num_cells[1]-1;
+  global_idx[1] = upper[0]*owner[1]+owner[1]+owner[0]*num_cells[1]+owner[0];
+  owner[0] = idx[0];
+  upper[0] = 0;
+  owner[1] = (long)idx[1]+1;
+  upper[1] = owner[1] == num_cells[1]-1;
+  global_idx[2] = upper[0]*owner[1]+owner[1]+owner[0]*num_cells[1]+owner[0];
+  owner[0] = 0;
+  upper[0] = 0;
+  owner[1] = (long)idx[1]+1;
+  upper[1] = owner[1] == num_cells[1]-1;
+  global_idx[3] = upper[0]*owner[1]+owner[1]+owner[0]*num_cells[1]+owner[0];
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_local_to_global_inx_periodicx_upy_nonperiodicy(const int *num_cells, const int *idx, long *global_idx) {
+  long owner[2];
+  int upper[2];
+  owner[0] = idx[0];
+  upper[0] = 0;
+  owner[1] = idx[1];
+  upper[1] = owner[1] == num_cells[1]-1;
+  global_idx[0] = upper[0]*owner[1]+owner[1]+owner[0]*num_cells[1]+owner[0];
+  owner[0] = (long)idx[0]+1;
+  upper[0] = 0;
+  owner[1] = idx[1];
+  upper[1] = owner[1] == num_cells[1]-1;
+  global_idx[1] = upper[0]*owner[1]+owner[1]+owner[0]*num_cells[1]+owner[0];
+  owner[0] = idx[0];
+  upper[0] = 0;
+  owner[1] = idx[1];
+  upper[1] = owner[1] == num_cells[1]-1;
+  global_idx[2] = upper[0]*owner[1]+owner[1]+owner[0]*num_cells[1]+upper[0]+owner[0]+1;
+  owner[0] = (long)idx[0]+1;
+  upper[0] = 0;
+  owner[1] = idx[1];
+  upper[1] = owner[1] == num_cells[1]-1;
+  global_idx[3] = upper[0]*owner[1]+owner[1]+owner[0]*num_cells[1]+upper[0]+owner[0]+1;
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_local_to_global_upx_periodicx_upy_nonperiodicy(const int *num_cells, const int *idx, long *global_idx) {
+  long owner[2];
+  int upper[2];
+  owner[0] = idx[0];
+  upper[0] = 0;
+  owner[1] = idx[1];
+  upper[1] = owner[1] == num_cells[1]-1;
+  global_idx[0] = upper[0]*owner[1]+owner[1]+owner[0]*num_cells[1]+owner[0];
+  owner[0] = 0;
+  upper[0] = 0;
+  owner[1] = idx[1];
+  upper[1] = owner[1] == num_cells[1]-1;
+  global_idx[1] = upper[0]*owner[1]+owner[1]+owner[0]*num_cells[1]+owner[0];
+  owner[0] = idx[0];
+  upper[0] = 0;
+  owner[1] = idx[1];
+  upper[1] = owner[1] == num_cells[1]-1;
+  global_idx[2] = upper[0]*owner[1]+owner[1]+owner[0]*num_cells[1]+upper[0]+owner[0]+1;
+  owner[0] = 0;
+  upper[0] = 0;
+  owner[1] = idx[1];
+  upper[1] = owner[1] == num_cells[1]-1;
+  global_idx[3] = upper[0]*owner[1]+owner[1]+owner[0]*num_cells[1]+upper[0]+owner[0]+1;
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_local_to_global_inx_nonperiodicx_iny_periodicy(const int *num_cells, const int *idx, long *global_idx) {
+  long owner[2];
+  int upper[2];
+  owner[0] = idx[0];
+  upper[0] = owner[0] == num_cells[0]-1;
+  owner[1] = idx[1];
+  upper[1] = 0;
+  global_idx[0] = upper[0]*owner[1]+owner[1]+owner[0]*num_cells[1];
+  owner[0] = (long)idx[0]+1;
+  upper[0] = owner[0] == num_cells[0]-1;
+  owner[1] = idx[1];
+  upper[1] = 0;
+  global_idx[1] = upper[0]*owner[1]+owner[1]+owner[0]*num_cells[1];
+  owner[0] = idx[0];
+  upper[0] = owner[0] == num_cells[0]-1;
+  owner[1] = (long)idx[1]+1;
+  upper[1] = 0;
+  global_idx[2] = upper[0]*owner[1]+owner[1]+owner[0]*num_cells[1];
+  owner[0] = (long)idx[0]+1;
+  upper[0] = owner[0] == num_cells[0]-1;
+  owner[1] = (long)idx[1]+1;
+  upper[1] = 0;
+  global_idx[3] = upper[0]*owner[1]+owner[1]+owner[0]*num_cells[1];
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_local_to_global_upx_nonperiodicx_iny_periodicy(const int *num_cells, const int *idx, long *global_idx) {
+  long owner[2];
+  int upper[2];
+  owner[0] = idx[0];
+  upper[0] = owner[0] == num_cells[0]-1;
+  owner[1] = idx[1];
+  upper[1] = 0;
+  global_idx[0] = upper[0]*owner[1]+owner[1]+owner[0]*num_cells[1];
+  owner[0] = idx[0];
+  upper[0] = owner[0] == num_cells[0]-1;
+  owner[1] = idx[1];
+  upper[1] = 0;
+  global_idx[1] = upper[0]*owner[1]+owner[1]+owner[0]*num_cells[1]+1;
+  owner[0] = idx[0];
+  upper[0] = owner[0] == num_cells[0]-1;
+  owner[1] = (long)idx[1]+1;
+  upper[1] = 0;
+  global_idx[2] = upper[0]*owner[1]+owner[1]+owner[0]*num_cells[1];
+  owner[0] = idx[0];
+  upper[0] = owner[0] == num_cells[0]-1;
+  owner[1] = (long)idx[1]+1;
+  upper[1] = 0;
+  global_idx[3] = upper[0]*owner[1]+owner[1]+owner[0]*num_cells[1]+1;
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_local_to_global_inx_nonperiodicx_upy_periodicy(const int *num_cells, const int *idx, long *global_idx) {
+  long owner[2];
+  int upper[2];
+  owner[0] = idx[0];
+  upper[0] = owner[0] == num_cells[0]-1;
+  owner[1] = idx[1];
+  upper[1] = 0;
+  global_idx[0] = upper[0]*owner[1]+owner[1]+owner[0]*num_cells[1];
+  owner[0] = (long)idx[0]+1;
+  upper[0] = owner[0] == num_cells[0]-1;
+  owner[1] = idx[1];
+  upper[1] = 0;
+  global_idx[1] = upper[0]*owner[1]+owner[1]+owner[0]*num_cells[1];
+  owner[0] = idx[0];
+  upper[0] = owner[0] == num_cells[0]-1;
+  owner[1] = 0;
+  upper[1] = 0;
+  global_idx[2] = upper[0]*owner[1]+owner[1]+owner[0]*num_cells[1];
+  owner[0] = (long)idx[0]+1;
+  upper[0] = owner[0] == num_cells[0]-1;
+  owner[1] = 0;
+  upper[1] = 0;
+  global_idx[3] = upper[0]*owner[1]+owner[1]+owner[0]*num_cells[1];
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_local_to_global_upx_nonperiodicx_upy_periodicy(const int *num_cells, const int *idx, long *global_idx) {
+  long owner[2];
+  int upper[2];
+  owner[0] = idx[0];
+  upper[0] = owner[0] == num_cells[0]-1;
+  owner[1] = idx[1];
+  upper[1] = 0;
+  global_idx[0] = upper[0]*owner[1]+owner[1]+owner[0]*num_cells[1];
+  owner[0] = idx[0];
+  upper[0] = owner[0] == num_cells[0]-1;
+  owner[1] = idx[1];
+  upper[1] = 0;
+  global_idx[1] = upper[0]*owner[1]+owner[1]+owner[0]*num_cells[1]+1;
+  owner[0] = idx[0];
+  upper[0] = owner[0] == num_cells[0]-1;
+  owner[1] = 0;
+  upper[1] = 0;
+  global_idx[2] = upper[0]*owner[1]+owner[1]+owner[0]*num_cells[1];
+  owner[0] = idx[0];
+  upper[0] = owner[0] == num_cells[0]-1;
+  owner[1] = 0;
+  upper[1] = 0;
+  global_idx[3] = upper[0]*owner[1]+owner[1]+owner[0]*num_cells[1]+1;
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_local_to_global_inx_periodicx_iny_periodicy(const int *num_cells, const int *idx, long *global_idx) {
+  long owner[2];
+  int upper[2];
+  owner[0] = idx[0];
+  upper[0] = 0;
+  owner[1] = idx[1];
+  upper[1] = 0;
+  global_idx[0] = upper[0]*owner[1]+owner[1]+owner[0]*num_cells[1];
+  owner[0] = (long)idx[0]+1;
+  upper[0] = 0;
+  owner[1] = idx[1];
+  upper[1] = 0;
+  global_idx[1] = upper[0]*owner[1]+owner[1]+owner[0]*num_cells[1];
+  owner[0] = idx[0];
+  upper[0] = 0;
+  owner[1] = (long)idx[1]+1;
+  upper[1] = 0;
+  global_idx[2] = upper[0]*owner[1]+owner[1]+owner[0]*num_cells[1];
+  owner[0] = (long)idx[0]+1;
+  upper[0] = 0;
+  owner[1] = (long)idx[1]+1;
+  upper[1] = 0;
+  global_idx[3] = upper[0]*owner[1]+owner[1]+owner[0]*num_cells[1];
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_local_to_global_upx_periodicx_iny_periodicy(const int *num_cells, const int *idx, long *global_idx) {
+  long owner[2];
+  int upper[2];
+  owner[0] = idx[0];
+  upper[0] = 0;
+  owner[1] = idx[1];
+  upper[1] = 0;
+  global_idx[0] = upper[0]*owner[1]+owner[1]+owner[0]*num_cells[1];
+  owner[0] = 0;
+  upper[0] = 0;
+  owner[1] = idx[1];
+  upper[1] = 0;
+  global_idx[1] = upper[0]*owner[1]+owner[1]+owner[0]*num_cells[1];
+  owner[0] = idx[0];
+  upper[0] = 0;
+  owner[1] = (long)idx[1]+1;
+  upper[1] = 0;
+  global_idx[2] = upper[0]*owner[1]+owner[1]+owner[0]*num_cells[1];
+  owner[0] = 0;
+  upper[0] = 0;
+  owner[1] = (long)idx[1]+1;
+  upper[1] = 0;
+  global_idx[3] = upper[0]*owner[1]+owner[1]+owner[0]*num_cells[1];
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_local_to_global_inx_periodicx_upy_periodicy(const int *num_cells, const int *idx, long *global_idx) {
+  long owner[2];
+  int upper[2];
+  owner[0] = idx[0];
+  upper[0] = 0;
+  owner[1] = idx[1];
+  upper[1] = 0;
+  global_idx[0] = upper[0]*owner[1]+owner[1]+owner[0]*num_cells[1];
+  owner[0] = (long)idx[0]+1;
+  upper[0] = 0;
+  owner[1] = idx[1];
+  upper[1] = 0;
+  global_idx[1] = upper[0]*owner[1]+owner[1]+owner[0]*num_cells[1];
+  owner[0] = idx[0];
+  upper[0] = 0;
+  owner[1] = 0;
+  upper[1] = 0;
+  global_idx[2] = upper[0]*owner[1]+owner[1]+owner[0]*num_cells[1];
+  owner[0] = (long)idx[0]+1;
+  upper[0] = 0;
+  owner[1] = 0;
+  upper[1] = 0;
+  global_idx[3] = upper[0]*owner[1]+owner[1]+owner[0]*num_cells[1];
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_local_to_global_upx_periodicx_upy_periodicy(const int *num_cells, const int *idx, long *global_idx) {
+  long owner[2];
+  int upper[2];
+  owner[0] = idx[0];
+  upper[0] = 0;
+  owner[1] = idx[1];
+  upper[1] = 0;
+  global_idx[0] = upper[0]*owner[1]+owner[1]+owner[0]*num_cells[1];
+  owner[0] = 0;
+  upper[0] = 0;
+  owner[1] = idx[1];
+  upper[1] = 0;
+  global_idx[1] = upper[0]*owner[1]+owner[1]+owner[0]*num_cells[1];
+  owner[0] = idx[0];
+  upper[0] = 0;
+  owner[1] = 0;
+  upper[1] = 0;
+  global_idx[2] = upper[0]*owner[1]+owner[1]+owner[0]*num_cells[1];
+  owner[0] = 0;
+  upper[0] = 0;
+  owner[1] = 0;
+  upper[1] = 0;
+  global_idx[3] = upper[0]*owner[1]+owner[1]+owner[0]*num_cells[1];
+}
+
+void fem_proj_2x_ser_p1_mass_noweight_inx_iny(const double *weight, const long *global_idx, gkyl_mat_triples *matrix) {
+  gkyl_mat_triples_accum(matrix, global_idx[0], global_idx[0], 0.4444444444444444);
+  gkyl_mat_triples_accum(matrix, global_idx[0], global_idx[1], 0.2222222222222222);
+  gkyl_mat_triples_accum(matrix, global_idx[0], global_idx[2], 0.2222222222222222);
+  gkyl_mat_triples_accum(matrix, global_idx[0], global_idx[3], 0.1111111111111111);
+  gkyl_mat_triples_accum(matrix, global_idx[1], global_idx[0], 0.2222222222222222);
+  gkyl_mat_triples_accum(matrix, global_idx[1], global_idx[1], 0.4444444444444444);
+  gkyl_mat_triples_accum(matrix, global_idx[1], global_idx[2], 0.1111111111111111);
+  gkyl_mat_triples_accum(matrix, global_idx[1], global_idx[3], 0.2222222222222222);
+  gkyl_mat_triples_accum(matrix, global_idx[2], global_idx[0], 0.2222222222222222);
+  gkyl_mat_triples_accum(matrix, global_idx[2], global_idx[1], 0.1111111111111111);
+  gkyl_mat_triples_accum(matrix, global_idx[2], global_idx[2], 0.4444444444444444);
+  gkyl_mat_triples_accum(matrix, global_idx[2], global_idx[3], 0.2222222222222222);
+  gkyl_mat_triples_accum(matrix, global_idx[3], global_idx[0], 0.1111111111111111);
+  gkyl_mat_triples_accum(matrix, global_idx[3], global_idx[1], 0.2222222222222222);
+  gkyl_mat_triples_accum(matrix, global_idx[3], global_idx[2], 0.2222222222222222);
+  gkyl_mat_triples_accum(matrix, global_idx[3], global_idx[3], 0.4444444444444444);
+}
+
+void fem_proj_2x_ser_p1_mass_noweight_lox_dirichletx_iny(const double *weight, const long *global_idx, gkyl_mat_triples *matrix) {
+  gkyl_mat_triples_insert(matrix, global_idx[0], global_idx[0], 1.0);
+  gkyl_mat_triples_accum(matrix, global_idx[1], global_idx[0], 0.2222222222222222);
+  gkyl_mat_triples_accum(matrix, global_idx[1], global_idx[1], 0.4444444444444444);
+  gkyl_mat_triples_accum(matrix, global_idx[1], global_idx[2], 0.1111111111111111);
+  gkyl_mat_triples_accum(matrix, global_idx[1], global_idx[3], 0.2222222222222222);
+  gkyl_mat_triples_insert(matrix, global_idx[2], global_idx[2], 1.0);
+  gkyl_mat_triples_accum(matrix, global_idx[3], global_idx[0], 0.1111111111111111);
+  gkyl_mat_triples_accum(matrix, global_idx[3], global_idx[1], 0.2222222222222222);
+  gkyl_mat_triples_accum(matrix, global_idx[3], global_idx[2], 0.2222222222222222);
+  gkyl_mat_triples_accum(matrix, global_idx[3], global_idx[3], 0.4444444444444444);
+}
+
+void fem_proj_2x_ser_p1_mass_noweight_upx_dirichletx_iny(const double *weight, const long *global_idx, gkyl_mat_triples *matrix) {
+  gkyl_mat_triples_accum(matrix, global_idx[0], global_idx[0], 0.4444444444444444);
+  gkyl_mat_triples_accum(matrix, global_idx[0], global_idx[1], 0.2222222222222222);
+  gkyl_mat_triples_accum(matrix, global_idx[0], global_idx[2], 0.2222222222222222);
+  gkyl_mat_triples_accum(matrix, global_idx[0], global_idx[3], 0.1111111111111111);
+  gkyl_mat_triples_insert(matrix, global_idx[1], global_idx[1], 1.0);
+  gkyl_mat_triples_accum(matrix, global_idx[2], global_idx[0], 0.2222222222222222);
+  gkyl_mat_triples_accum(matrix, global_idx[2], global_idx[1], 0.1111111111111111);
+  gkyl_mat_triples_accum(matrix, global_idx[2], global_idx[2], 0.4444444444444444);
+  gkyl_mat_triples_accum(matrix, global_idx[2], global_idx[3], 0.2222222222222222);
+  gkyl_mat_triples_insert(matrix, global_idx[3], global_idx[3], 1.0);
+}
+
+void fem_proj_2x_ser_p1_mass_noweight_lox_dirichletx_upx_dirichletx_iny(const double *weight, const long *global_idx, gkyl_mat_triples *matrix) {
+  gkyl_mat_triples_insert(matrix, global_idx[0], global_idx[0], 1.0);
+  gkyl_mat_triples_insert(matrix, global_idx[1], global_idx[1], 1.0);
+  gkyl_mat_triples_insert(matrix, global_idx[2], global_idx[2], 1.0);
+  gkyl_mat_triples_insert(matrix, global_idx[3], global_idx[3], 1.0);
+}
+
+void fem_proj_2x_ser_p1_mass_noweight_inx_loy_dirichlety(const double *weight, const long *global_idx, gkyl_mat_triples *matrix) {
+  gkyl_mat_triples_insert(matrix, global_idx[0], global_idx[0], 1.0);
+  gkyl_mat_triples_insert(matrix, global_idx[1], global_idx[1], 1.0);
+  gkyl_mat_triples_accum(matrix, global_idx[2], global_idx[0], 0.2222222222222222);
+  gkyl_mat_triples_accum(matrix, global_idx[2], global_idx[1], 0.1111111111111111);
+  gkyl_mat_triples_accum(matrix, global_idx[2], global_idx[2], 0.4444444444444444);
+  gkyl_mat_triples_accum(matrix, global_idx[2], global_idx[3], 0.2222222222222222);
+  gkyl_mat_triples_accum(matrix, global_idx[3], global_idx[0], 0.1111111111111111);
+  gkyl_mat_triples_accum(matrix, global_idx[3], global_idx[1], 0.2222222222222222);
+  gkyl_mat_triples_accum(matrix, global_idx[3], global_idx[2], 0.2222222222222222);
+  gkyl_mat_triples_accum(matrix, global_idx[3], global_idx[3], 0.4444444444444444);
+}
+
+void fem_proj_2x_ser_p1_mass_noweight_lox_dirichletx_loy_dirichlety(const double *weight, const long *global_idx, gkyl_mat_triples *matrix) {
+  gkyl_mat_triples_insert(matrix, global_idx[0], global_idx[0], 1.0);
+  gkyl_mat_triples_insert(matrix, global_idx[1], global_idx[1], 1.0);
+  gkyl_mat_triples_insert(matrix, global_idx[2], global_idx[2], 1.0);
+  gkyl_mat_triples_accum(matrix, global_idx[3], global_idx[0], 0.1111111111111111);
+  gkyl_mat_triples_accum(matrix, global_idx[3], global_idx[1], 0.2222222222222222);
+  gkyl_mat_triples_accum(matrix, global_idx[3], global_idx[2], 0.2222222222222222);
+  gkyl_mat_triples_accum(matrix, global_idx[3], global_idx[3], 0.4444444444444444);
+}
+
+void fem_proj_2x_ser_p1_mass_noweight_upx_dirichletx_loy_dirichlety(const double *weight, const long *global_idx, gkyl_mat_triples *matrix) {
+  gkyl_mat_triples_insert(matrix, global_idx[0], global_idx[0], 1.0);
+  gkyl_mat_triples_insert(matrix, global_idx[1], global_idx[1], 1.0);
+  gkyl_mat_triples_accum(matrix, global_idx[2], global_idx[0], 0.2222222222222222);
+  gkyl_mat_triples_accum(matrix, global_idx[2], global_idx[1], 0.1111111111111111);
+  gkyl_mat_triples_accum(matrix, global_idx[2], global_idx[2], 0.4444444444444444);
+  gkyl_mat_triples_accum(matrix, global_idx[2], global_idx[3], 0.2222222222222222);
+  gkyl_mat_triples_insert(matrix, global_idx[3], global_idx[3], 1.0);
+}
+
+void fem_proj_2x_ser_p1_mass_noweight_lox_dirichletx_upx_dirichletx_loy_dirichlety(const double *weight, const long *global_idx, gkyl_mat_triples *matrix) {
+  gkyl_mat_triples_insert(matrix, global_idx[0], global_idx[0], 1.0);
+  gkyl_mat_triples_insert(matrix, global_idx[1], global_idx[1], 1.0);
+  gkyl_mat_triples_insert(matrix, global_idx[2], global_idx[2], 1.0);
+  gkyl_mat_triples_insert(matrix, global_idx[3], global_idx[3], 1.0);
+}
+
+void fem_proj_2x_ser_p1_mass_noweight_inx_upy_dirichlety(const double *weight, const long *global_idx, gkyl_mat_triples *matrix) {
+  gkyl_mat_triples_accum(matrix, global_idx[0], global_idx[0], 0.4444444444444444);
+  gkyl_mat_triples_accum(matrix, global_idx[0], global_idx[1], 0.2222222222222222);
+  gkyl_mat_triples_accum(matrix, global_idx[0], global_idx[2], 0.2222222222222222);
+  gkyl_mat_triples_accum(matrix, global_idx[0], global_idx[3], 0.1111111111111111);
+  gkyl_mat_triples_accum(matrix, global_idx[1], global_idx[0], 0.2222222222222222);
+  gkyl_mat_triples_accum(matrix, global_idx[1], global_idx[1], 0.4444444444444444);
+  gkyl_mat_triples_accum(matrix, global_idx[1], global_idx[2], 0.1111111111111111);
+  gkyl_mat_triples_accum(matrix, global_idx[1], global_idx[3], 0.2222222222222222);
+  gkyl_mat_triples_insert(matrix, global_idx[2], global_idx[2], 1.0);
+  gkyl_mat_triples_insert(matrix, global_idx[3], global_idx[3], 1.0);
+}
+
+void fem_proj_2x_ser_p1_mass_noweight_lox_dirichletx_upy_dirichlety(const double *weight, const long *global_idx, gkyl_mat_triples *matrix) {
+  gkyl_mat_triples_insert(matrix, global_idx[0], global_idx[0], 1.0);
+  gkyl_mat_triples_accum(matrix, global_idx[1], global_idx[0], 0.2222222222222222);
+  gkyl_mat_triples_accum(matrix, global_idx[1], global_idx[1], 0.4444444444444444);
+  gkyl_mat_triples_accum(matrix, global_idx[1], global_idx[2], 0.1111111111111111);
+  gkyl_mat_triples_accum(matrix, global_idx[1], global_idx[3], 0.2222222222222222);
+  gkyl_mat_triples_insert(matrix, global_idx[2], global_idx[2], 1.0);
+  gkyl_mat_triples_insert(matrix, global_idx[3], global_idx[3], 1.0);
+}
+
+void fem_proj_2x_ser_p1_mass_noweight_upx_dirichletx_upy_dirichlety(const double *weight, const long *global_idx, gkyl_mat_triples *matrix) {
+  gkyl_mat_triples_accum(matrix, global_idx[0], global_idx[0], 0.4444444444444444);
+  gkyl_mat_triples_accum(matrix, global_idx[0], global_idx[1], 0.2222222222222222);
+  gkyl_mat_triples_accum(matrix, global_idx[0], global_idx[2], 0.2222222222222222);
+  gkyl_mat_triples_accum(matrix, global_idx[0], global_idx[3], 0.1111111111111111);
+  gkyl_mat_triples_insert(matrix, global_idx[1], global_idx[1], 1.0);
+  gkyl_mat_triples_insert(matrix, global_idx[2], global_idx[2], 1.0);
+  gkyl_mat_triples_insert(matrix, global_idx[3], global_idx[3], 1.0);
+}
+
+void fem_proj_2x_ser_p1_mass_noweight_lox_dirichletx_upx_dirichletx_upy_dirichlety(const double *weight, const long *global_idx, gkyl_mat_triples *matrix) {
+  gkyl_mat_triples_insert(matrix, global_idx[0], global_idx[0], 1.0);
+  gkyl_mat_triples_insert(matrix, global_idx[1], global_idx[1], 1.0);
+  gkyl_mat_triples_insert(matrix, global_idx[2], global_idx[2], 1.0);
+  gkyl_mat_triples_insert(matrix, global_idx[3], global_idx[3], 1.0);
+}
+
+void fem_proj_2x_ser_p1_mass_noweight_inx_loy_dirichlety_upy_dirichlety(const double *weight, const long *global_idx, gkyl_mat_triples *matrix) {
+  gkyl_mat_triples_insert(matrix, global_idx[0], global_idx[0], 1.0);
+  gkyl_mat_triples_insert(matrix, global_idx[1], global_idx[1], 1.0);
+  gkyl_mat_triples_insert(matrix, global_idx[2], global_idx[2], 1.0);
+  gkyl_mat_triples_insert(matrix, global_idx[3], global_idx[3], 1.0);
+}
+
+void fem_proj_2x_ser_p1_mass_noweight_lox_dirichletx_loy_dirichlety_upy_dirichlety(const double *weight, const long *global_idx, gkyl_mat_triples *matrix) {
+  gkyl_mat_triples_insert(matrix, global_idx[0], global_idx[0], 1.0);
+  gkyl_mat_triples_insert(matrix, global_idx[1], global_idx[1], 1.0);
+  gkyl_mat_triples_insert(matrix, global_idx[2], global_idx[2], 1.0);
+  gkyl_mat_triples_insert(matrix, global_idx[3], global_idx[3], 1.0);
+}
+
+void fem_proj_2x_ser_p1_mass_noweight_upx_dirichletx_loy_dirichlety_upy_dirichlety(const double *weight, const long *global_idx, gkyl_mat_triples *matrix) {
+  gkyl_mat_triples_insert(matrix, global_idx[0], global_idx[0], 1.0);
+  gkyl_mat_triples_insert(matrix, global_idx[1], global_idx[1], 1.0);
+  gkyl_mat_triples_insert(matrix, global_idx[2], global_idx[2], 1.0);
+  gkyl_mat_triples_insert(matrix, global_idx[3], global_idx[3], 1.0);
+}
+
+void fem_proj_2x_ser_p1_mass_noweight_lox_dirichletx_upx_dirichletx_loy_dirichlety_upy_dirichlety(const double *weight, const long *global_idx, gkyl_mat_triples *matrix) {
+  gkyl_mat_triples_insert(matrix, global_idx[0], global_idx[0], 1.0);
+  gkyl_mat_triples_insert(matrix, global_idx[1], global_idx[1], 1.0);
+  gkyl_mat_triples_insert(matrix, global_idx[2], global_idx[2], 1.0);
+  gkyl_mat_triples_insert(matrix, global_idx[3], global_idx[3], 1.0);
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_inx_iny(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[0]], 0.16666666666666666*rhs[3]-0.2886751345948129*rhs[2]-0.2886751345948129*rhs[1]+0.5*rhs[0]);
+#else
+  out[global_idx[0]] += 0.16666666666666666*rhs[3]-0.2886751345948129*rhs[2]-0.2886751345948129*rhs[1]+0.5*rhs[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[1]], -(0.16666666666666666*rhs[3])-0.2886751345948129*rhs[2]+0.2886751345948129*rhs[1]+0.5*rhs[0]);
+#else
+  out[global_idx[1]] += -(0.16666666666666666*rhs[3])-0.2886751345948129*rhs[2]+0.2886751345948129*rhs[1]+0.5*rhs[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[2]], -(0.16666666666666666*rhs[3])+0.2886751345948129*rhs[2]-0.2886751345948129*rhs[1]+0.5*rhs[0]);
+#else
+  out[global_idx[2]] += -(0.16666666666666666*rhs[3])+0.2886751345948129*rhs[2]-0.2886751345948129*rhs[1]+0.5*rhs[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[3]], 0.16666666666666666*rhs[3]+0.2886751345948129*rhs[2]+0.2886751345948129*rhs[1]+0.5*rhs[0]);
+#else
+  out[global_idx[3]] += 0.16666666666666666*rhs[3]+0.2886751345948129*rhs[2]+0.2886751345948129*rhs[1]+0.5*rhs[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_lox_dirichletx_iny(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[0]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[1]], -(0.16666666666666666*rhs[3])-0.2886751345948129*rhs[2]+0.2886751345948129*rhs[1]+0.5*rhs[0]);
+#else
+  out[global_idx[1]] += -(0.16666666666666666*rhs[3])-0.2886751345948129*rhs[2]+0.2886751345948129*rhs[1]+0.5*rhs[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[2]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[3]], 0.16666666666666666*rhs[3]+0.2886751345948129*rhs[2]+0.2886751345948129*rhs[1]+0.5*rhs[0]);
+#else
+  out[global_idx[3]] += 0.16666666666666666*rhs[3]+0.2886751345948129*rhs[2]+0.2886751345948129*rhs[1]+0.5*rhs[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_lox_dirichletvarx_iny(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[1]], -(0.16666666666666666*rhs[3])-0.2886751345948129*rhs[2]+0.2886751345948129*rhs[1]+0.5*rhs[0]);
+#else
+  out[global_idx[1]] += -(0.16666666666666666*rhs[3])-0.2886751345948129*rhs[2]+0.2886751345948129*rhs[1]+0.5*rhs[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[3]], 0.16666666666666666*rhs[3]+0.2886751345948129*rhs[2]+0.2886751345948129*rhs[1]+0.5*rhs[0]);
+#else
+  out[global_idx[3]] += 0.16666666666666666*rhs[3]+0.2886751345948129*rhs[2]+0.2886751345948129*rhs[1]+0.5*rhs[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_upx_dirichletx_iny(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[0]], 0.16666666666666666*rhs[3]-0.2886751345948129*rhs[2]-0.2886751345948129*rhs[1]+0.5*rhs[0]);
+#else
+  out[global_idx[0]] += 0.16666666666666666*rhs[3]-0.2886751345948129*rhs[2]-0.2886751345948129*rhs[1]+0.5*rhs[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[1]] = bc_values[1];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[2]], -(0.16666666666666666*rhs[3])+0.2886751345948129*rhs[2]-0.2886751345948129*rhs[1]+0.5*rhs[0]);
+#else
+  out[global_idx[2]] += -(0.16666666666666666*rhs[3])+0.2886751345948129*rhs[2]-0.2886751345948129*rhs[1]+0.5*rhs[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[3]] = bc_values[1];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_lox_dirichletx_upx_dirichletx_iny(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[0]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[1]] = bc_values[1];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[2]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[3]] = bc_values[1];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_lox_dirichletvarx_upx_dirichletx_iny(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[1]] = bc_values[1];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[3]] = bc_values[1];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_upx_dirichletvarx_iny(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[0]], 0.16666666666666666*rhs[3]-0.2886751345948129*rhs[2]-0.2886751345948129*rhs[1]+0.5*rhs[0]);
+#else
+  out[global_idx[0]] += 0.16666666666666666*rhs[3]-0.2886751345948129*rhs[2]-0.2886751345948129*rhs[1]+0.5*rhs[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[2]], -(0.16666666666666666*rhs[3])+0.2886751345948129*rhs[2]-0.2886751345948129*rhs[1]+0.5*rhs[0]);
+#else
+  out[global_idx[2]] += -(0.16666666666666666*rhs[3])+0.2886751345948129*rhs[2]-0.2886751345948129*rhs[1]+0.5*rhs[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_lox_dirichletx_upx_dirichletvarx_iny(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[0]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[2]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_lox_dirichletvarx_upx_dirichletvarx_iny(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_inx_loy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[2]));
+#else
+  out[global_idx[0]] = bc_values[2];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[2]));
+#else
+  out[global_idx[1]] = bc_values[2];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[2]], -(0.16666666666666666*rhs[3])+0.2886751345948129*rhs[2]-0.2886751345948129*rhs[1]+0.5*rhs[0]);
+#else
+  out[global_idx[2]] += -(0.16666666666666666*rhs[3])+0.2886751345948129*rhs[2]-0.2886751345948129*rhs[1]+0.5*rhs[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[3]], 0.16666666666666666*rhs[3]+0.2886751345948129*rhs[2]+0.2886751345948129*rhs[1]+0.5*rhs[0]);
+#else
+  out[global_idx[3]] += 0.16666666666666666*rhs[3]+0.2886751345948129*rhs[2]+0.2886751345948129*rhs[1]+0.5*rhs[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_lox_dirichletx_loy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[0]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[2]));
+#else
+  out[global_idx[1]] = bc_values[2];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[2]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[3]], 0.16666666666666666*rhs[3]+0.2886751345948129*rhs[2]+0.2886751345948129*rhs[1]+0.5*rhs[0]);
+#else
+  out[global_idx[3]] += 0.16666666666666666*rhs[3]+0.2886751345948129*rhs[2]+0.2886751345948129*rhs[1]+0.5*rhs[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_lox_dirichletvarx_loy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[2]));
+#else
+  out[global_idx[1]] = bc_values[2];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[3]], 0.16666666666666666*rhs[3]+0.2886751345948129*rhs[2]+0.2886751345948129*rhs[1]+0.5*rhs[0]);
+#else
+  out[global_idx[3]] += 0.16666666666666666*rhs[3]+0.2886751345948129*rhs[2]+0.2886751345948129*rhs[1]+0.5*rhs[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_upx_dirichletx_loy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[2]));
+#else
+  out[global_idx[0]] = bc_values[2];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[1]] = bc_values[1];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[2]], -(0.16666666666666666*rhs[3])+0.2886751345948129*rhs[2]-0.2886751345948129*rhs[1]+0.5*rhs[0]);
+#else
+  out[global_idx[2]] += -(0.16666666666666666*rhs[3])+0.2886751345948129*rhs[2]-0.2886751345948129*rhs[1]+0.5*rhs[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[3]] = bc_values[1];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_lox_dirichletx_upx_dirichletx_loy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[0]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[1]] = bc_values[1];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[2]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[3]] = bc_values[1];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_lox_dirichletvarx_upx_dirichletx_loy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[1]] = bc_values[1];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[3]] = bc_values[1];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_upx_dirichletvarx_loy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[2]));
+#else
+  out[global_idx[0]] = bc_values[2];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[2]], -(0.16666666666666666*rhs[3])+0.2886751345948129*rhs[2]-0.2886751345948129*rhs[1]+0.5*rhs[0]);
+#else
+  out[global_idx[2]] += -(0.16666666666666666*rhs[3])+0.2886751345948129*rhs[2]-0.2886751345948129*rhs[1]+0.5*rhs[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_lox_dirichletx_upx_dirichletvarx_loy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[0]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[2]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_lox_dirichletvarx_upx_dirichletvarx_loy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_inx_loy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[2]], -(0.16666666666666666*rhs[3])+0.2886751345948129*rhs[2]-0.2886751345948129*rhs[1]+0.5*rhs[0]);
+#else
+  out[global_idx[2]] += -(0.16666666666666666*rhs[3])+0.2886751345948129*rhs[2]-0.2886751345948129*rhs[1]+0.5*rhs[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[3]], 0.16666666666666666*rhs[3]+0.2886751345948129*rhs[2]+0.2886751345948129*rhs[1]+0.5*rhs[0]);
+#else
+  out[global_idx[3]] += 0.16666666666666666*rhs[3]+0.2886751345948129*rhs[2]+0.2886751345948129*rhs[1]+0.5*rhs[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_lox_dirichletx_loy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[0]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[2]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[3]], 0.16666666666666666*rhs[3]+0.2886751345948129*rhs[2]+0.2886751345948129*rhs[1]+0.5*rhs[0]);
+#else
+  out[global_idx[3]] += 0.16666666666666666*rhs[3]+0.2886751345948129*rhs[2]+0.2886751345948129*rhs[1]+0.5*rhs[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_lox_dirichletvarx_loy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[3]], 0.16666666666666666*rhs[3]+0.2886751345948129*rhs[2]+0.2886751345948129*rhs[1]+0.5*rhs[0]);
+#else
+  out[global_idx[3]] += 0.16666666666666666*rhs[3]+0.2886751345948129*rhs[2]+0.2886751345948129*rhs[1]+0.5*rhs[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_upx_dirichletx_loy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[1]] = bc_values[1];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[2]], -(0.16666666666666666*rhs[3])+0.2886751345948129*rhs[2]-0.2886751345948129*rhs[1]+0.5*rhs[0]);
+#else
+  out[global_idx[2]] += -(0.16666666666666666*rhs[3])+0.2886751345948129*rhs[2]-0.2886751345948129*rhs[1]+0.5*rhs[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[3]] = bc_values[1];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_lox_dirichletx_upx_dirichletx_loy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[0]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[1]] = bc_values[1];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[2]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[3]] = bc_values[1];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_lox_dirichletvarx_upx_dirichletx_loy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[1]] = bc_values[1];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[3]] = bc_values[1];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_upx_dirichletvarx_loy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[2]], -(0.16666666666666666*rhs[3])+0.2886751345948129*rhs[2]-0.2886751345948129*rhs[1]+0.5*rhs[0]);
+#else
+  out[global_idx[2]] += -(0.16666666666666666*rhs[3])+0.2886751345948129*rhs[2]-0.2886751345948129*rhs[1]+0.5*rhs[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_lox_dirichletx_upx_dirichletvarx_loy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[0]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[2]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_lox_dirichletvarx_upx_dirichletvarx_loy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_inx_upy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[0]], 0.16666666666666666*rhs[3]-0.2886751345948129*rhs[2]-0.2886751345948129*rhs[1]+0.5*rhs[0]);
+#else
+  out[global_idx[0]] += 0.16666666666666666*rhs[3]-0.2886751345948129*rhs[2]-0.2886751345948129*rhs[1]+0.5*rhs[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[1]], -(0.16666666666666666*rhs[3])-0.2886751345948129*rhs[2]+0.2886751345948129*rhs[1]+0.5*rhs[0]);
+#else
+  out[global_idx[1]] += -(0.16666666666666666*rhs[3])-0.2886751345948129*rhs[2]+0.2886751345948129*rhs[1]+0.5*rhs[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[3]));
+#else
+  out[global_idx[2]] = bc_values[3];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[3]));
+#else
+  out[global_idx[3]] = bc_values[3];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_lox_dirichletx_upy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[0]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[1]], -(0.16666666666666666*rhs[3])-0.2886751345948129*rhs[2]+0.2886751345948129*rhs[1]+0.5*rhs[0]);
+#else
+  out[global_idx[1]] += -(0.16666666666666666*rhs[3])-0.2886751345948129*rhs[2]+0.2886751345948129*rhs[1]+0.5*rhs[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[2]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[3]));
+#else
+  out[global_idx[3]] = bc_values[3];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_lox_dirichletvarx_upy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[1]], -(0.16666666666666666*rhs[3])-0.2886751345948129*rhs[2]+0.2886751345948129*rhs[1]+0.5*rhs[0]);
+#else
+  out[global_idx[1]] += -(0.16666666666666666*rhs[3])-0.2886751345948129*rhs[2]+0.2886751345948129*rhs[1]+0.5*rhs[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[3]));
+#else
+  out[global_idx[3]] = bc_values[3];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_upx_dirichletx_upy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[0]], 0.16666666666666666*rhs[3]-0.2886751345948129*rhs[2]-0.2886751345948129*rhs[1]+0.5*rhs[0]);
+#else
+  out[global_idx[0]] += 0.16666666666666666*rhs[3]-0.2886751345948129*rhs[2]-0.2886751345948129*rhs[1]+0.5*rhs[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[1]] = bc_values[1];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[3]));
+#else
+  out[global_idx[2]] = bc_values[3];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[3]] = bc_values[1];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_lox_dirichletx_upx_dirichletx_upy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[0]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[1]] = bc_values[1];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[2]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[3]] = bc_values[1];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_lox_dirichletvarx_upx_dirichletx_upy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[1]] = bc_values[1];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[3]] = bc_values[1];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_upx_dirichletvarx_upy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[0]], 0.16666666666666666*rhs[3]-0.2886751345948129*rhs[2]-0.2886751345948129*rhs[1]+0.5*rhs[0]);
+#else
+  out[global_idx[0]] += 0.16666666666666666*rhs[3]-0.2886751345948129*rhs[2]-0.2886751345948129*rhs[1]+0.5*rhs[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[3]));
+#else
+  out[global_idx[2]] = bc_values[3];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_lox_dirichletx_upx_dirichletvarx_upy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[0]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[2]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_lox_dirichletvarx_upx_dirichletvarx_upy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_inx_loy_dirichlety_upy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[2]));
+#else
+  out[global_idx[0]] = bc_values[2];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[2]));
+#else
+  out[global_idx[1]] = bc_values[2];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[3]));
+#else
+  out[global_idx[2]] = bc_values[3];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[3]));
+#else
+  out[global_idx[3]] = bc_values[3];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_lox_dirichletx_loy_dirichlety_upy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[0]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[2]));
+#else
+  out[global_idx[1]] = bc_values[2];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[2]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[3]));
+#else
+  out[global_idx[3]] = bc_values[3];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_lox_dirichletvarx_loy_dirichlety_upy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[2]));
+#else
+  out[global_idx[1]] = bc_values[2];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[3]));
+#else
+  out[global_idx[3]] = bc_values[3];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_upx_dirichletx_loy_dirichlety_upy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[2]));
+#else
+  out[global_idx[0]] = bc_values[2];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[1]] = bc_values[1];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[3]));
+#else
+  out[global_idx[2]] = bc_values[3];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[3]] = bc_values[1];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_lox_dirichletx_upx_dirichletx_loy_dirichlety_upy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[0]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[1]] = bc_values[1];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[2]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[3]] = bc_values[1];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_lox_dirichletvarx_upx_dirichletx_loy_dirichlety_upy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[1]] = bc_values[1];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[3]] = bc_values[1];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_upx_dirichletvarx_loy_dirichlety_upy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[2]));
+#else
+  out[global_idx[0]] = bc_values[2];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[3]));
+#else
+  out[global_idx[2]] = bc_values[3];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_lox_dirichletx_upx_dirichletvarx_loy_dirichlety_upy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[0]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[2]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_lox_dirichletvarx_upx_dirichletvarx_loy_dirichlety_upy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_inx_loy_dirichletvary_upy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[3]));
+#else
+  out[global_idx[2]] = bc_values[3];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[3]));
+#else
+  out[global_idx[3]] = bc_values[3];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_lox_dirichletx_loy_dirichletvary_upy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[0]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[2]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[3]));
+#else
+  out[global_idx[3]] = bc_values[3];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_lox_dirichletvarx_loy_dirichletvary_upy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[3]));
+#else
+  out[global_idx[3]] = bc_values[3];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_upx_dirichletx_loy_dirichletvary_upy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[1]] = bc_values[1];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[3]));
+#else
+  out[global_idx[2]] = bc_values[3];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[3]] = bc_values[1];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_lox_dirichletx_upx_dirichletx_loy_dirichletvary_upy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[0]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[1]] = bc_values[1];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[2]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[3]] = bc_values[1];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_lox_dirichletvarx_upx_dirichletx_loy_dirichletvary_upy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[1]] = bc_values[1];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[3]] = bc_values[1];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_upx_dirichletvarx_loy_dirichletvary_upy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[3]));
+#else
+  out[global_idx[2]] = bc_values[3];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_lox_dirichletx_upx_dirichletvarx_loy_dirichletvary_upy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[0]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[2]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_lox_dirichletvarx_upx_dirichletvarx_loy_dirichletvary_upy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_inx_upy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[0]], 0.16666666666666666*rhs[3]-0.2886751345948129*rhs[2]-0.2886751345948129*rhs[1]+0.5*rhs[0]);
+#else
+  out[global_idx[0]] += 0.16666666666666666*rhs[3]-0.2886751345948129*rhs[2]-0.2886751345948129*rhs[1]+0.5*rhs[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[1]], -(0.16666666666666666*rhs[3])-0.2886751345948129*rhs[2]+0.2886751345948129*rhs[1]+0.5*rhs[0]);
+#else
+  out[global_idx[1]] += -(0.16666666666666666*rhs[3])-0.2886751345948129*rhs[2]+0.2886751345948129*rhs[1]+0.5*rhs[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_lox_dirichletx_upy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[0]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[1]], -(0.16666666666666666*rhs[3])-0.2886751345948129*rhs[2]+0.2886751345948129*rhs[1]+0.5*rhs[0]);
+#else
+  out[global_idx[1]] += -(0.16666666666666666*rhs[3])-0.2886751345948129*rhs[2]+0.2886751345948129*rhs[1]+0.5*rhs[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[2]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_lox_dirichletvarx_upy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[1]], -(0.16666666666666666*rhs[3])-0.2886751345948129*rhs[2]+0.2886751345948129*rhs[1]+0.5*rhs[0]);
+#else
+  out[global_idx[1]] += -(0.16666666666666666*rhs[3])-0.2886751345948129*rhs[2]+0.2886751345948129*rhs[1]+0.5*rhs[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_upx_dirichletx_upy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[0]], 0.16666666666666666*rhs[3]-0.2886751345948129*rhs[2]-0.2886751345948129*rhs[1]+0.5*rhs[0]);
+#else
+  out[global_idx[0]] += 0.16666666666666666*rhs[3]-0.2886751345948129*rhs[2]-0.2886751345948129*rhs[1]+0.5*rhs[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[1]] = bc_values[1];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[3]] = bc_values[1];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_lox_dirichletx_upx_dirichletx_upy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[0]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[1]] = bc_values[1];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[2]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[3]] = bc_values[1];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_lox_dirichletvarx_upx_dirichletx_upy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[1]] = bc_values[1];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[3]] = bc_values[1];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_upx_dirichletvarx_upy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[0]], 0.16666666666666666*rhs[3]-0.2886751345948129*rhs[2]-0.2886751345948129*rhs[1]+0.5*rhs[0]);
+#else
+  out[global_idx[0]] += 0.16666666666666666*rhs[3]-0.2886751345948129*rhs[2]-0.2886751345948129*rhs[1]+0.5*rhs[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_lox_dirichletx_upx_dirichletvarx_upy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[0]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[2]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_lox_dirichletvarx_upx_dirichletvarx_upy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_inx_loy_dirichlety_upy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[2]));
+#else
+  out[global_idx[0]] = bc_values[2];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[2]));
+#else
+  out[global_idx[1]] = bc_values[2];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_lox_dirichletx_loy_dirichlety_upy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[0]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[2]));
+#else
+  out[global_idx[1]] = bc_values[2];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[2]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_lox_dirichletvarx_loy_dirichlety_upy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[2]));
+#else
+  out[global_idx[1]] = bc_values[2];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_upx_dirichletx_loy_dirichlety_upy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[2]));
+#else
+  out[global_idx[0]] = bc_values[2];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[1]] = bc_values[1];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[3]] = bc_values[1];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_lox_dirichletx_upx_dirichletx_loy_dirichlety_upy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[0]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[1]] = bc_values[1];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[2]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[3]] = bc_values[1];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_lox_dirichletvarx_upx_dirichletx_loy_dirichlety_upy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[1]] = bc_values[1];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[3]] = bc_values[1];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_upx_dirichletvarx_loy_dirichlety_upy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[2]));
+#else
+  out[global_idx[0]] = bc_values[2];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_lox_dirichletx_upx_dirichletvarx_loy_dirichlety_upy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[0]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[2]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_lox_dirichletvarx_upx_dirichletvarx_loy_dirichlety_upy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_inx_loy_dirichletvary_upy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_lox_dirichletx_loy_dirichletvary_upy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[0]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[2]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_lox_dirichletvarx_loy_dirichletvary_upy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_upx_dirichletx_loy_dirichletvary_upy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[1]] = bc_values[1];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[3]] = bc_values[1];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_lox_dirichletx_upx_dirichletx_loy_dirichletvary_upy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[0]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[1]] = bc_values[1];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[2]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[3]] = bc_values[1];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_lox_dirichletvarx_upx_dirichletx_loy_dirichletvary_upy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[1]] = bc_values[1];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[3]] = bc_values[1];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_upx_dirichletvarx_loy_dirichletvary_upy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_lox_dirichletx_upx_dirichletvarx_loy_dirichletvary_upy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[0]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[2]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_noweight_lox_dirichletvarx_upx_dirichletvarx_loy_dirichletvary_upy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+void fem_proj_2x_ser_p1_mass_weighted_inx_iny(const double *weight, const long *global_idx, gkyl_mat_triples *matrix) {
+  gkyl_mat_triples_accum(matrix, global_idx[0], global_idx[0], 0.16666666666666666*weight[3]-0.1924500897298753*weight[2]-0.1924500897298753*weight[1]+0.2222222222222222*weight[0]);
+  gkyl_mat_triples_accum(matrix, global_idx[0], global_idx[1], 0.1111111111111111*weight[0]-0.09622504486493764*weight[2]);
+  gkyl_mat_triples_accum(matrix, global_idx[0], global_idx[2], 0.1111111111111111*weight[0]-0.09622504486493764*weight[1]);
+  gkyl_mat_triples_accum(matrix, global_idx[0], global_idx[3], 0.05555555555555555*weight[0]);
+  gkyl_mat_triples_accum(matrix, global_idx[1], global_idx[0], 0.1111111111111111*weight[0]-0.09622504486493764*weight[2]);
+  gkyl_mat_triples_accum(matrix, global_idx[1], global_idx[1], -(0.16666666666666666*weight[3])-0.1924500897298753*weight[2]+0.1924500897298753*weight[1]+0.2222222222222222*weight[0]);
+  gkyl_mat_triples_accum(matrix, global_idx[1], global_idx[2], 0.05555555555555555*weight[0]);
+  gkyl_mat_triples_accum(matrix, global_idx[1], global_idx[3], 0.09622504486493764*weight[1]+0.1111111111111111*weight[0]);
+  gkyl_mat_triples_accum(matrix, global_idx[2], global_idx[0], 0.1111111111111111*weight[0]-0.09622504486493764*weight[1]);
+  gkyl_mat_triples_accum(matrix, global_idx[2], global_idx[1], 0.05555555555555555*weight[0]);
+  gkyl_mat_triples_accum(matrix, global_idx[2], global_idx[2], -(0.16666666666666666*weight[3])+0.1924500897298753*weight[2]-0.1924500897298753*weight[1]+0.2222222222222222*weight[0]);
+  gkyl_mat_triples_accum(matrix, global_idx[2], global_idx[3], 0.09622504486493764*weight[2]+0.1111111111111111*weight[0]);
+  gkyl_mat_triples_accum(matrix, global_idx[3], global_idx[0], 0.05555555555555555*weight[0]);
+  gkyl_mat_triples_accum(matrix, global_idx[3], global_idx[1], 0.09622504486493764*weight[1]+0.1111111111111111*weight[0]);
+  gkyl_mat_triples_accum(matrix, global_idx[3], global_idx[2], 0.09622504486493764*weight[2]+0.1111111111111111*weight[0]);
+  gkyl_mat_triples_accum(matrix, global_idx[3], global_idx[3], 0.16666666666666666*weight[3]+0.1924500897298753*weight[2]+0.1924500897298753*weight[1]+0.2222222222222222*weight[0]);
+}
+
+void fem_proj_2x_ser_p1_mass_weighted_lox_dirichletx_iny(const double *weight, const long *global_idx, gkyl_mat_triples *matrix) {
+  gkyl_mat_triples_insert(matrix, global_idx[0], global_idx[0], 1.0);
+  gkyl_mat_triples_accum(matrix, global_idx[1], global_idx[0], 0.1111111111111111*weight[0]-0.09622504486493764*weight[2]);
+  gkyl_mat_triples_accum(matrix, global_idx[1], global_idx[1], -(0.16666666666666666*weight[3])-0.1924500897298753*weight[2]+0.1924500897298753*weight[1]+0.2222222222222222*weight[0]);
+  gkyl_mat_triples_accum(matrix, global_idx[1], global_idx[2], 0.05555555555555555*weight[0]);
+  gkyl_mat_triples_accum(matrix, global_idx[1], global_idx[3], 0.09622504486493764*weight[1]+0.1111111111111111*weight[0]);
+  gkyl_mat_triples_insert(matrix, global_idx[2], global_idx[2], 1.0);
+  gkyl_mat_triples_accum(matrix, global_idx[3], global_idx[0], 0.05555555555555555*weight[0]);
+  gkyl_mat_triples_accum(matrix, global_idx[3], global_idx[1], 0.09622504486493764*weight[1]+0.1111111111111111*weight[0]);
+  gkyl_mat_triples_accum(matrix, global_idx[3], global_idx[2], 0.09622504486493764*weight[2]+0.1111111111111111*weight[0]);
+  gkyl_mat_triples_accum(matrix, global_idx[3], global_idx[3], 0.16666666666666666*weight[3]+0.1924500897298753*weight[2]+0.1924500897298753*weight[1]+0.2222222222222222*weight[0]);
+}
+
+void fem_proj_2x_ser_p1_mass_weighted_upx_dirichletx_iny(const double *weight, const long *global_idx, gkyl_mat_triples *matrix) {
+  gkyl_mat_triples_accum(matrix, global_idx[0], global_idx[0], 0.16666666666666666*weight[3]-0.1924500897298753*weight[2]-0.1924500897298753*weight[1]+0.2222222222222222*weight[0]);
+  gkyl_mat_triples_accum(matrix, global_idx[0], global_idx[1], 0.1111111111111111*weight[0]-0.09622504486493764*weight[2]);
+  gkyl_mat_triples_accum(matrix, global_idx[0], global_idx[2], 0.1111111111111111*weight[0]-0.09622504486493764*weight[1]);
+  gkyl_mat_triples_accum(matrix, global_idx[0], global_idx[3], 0.05555555555555555*weight[0]);
+  gkyl_mat_triples_insert(matrix, global_idx[1], global_idx[1], 1.0);
+  gkyl_mat_triples_accum(matrix, global_idx[2], global_idx[0], 0.1111111111111111*weight[0]-0.09622504486493764*weight[1]);
+  gkyl_mat_triples_accum(matrix, global_idx[2], global_idx[1], 0.05555555555555555*weight[0]);
+  gkyl_mat_triples_accum(matrix, global_idx[2], global_idx[2], -(0.16666666666666666*weight[3])+0.1924500897298753*weight[2]-0.1924500897298753*weight[1]+0.2222222222222222*weight[0]);
+  gkyl_mat_triples_accum(matrix, global_idx[2], global_idx[3], 0.09622504486493764*weight[2]+0.1111111111111111*weight[0]);
+  gkyl_mat_triples_insert(matrix, global_idx[3], global_idx[3], 1.0);
+}
+
+void fem_proj_2x_ser_p1_mass_weighted_lox_dirichletx_upx_dirichletx_iny(const double *weight, const long *global_idx, gkyl_mat_triples *matrix) {
+  gkyl_mat_triples_insert(matrix, global_idx[0], global_idx[0], 1.0);
+  gkyl_mat_triples_insert(matrix, global_idx[1], global_idx[1], 1.0);
+  gkyl_mat_triples_insert(matrix, global_idx[2], global_idx[2], 1.0);
+  gkyl_mat_triples_insert(matrix, global_idx[3], global_idx[3], 1.0);
+}
+
+void fem_proj_2x_ser_p1_mass_weighted_inx_loy_dirichlety(const double *weight, const long *global_idx, gkyl_mat_triples *matrix) {
+  gkyl_mat_triples_insert(matrix, global_idx[0], global_idx[0], 1.0);
+  gkyl_mat_triples_insert(matrix, global_idx[1], global_idx[1], 1.0);
+  gkyl_mat_triples_accum(matrix, global_idx[2], global_idx[0], 0.1111111111111111*weight[0]-0.09622504486493764*weight[1]);
+  gkyl_mat_triples_accum(matrix, global_idx[2], global_idx[1], 0.05555555555555555*weight[0]);
+  gkyl_mat_triples_accum(matrix, global_idx[2], global_idx[2], -(0.16666666666666666*weight[3])+0.1924500897298753*weight[2]-0.1924500897298753*weight[1]+0.2222222222222222*weight[0]);
+  gkyl_mat_triples_accum(matrix, global_idx[2], global_idx[3], 0.09622504486493764*weight[2]+0.1111111111111111*weight[0]);
+  gkyl_mat_triples_accum(matrix, global_idx[3], global_idx[0], 0.05555555555555555*weight[0]);
+  gkyl_mat_triples_accum(matrix, global_idx[3], global_idx[1], 0.09622504486493764*weight[1]+0.1111111111111111*weight[0]);
+  gkyl_mat_triples_accum(matrix, global_idx[3], global_idx[2], 0.09622504486493764*weight[2]+0.1111111111111111*weight[0]);
+  gkyl_mat_triples_accum(matrix, global_idx[3], global_idx[3], 0.16666666666666666*weight[3]+0.1924500897298753*weight[2]+0.1924500897298753*weight[1]+0.2222222222222222*weight[0]);
+}
+
+void fem_proj_2x_ser_p1_mass_weighted_lox_dirichletx_loy_dirichlety(const double *weight, const long *global_idx, gkyl_mat_triples *matrix) {
+  gkyl_mat_triples_insert(matrix, global_idx[0], global_idx[0], 1.0);
+  gkyl_mat_triples_insert(matrix, global_idx[1], global_idx[1], 1.0);
+  gkyl_mat_triples_insert(matrix, global_idx[2], global_idx[2], 1.0);
+  gkyl_mat_triples_accum(matrix, global_idx[3], global_idx[0], 0.05555555555555555*weight[0]);
+  gkyl_mat_triples_accum(matrix, global_idx[3], global_idx[1], 0.09622504486493764*weight[1]+0.1111111111111111*weight[0]);
+  gkyl_mat_triples_accum(matrix, global_idx[3], global_idx[2], 0.09622504486493764*weight[2]+0.1111111111111111*weight[0]);
+  gkyl_mat_triples_accum(matrix, global_idx[3], global_idx[3], 0.16666666666666666*weight[3]+0.1924500897298753*weight[2]+0.1924500897298753*weight[1]+0.2222222222222222*weight[0]);
+}
+
+void fem_proj_2x_ser_p1_mass_weighted_upx_dirichletx_loy_dirichlety(const double *weight, const long *global_idx, gkyl_mat_triples *matrix) {
+  gkyl_mat_triples_insert(matrix, global_idx[0], global_idx[0], 1.0);
+  gkyl_mat_triples_insert(matrix, global_idx[1], global_idx[1], 1.0);
+  gkyl_mat_triples_accum(matrix, global_idx[2], global_idx[0], 0.1111111111111111*weight[0]-0.09622504486493764*weight[1]);
+  gkyl_mat_triples_accum(matrix, global_idx[2], global_idx[1], 0.05555555555555555*weight[0]);
+  gkyl_mat_triples_accum(matrix, global_idx[2], global_idx[2], -(0.16666666666666666*weight[3])+0.1924500897298753*weight[2]-0.1924500897298753*weight[1]+0.2222222222222222*weight[0]);
+  gkyl_mat_triples_accum(matrix, global_idx[2], global_idx[3], 0.09622504486493764*weight[2]+0.1111111111111111*weight[0]);
+  gkyl_mat_triples_insert(matrix, global_idx[3], global_idx[3], 1.0);
+}
+
+void fem_proj_2x_ser_p1_mass_weighted_lox_dirichletx_upx_dirichletx_loy_dirichlety(const double *weight, const long *global_idx, gkyl_mat_triples *matrix) {
+  gkyl_mat_triples_insert(matrix, global_idx[0], global_idx[0], 1.0);
+  gkyl_mat_triples_insert(matrix, global_idx[1], global_idx[1], 1.0);
+  gkyl_mat_triples_insert(matrix, global_idx[2], global_idx[2], 1.0);
+  gkyl_mat_triples_insert(matrix, global_idx[3], global_idx[3], 1.0);
+}
+
+void fem_proj_2x_ser_p1_mass_weighted_inx_upy_dirichlety(const double *weight, const long *global_idx, gkyl_mat_triples *matrix) {
+  gkyl_mat_triples_accum(matrix, global_idx[0], global_idx[0], 0.16666666666666666*weight[3]-0.1924500897298753*weight[2]-0.1924500897298753*weight[1]+0.2222222222222222*weight[0]);
+  gkyl_mat_triples_accum(matrix, global_idx[0], global_idx[1], 0.1111111111111111*weight[0]-0.09622504486493764*weight[2]);
+  gkyl_mat_triples_accum(matrix, global_idx[0], global_idx[2], 0.1111111111111111*weight[0]-0.09622504486493764*weight[1]);
+  gkyl_mat_triples_accum(matrix, global_idx[0], global_idx[3], 0.05555555555555555*weight[0]);
+  gkyl_mat_triples_accum(matrix, global_idx[1], global_idx[0], 0.1111111111111111*weight[0]-0.09622504486493764*weight[2]);
+  gkyl_mat_triples_accum(matrix, global_idx[1], global_idx[1], -(0.16666666666666666*weight[3])-0.1924500897298753*weight[2]+0.1924500897298753*weight[1]+0.2222222222222222*weight[0]);
+  gkyl_mat_triples_accum(matrix, global_idx[1], global_idx[2], 0.05555555555555555*weight[0]);
+  gkyl_mat_triples_accum(matrix, global_idx[1], global_idx[3], 0.09622504486493764*weight[1]+0.1111111111111111*weight[0]);
+  gkyl_mat_triples_insert(matrix, global_idx[2], global_idx[2], 1.0);
+  gkyl_mat_triples_insert(matrix, global_idx[3], global_idx[3], 1.0);
+}
+
+void fem_proj_2x_ser_p1_mass_weighted_lox_dirichletx_upy_dirichlety(const double *weight, const long *global_idx, gkyl_mat_triples *matrix) {
+  gkyl_mat_triples_insert(matrix, global_idx[0], global_idx[0], 1.0);
+  gkyl_mat_triples_accum(matrix, global_idx[1], global_idx[0], 0.1111111111111111*weight[0]-0.09622504486493764*weight[2]);
+  gkyl_mat_triples_accum(matrix, global_idx[1], global_idx[1], -(0.16666666666666666*weight[3])-0.1924500897298753*weight[2]+0.1924500897298753*weight[1]+0.2222222222222222*weight[0]);
+  gkyl_mat_triples_accum(matrix, global_idx[1], global_idx[2], 0.05555555555555555*weight[0]);
+  gkyl_mat_triples_accum(matrix, global_idx[1], global_idx[3], 0.09622504486493764*weight[1]+0.1111111111111111*weight[0]);
+  gkyl_mat_triples_insert(matrix, global_idx[2], global_idx[2], 1.0);
+  gkyl_mat_triples_insert(matrix, global_idx[3], global_idx[3], 1.0);
+}
+
+void fem_proj_2x_ser_p1_mass_weighted_upx_dirichletx_upy_dirichlety(const double *weight, const long *global_idx, gkyl_mat_triples *matrix) {
+  gkyl_mat_triples_accum(matrix, global_idx[0], global_idx[0], 0.16666666666666666*weight[3]-0.1924500897298753*weight[2]-0.1924500897298753*weight[1]+0.2222222222222222*weight[0]);
+  gkyl_mat_triples_accum(matrix, global_idx[0], global_idx[1], 0.1111111111111111*weight[0]-0.09622504486493764*weight[2]);
+  gkyl_mat_triples_accum(matrix, global_idx[0], global_idx[2], 0.1111111111111111*weight[0]-0.09622504486493764*weight[1]);
+  gkyl_mat_triples_accum(matrix, global_idx[0], global_idx[3], 0.05555555555555555*weight[0]);
+  gkyl_mat_triples_insert(matrix, global_idx[1], global_idx[1], 1.0);
+  gkyl_mat_triples_insert(matrix, global_idx[2], global_idx[2], 1.0);
+  gkyl_mat_triples_insert(matrix, global_idx[3], global_idx[3], 1.0);
+}
+
+void fem_proj_2x_ser_p1_mass_weighted_lox_dirichletx_upx_dirichletx_upy_dirichlety(const double *weight, const long *global_idx, gkyl_mat_triples *matrix) {
+  gkyl_mat_triples_insert(matrix, global_idx[0], global_idx[0], 1.0);
+  gkyl_mat_triples_insert(matrix, global_idx[1], global_idx[1], 1.0);
+  gkyl_mat_triples_insert(matrix, global_idx[2], global_idx[2], 1.0);
+  gkyl_mat_triples_insert(matrix, global_idx[3], global_idx[3], 1.0);
+}
+
+void fem_proj_2x_ser_p1_mass_weighted_inx_loy_dirichlety_upy_dirichlety(const double *weight, const long *global_idx, gkyl_mat_triples *matrix) {
+  gkyl_mat_triples_insert(matrix, global_idx[0], global_idx[0], 1.0);
+  gkyl_mat_triples_insert(matrix, global_idx[1], global_idx[1], 1.0);
+  gkyl_mat_triples_insert(matrix, global_idx[2], global_idx[2], 1.0);
+  gkyl_mat_triples_insert(matrix, global_idx[3], global_idx[3], 1.0);
+}
+
+void fem_proj_2x_ser_p1_mass_weighted_lox_dirichletx_loy_dirichlety_upy_dirichlety(const double *weight, const long *global_idx, gkyl_mat_triples *matrix) {
+  gkyl_mat_triples_insert(matrix, global_idx[0], global_idx[0], 1.0);
+  gkyl_mat_triples_insert(matrix, global_idx[1], global_idx[1], 1.0);
+  gkyl_mat_triples_insert(matrix, global_idx[2], global_idx[2], 1.0);
+  gkyl_mat_triples_insert(matrix, global_idx[3], global_idx[3], 1.0);
+}
+
+void fem_proj_2x_ser_p1_mass_weighted_upx_dirichletx_loy_dirichlety_upy_dirichlety(const double *weight, const long *global_idx, gkyl_mat_triples *matrix) {
+  gkyl_mat_triples_insert(matrix, global_idx[0], global_idx[0], 1.0);
+  gkyl_mat_triples_insert(matrix, global_idx[1], global_idx[1], 1.0);
+  gkyl_mat_triples_insert(matrix, global_idx[2], global_idx[2], 1.0);
+  gkyl_mat_triples_insert(matrix, global_idx[3], global_idx[3], 1.0);
+}
+
+void fem_proj_2x_ser_p1_mass_weighted_lox_dirichletx_upx_dirichletx_loy_dirichlety_upy_dirichlety(const double *weight, const long *global_idx, gkyl_mat_triples *matrix) {
+  gkyl_mat_triples_insert(matrix, global_idx[0], global_idx[0], 1.0);
+  gkyl_mat_triples_insert(matrix, global_idx[1], global_idx[1], 1.0);
+  gkyl_mat_triples_insert(matrix, global_idx[2], global_idx[2], 1.0);
+  gkyl_mat_triples_insert(matrix, global_idx[3], global_idx[3], 1.0);
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_inx_iny(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[0]], 0.25*rhs[3]*weight[3]-0.14433756729740646*rhs[2]*weight[3]-0.14433756729740646*rhs[1]*weight[3]+0.08333333333333333*rhs[0]*weight[3]-0.14433756729740646*weight[2]*rhs[3]-0.14433756729740646*weight[1]*rhs[3]+0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]+0.08333333333333333*rhs[1]*weight[2]-0.14433756729740646*rhs[0]*weight[2]+0.08333333333333333*weight[1]*rhs[2]-0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]-0.14433756729740646*rhs[0]*weight[1]-0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0]);
+#else
+  out[global_idx[0]] += 0.25*rhs[3]*weight[3]-0.14433756729740646*rhs[2]*weight[3]-0.14433756729740646*rhs[1]*weight[3]+0.08333333333333333*rhs[0]*weight[3]-0.14433756729740646*weight[2]*rhs[3]-0.14433756729740646*weight[1]*rhs[3]+0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]+0.08333333333333333*rhs[1]*weight[2]-0.14433756729740646*rhs[0]*weight[2]+0.08333333333333333*weight[1]*rhs[2]-0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]-0.14433756729740646*rhs[0]*weight[1]-0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[1]], 0.25*rhs[3]*weight[3]+0.14433756729740646*rhs[2]*weight[3]-0.14433756729740646*rhs[1]*weight[3]-0.08333333333333333*rhs[0]*weight[3]+0.14433756729740646*weight[2]*rhs[3]-0.14433756729740646*weight[1]*rhs[3]-0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]-0.08333333333333333*rhs[1]*weight[2]-0.14433756729740646*rhs[0]*weight[2]-0.08333333333333333*weight[1]*rhs[2]-0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]+0.14433756729740646*rhs[0]*weight[1]+0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0]);
+#else
+  out[global_idx[1]] += 0.25*rhs[3]*weight[3]+0.14433756729740646*rhs[2]*weight[3]-0.14433756729740646*rhs[1]*weight[3]-0.08333333333333333*rhs[0]*weight[3]+0.14433756729740646*weight[2]*rhs[3]-0.14433756729740646*weight[1]*rhs[3]-0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]-0.08333333333333333*rhs[1]*weight[2]-0.14433756729740646*rhs[0]*weight[2]-0.08333333333333333*weight[1]*rhs[2]-0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]+0.14433756729740646*rhs[0]*weight[1]+0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[2]], 0.25*rhs[3]*weight[3]-0.14433756729740646*rhs[2]*weight[3]+0.14433756729740646*rhs[1]*weight[3]-0.08333333333333333*rhs[0]*weight[3]-0.14433756729740646*weight[2]*rhs[3]+0.14433756729740646*weight[1]*rhs[3]-0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]-0.08333333333333333*rhs[1]*weight[2]+0.14433756729740646*rhs[0]*weight[2]-0.08333333333333333*weight[1]*rhs[2]+0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]-0.14433756729740646*rhs[0]*weight[1]-0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0]);
+#else
+  out[global_idx[2]] += 0.25*rhs[3]*weight[3]-0.14433756729740646*rhs[2]*weight[3]+0.14433756729740646*rhs[1]*weight[3]-0.08333333333333333*rhs[0]*weight[3]-0.14433756729740646*weight[2]*rhs[3]+0.14433756729740646*weight[1]*rhs[3]-0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]-0.08333333333333333*rhs[1]*weight[2]+0.14433756729740646*rhs[0]*weight[2]-0.08333333333333333*weight[1]*rhs[2]+0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]-0.14433756729740646*rhs[0]*weight[1]-0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[3]], 0.25*rhs[3]*weight[3]+0.14433756729740646*rhs[2]*weight[3]+0.14433756729740646*rhs[1]*weight[3]+0.08333333333333333*rhs[0]*weight[3]+0.14433756729740646*weight[2]*rhs[3]+0.14433756729740646*weight[1]*rhs[3]+0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]+0.08333333333333333*rhs[1]*weight[2]+0.14433756729740646*rhs[0]*weight[2]+0.08333333333333333*weight[1]*rhs[2]+0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]+0.14433756729740646*rhs[0]*weight[1]+0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0]);
+#else
+  out[global_idx[3]] += 0.25*rhs[3]*weight[3]+0.14433756729740646*rhs[2]*weight[3]+0.14433756729740646*rhs[1]*weight[3]+0.08333333333333333*rhs[0]*weight[3]+0.14433756729740646*weight[2]*rhs[3]+0.14433756729740646*weight[1]*rhs[3]+0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]+0.08333333333333333*rhs[1]*weight[2]+0.14433756729740646*rhs[0]*weight[2]+0.08333333333333333*weight[1]*rhs[2]+0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]+0.14433756729740646*rhs[0]*weight[1]+0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_lox_dirichletx_iny(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[0]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[1]], 0.25*rhs[3]*weight[3]+0.14433756729740646*rhs[2]*weight[3]-0.14433756729740646*rhs[1]*weight[3]-0.08333333333333333*rhs[0]*weight[3]+0.14433756729740646*weight[2]*rhs[3]-0.14433756729740646*weight[1]*rhs[3]-0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]-0.08333333333333333*rhs[1]*weight[2]-0.14433756729740646*rhs[0]*weight[2]-0.08333333333333333*weight[1]*rhs[2]-0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]+0.14433756729740646*rhs[0]*weight[1]+0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0]);
+#else
+  out[global_idx[1]] += 0.25*rhs[3]*weight[3]+0.14433756729740646*rhs[2]*weight[3]-0.14433756729740646*rhs[1]*weight[3]-0.08333333333333333*rhs[0]*weight[3]+0.14433756729740646*weight[2]*rhs[3]-0.14433756729740646*weight[1]*rhs[3]-0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]-0.08333333333333333*rhs[1]*weight[2]-0.14433756729740646*rhs[0]*weight[2]-0.08333333333333333*weight[1]*rhs[2]-0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]+0.14433756729740646*rhs[0]*weight[1]+0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[2]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[3]], 0.25*rhs[3]*weight[3]+0.14433756729740646*rhs[2]*weight[3]+0.14433756729740646*rhs[1]*weight[3]+0.08333333333333333*rhs[0]*weight[3]+0.14433756729740646*weight[2]*rhs[3]+0.14433756729740646*weight[1]*rhs[3]+0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]+0.08333333333333333*rhs[1]*weight[2]+0.14433756729740646*rhs[0]*weight[2]+0.08333333333333333*weight[1]*rhs[2]+0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]+0.14433756729740646*rhs[0]*weight[1]+0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0]);
+#else
+  out[global_idx[3]] += 0.25*rhs[3]*weight[3]+0.14433756729740646*rhs[2]*weight[3]+0.14433756729740646*rhs[1]*weight[3]+0.08333333333333333*rhs[0]*weight[3]+0.14433756729740646*weight[2]*rhs[3]+0.14433756729740646*weight[1]*rhs[3]+0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]+0.08333333333333333*rhs[1]*weight[2]+0.14433756729740646*rhs[0]*weight[2]+0.08333333333333333*weight[1]*rhs[2]+0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]+0.14433756729740646*rhs[0]*weight[1]+0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_lox_dirichletvarx_iny(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[1]], 0.25*rhs[3]*weight[3]+0.14433756729740646*rhs[2]*weight[3]-0.14433756729740646*rhs[1]*weight[3]-0.08333333333333333*rhs[0]*weight[3]+0.14433756729740646*weight[2]*rhs[3]-0.14433756729740646*weight[1]*rhs[3]-0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]-0.08333333333333333*rhs[1]*weight[2]-0.14433756729740646*rhs[0]*weight[2]-0.08333333333333333*weight[1]*rhs[2]-0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]+0.14433756729740646*rhs[0]*weight[1]+0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0]);
+#else
+  out[global_idx[1]] += 0.25*rhs[3]*weight[3]+0.14433756729740646*rhs[2]*weight[3]-0.14433756729740646*rhs[1]*weight[3]-0.08333333333333333*rhs[0]*weight[3]+0.14433756729740646*weight[2]*rhs[3]-0.14433756729740646*weight[1]*rhs[3]-0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]-0.08333333333333333*rhs[1]*weight[2]-0.14433756729740646*rhs[0]*weight[2]-0.08333333333333333*weight[1]*rhs[2]-0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]+0.14433756729740646*rhs[0]*weight[1]+0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[3]], 0.25*rhs[3]*weight[3]+0.14433756729740646*rhs[2]*weight[3]+0.14433756729740646*rhs[1]*weight[3]+0.08333333333333333*rhs[0]*weight[3]+0.14433756729740646*weight[2]*rhs[3]+0.14433756729740646*weight[1]*rhs[3]+0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]+0.08333333333333333*rhs[1]*weight[2]+0.14433756729740646*rhs[0]*weight[2]+0.08333333333333333*weight[1]*rhs[2]+0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]+0.14433756729740646*rhs[0]*weight[1]+0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0]);
+#else
+  out[global_idx[3]] += 0.25*rhs[3]*weight[3]+0.14433756729740646*rhs[2]*weight[3]+0.14433756729740646*rhs[1]*weight[3]+0.08333333333333333*rhs[0]*weight[3]+0.14433756729740646*weight[2]*rhs[3]+0.14433756729740646*weight[1]*rhs[3]+0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]+0.08333333333333333*rhs[1]*weight[2]+0.14433756729740646*rhs[0]*weight[2]+0.08333333333333333*weight[1]*rhs[2]+0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]+0.14433756729740646*rhs[0]*weight[1]+0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_upx_dirichletx_iny(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[0]], 0.25*rhs[3]*weight[3]-0.14433756729740646*rhs[2]*weight[3]-0.14433756729740646*rhs[1]*weight[3]+0.08333333333333333*rhs[0]*weight[3]-0.14433756729740646*weight[2]*rhs[3]-0.14433756729740646*weight[1]*rhs[3]+0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]+0.08333333333333333*rhs[1]*weight[2]-0.14433756729740646*rhs[0]*weight[2]+0.08333333333333333*weight[1]*rhs[2]-0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]-0.14433756729740646*rhs[0]*weight[1]-0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0]);
+#else
+  out[global_idx[0]] += 0.25*rhs[3]*weight[3]-0.14433756729740646*rhs[2]*weight[3]-0.14433756729740646*rhs[1]*weight[3]+0.08333333333333333*rhs[0]*weight[3]-0.14433756729740646*weight[2]*rhs[3]-0.14433756729740646*weight[1]*rhs[3]+0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]+0.08333333333333333*rhs[1]*weight[2]-0.14433756729740646*rhs[0]*weight[2]+0.08333333333333333*weight[1]*rhs[2]-0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]-0.14433756729740646*rhs[0]*weight[1]-0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[1]] = bc_values[1];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[2]], 0.25*rhs[3]*weight[3]-0.14433756729740646*rhs[2]*weight[3]+0.14433756729740646*rhs[1]*weight[3]-0.08333333333333333*rhs[0]*weight[3]-0.14433756729740646*weight[2]*rhs[3]+0.14433756729740646*weight[1]*rhs[3]-0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]-0.08333333333333333*rhs[1]*weight[2]+0.14433756729740646*rhs[0]*weight[2]-0.08333333333333333*weight[1]*rhs[2]+0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]-0.14433756729740646*rhs[0]*weight[1]-0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0]);
+#else
+  out[global_idx[2]] += 0.25*rhs[3]*weight[3]-0.14433756729740646*rhs[2]*weight[3]+0.14433756729740646*rhs[1]*weight[3]-0.08333333333333333*rhs[0]*weight[3]-0.14433756729740646*weight[2]*rhs[3]+0.14433756729740646*weight[1]*rhs[3]-0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]-0.08333333333333333*rhs[1]*weight[2]+0.14433756729740646*rhs[0]*weight[2]-0.08333333333333333*weight[1]*rhs[2]+0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]-0.14433756729740646*rhs[0]*weight[1]-0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[3]] = bc_values[1];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_lox_dirichletx_upx_dirichletx_iny(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[0]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[1]] = bc_values[1];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[2]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[3]] = bc_values[1];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_lox_dirichletvarx_upx_dirichletx_iny(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[1]] = bc_values[1];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[3]] = bc_values[1];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_upx_dirichletvarx_iny(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[0]], 0.25*rhs[3]*weight[3]-0.14433756729740646*rhs[2]*weight[3]-0.14433756729740646*rhs[1]*weight[3]+0.08333333333333333*rhs[0]*weight[3]-0.14433756729740646*weight[2]*rhs[3]-0.14433756729740646*weight[1]*rhs[3]+0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]+0.08333333333333333*rhs[1]*weight[2]-0.14433756729740646*rhs[0]*weight[2]+0.08333333333333333*weight[1]*rhs[2]-0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]-0.14433756729740646*rhs[0]*weight[1]-0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0]);
+#else
+  out[global_idx[0]] += 0.25*rhs[3]*weight[3]-0.14433756729740646*rhs[2]*weight[3]-0.14433756729740646*rhs[1]*weight[3]+0.08333333333333333*rhs[0]*weight[3]-0.14433756729740646*weight[2]*rhs[3]-0.14433756729740646*weight[1]*rhs[3]+0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]+0.08333333333333333*rhs[1]*weight[2]-0.14433756729740646*rhs[0]*weight[2]+0.08333333333333333*weight[1]*rhs[2]-0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]-0.14433756729740646*rhs[0]*weight[1]-0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[2]], 0.25*rhs[3]*weight[3]-0.14433756729740646*rhs[2]*weight[3]+0.14433756729740646*rhs[1]*weight[3]-0.08333333333333333*rhs[0]*weight[3]-0.14433756729740646*weight[2]*rhs[3]+0.14433756729740646*weight[1]*rhs[3]-0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]-0.08333333333333333*rhs[1]*weight[2]+0.14433756729740646*rhs[0]*weight[2]-0.08333333333333333*weight[1]*rhs[2]+0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]-0.14433756729740646*rhs[0]*weight[1]-0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0]);
+#else
+  out[global_idx[2]] += 0.25*rhs[3]*weight[3]-0.14433756729740646*rhs[2]*weight[3]+0.14433756729740646*rhs[1]*weight[3]-0.08333333333333333*rhs[0]*weight[3]-0.14433756729740646*weight[2]*rhs[3]+0.14433756729740646*weight[1]*rhs[3]-0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]-0.08333333333333333*rhs[1]*weight[2]+0.14433756729740646*rhs[0]*weight[2]-0.08333333333333333*weight[1]*rhs[2]+0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]-0.14433756729740646*rhs[0]*weight[1]-0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_lox_dirichletx_upx_dirichletvarx_iny(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[0]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[2]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_lox_dirichletvarx_upx_dirichletvarx_iny(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_inx_loy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[2]));
+#else
+  out[global_idx[0]] = bc_values[2];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[2]));
+#else
+  out[global_idx[1]] = bc_values[2];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[2]], 0.25*rhs[3]*weight[3]-0.14433756729740646*rhs[2]*weight[3]+0.14433756729740646*rhs[1]*weight[3]-0.08333333333333333*rhs[0]*weight[3]-0.14433756729740646*weight[2]*rhs[3]+0.14433756729740646*weight[1]*rhs[3]-0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]-0.08333333333333333*rhs[1]*weight[2]+0.14433756729740646*rhs[0]*weight[2]-0.08333333333333333*weight[1]*rhs[2]+0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]-0.14433756729740646*rhs[0]*weight[1]-0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0]);
+#else
+  out[global_idx[2]] += 0.25*rhs[3]*weight[3]-0.14433756729740646*rhs[2]*weight[3]+0.14433756729740646*rhs[1]*weight[3]-0.08333333333333333*rhs[0]*weight[3]-0.14433756729740646*weight[2]*rhs[3]+0.14433756729740646*weight[1]*rhs[3]-0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]-0.08333333333333333*rhs[1]*weight[2]+0.14433756729740646*rhs[0]*weight[2]-0.08333333333333333*weight[1]*rhs[2]+0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]-0.14433756729740646*rhs[0]*weight[1]-0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[3]], 0.25*rhs[3]*weight[3]+0.14433756729740646*rhs[2]*weight[3]+0.14433756729740646*rhs[1]*weight[3]+0.08333333333333333*rhs[0]*weight[3]+0.14433756729740646*weight[2]*rhs[3]+0.14433756729740646*weight[1]*rhs[3]+0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]+0.08333333333333333*rhs[1]*weight[2]+0.14433756729740646*rhs[0]*weight[2]+0.08333333333333333*weight[1]*rhs[2]+0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]+0.14433756729740646*rhs[0]*weight[1]+0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0]);
+#else
+  out[global_idx[3]] += 0.25*rhs[3]*weight[3]+0.14433756729740646*rhs[2]*weight[3]+0.14433756729740646*rhs[1]*weight[3]+0.08333333333333333*rhs[0]*weight[3]+0.14433756729740646*weight[2]*rhs[3]+0.14433756729740646*weight[1]*rhs[3]+0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]+0.08333333333333333*rhs[1]*weight[2]+0.14433756729740646*rhs[0]*weight[2]+0.08333333333333333*weight[1]*rhs[2]+0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]+0.14433756729740646*rhs[0]*weight[1]+0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_lox_dirichletx_loy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[0]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[2]));
+#else
+  out[global_idx[1]] = bc_values[2];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[2]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[3]], 0.25*rhs[3]*weight[3]+0.14433756729740646*rhs[2]*weight[3]+0.14433756729740646*rhs[1]*weight[3]+0.08333333333333333*rhs[0]*weight[3]+0.14433756729740646*weight[2]*rhs[3]+0.14433756729740646*weight[1]*rhs[3]+0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]+0.08333333333333333*rhs[1]*weight[2]+0.14433756729740646*rhs[0]*weight[2]+0.08333333333333333*weight[1]*rhs[2]+0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]+0.14433756729740646*rhs[0]*weight[1]+0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0]);
+#else
+  out[global_idx[3]] += 0.25*rhs[3]*weight[3]+0.14433756729740646*rhs[2]*weight[3]+0.14433756729740646*rhs[1]*weight[3]+0.08333333333333333*rhs[0]*weight[3]+0.14433756729740646*weight[2]*rhs[3]+0.14433756729740646*weight[1]*rhs[3]+0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]+0.08333333333333333*rhs[1]*weight[2]+0.14433756729740646*rhs[0]*weight[2]+0.08333333333333333*weight[1]*rhs[2]+0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]+0.14433756729740646*rhs[0]*weight[1]+0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_lox_dirichletvarx_loy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[2]));
+#else
+  out[global_idx[1]] = bc_values[2];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[3]], 0.25*rhs[3]*weight[3]+0.14433756729740646*rhs[2]*weight[3]+0.14433756729740646*rhs[1]*weight[3]+0.08333333333333333*rhs[0]*weight[3]+0.14433756729740646*weight[2]*rhs[3]+0.14433756729740646*weight[1]*rhs[3]+0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]+0.08333333333333333*rhs[1]*weight[2]+0.14433756729740646*rhs[0]*weight[2]+0.08333333333333333*weight[1]*rhs[2]+0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]+0.14433756729740646*rhs[0]*weight[1]+0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0]);
+#else
+  out[global_idx[3]] += 0.25*rhs[3]*weight[3]+0.14433756729740646*rhs[2]*weight[3]+0.14433756729740646*rhs[1]*weight[3]+0.08333333333333333*rhs[0]*weight[3]+0.14433756729740646*weight[2]*rhs[3]+0.14433756729740646*weight[1]*rhs[3]+0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]+0.08333333333333333*rhs[1]*weight[2]+0.14433756729740646*rhs[0]*weight[2]+0.08333333333333333*weight[1]*rhs[2]+0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]+0.14433756729740646*rhs[0]*weight[1]+0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_upx_dirichletx_loy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[2]));
+#else
+  out[global_idx[0]] = bc_values[2];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[1]] = bc_values[1];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[2]], 0.25*rhs[3]*weight[3]-0.14433756729740646*rhs[2]*weight[3]+0.14433756729740646*rhs[1]*weight[3]-0.08333333333333333*rhs[0]*weight[3]-0.14433756729740646*weight[2]*rhs[3]+0.14433756729740646*weight[1]*rhs[3]-0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]-0.08333333333333333*rhs[1]*weight[2]+0.14433756729740646*rhs[0]*weight[2]-0.08333333333333333*weight[1]*rhs[2]+0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]-0.14433756729740646*rhs[0]*weight[1]-0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0]);
+#else
+  out[global_idx[2]] += 0.25*rhs[3]*weight[3]-0.14433756729740646*rhs[2]*weight[3]+0.14433756729740646*rhs[1]*weight[3]-0.08333333333333333*rhs[0]*weight[3]-0.14433756729740646*weight[2]*rhs[3]+0.14433756729740646*weight[1]*rhs[3]-0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]-0.08333333333333333*rhs[1]*weight[2]+0.14433756729740646*rhs[0]*weight[2]-0.08333333333333333*weight[1]*rhs[2]+0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]-0.14433756729740646*rhs[0]*weight[1]-0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[3]] = bc_values[1];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_lox_dirichletx_upx_dirichletx_loy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[0]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[1]] = bc_values[1];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[2]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[3]] = bc_values[1];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_lox_dirichletvarx_upx_dirichletx_loy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[1]] = bc_values[1];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[3]] = bc_values[1];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_upx_dirichletvarx_loy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[2]));
+#else
+  out[global_idx[0]] = bc_values[2];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[2]], 0.25*rhs[3]*weight[3]-0.14433756729740646*rhs[2]*weight[3]+0.14433756729740646*rhs[1]*weight[3]-0.08333333333333333*rhs[0]*weight[3]-0.14433756729740646*weight[2]*rhs[3]+0.14433756729740646*weight[1]*rhs[3]-0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]-0.08333333333333333*rhs[1]*weight[2]+0.14433756729740646*rhs[0]*weight[2]-0.08333333333333333*weight[1]*rhs[2]+0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]-0.14433756729740646*rhs[0]*weight[1]-0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0]);
+#else
+  out[global_idx[2]] += 0.25*rhs[3]*weight[3]-0.14433756729740646*rhs[2]*weight[3]+0.14433756729740646*rhs[1]*weight[3]-0.08333333333333333*rhs[0]*weight[3]-0.14433756729740646*weight[2]*rhs[3]+0.14433756729740646*weight[1]*rhs[3]-0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]-0.08333333333333333*rhs[1]*weight[2]+0.14433756729740646*rhs[0]*weight[2]-0.08333333333333333*weight[1]*rhs[2]+0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]-0.14433756729740646*rhs[0]*weight[1]-0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_lox_dirichletx_upx_dirichletvarx_loy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[0]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[2]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_lox_dirichletvarx_upx_dirichletvarx_loy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_inx_loy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[2]], 0.25*rhs[3]*weight[3]-0.14433756729740646*rhs[2]*weight[3]+0.14433756729740646*rhs[1]*weight[3]-0.08333333333333333*rhs[0]*weight[3]-0.14433756729740646*weight[2]*rhs[3]+0.14433756729740646*weight[1]*rhs[3]-0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]-0.08333333333333333*rhs[1]*weight[2]+0.14433756729740646*rhs[0]*weight[2]-0.08333333333333333*weight[1]*rhs[2]+0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]-0.14433756729740646*rhs[0]*weight[1]-0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0]);
+#else
+  out[global_idx[2]] += 0.25*rhs[3]*weight[3]-0.14433756729740646*rhs[2]*weight[3]+0.14433756729740646*rhs[1]*weight[3]-0.08333333333333333*rhs[0]*weight[3]-0.14433756729740646*weight[2]*rhs[3]+0.14433756729740646*weight[1]*rhs[3]-0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]-0.08333333333333333*rhs[1]*weight[2]+0.14433756729740646*rhs[0]*weight[2]-0.08333333333333333*weight[1]*rhs[2]+0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]-0.14433756729740646*rhs[0]*weight[1]-0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[3]], 0.25*rhs[3]*weight[3]+0.14433756729740646*rhs[2]*weight[3]+0.14433756729740646*rhs[1]*weight[3]+0.08333333333333333*rhs[0]*weight[3]+0.14433756729740646*weight[2]*rhs[3]+0.14433756729740646*weight[1]*rhs[3]+0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]+0.08333333333333333*rhs[1]*weight[2]+0.14433756729740646*rhs[0]*weight[2]+0.08333333333333333*weight[1]*rhs[2]+0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]+0.14433756729740646*rhs[0]*weight[1]+0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0]);
+#else
+  out[global_idx[3]] += 0.25*rhs[3]*weight[3]+0.14433756729740646*rhs[2]*weight[3]+0.14433756729740646*rhs[1]*weight[3]+0.08333333333333333*rhs[0]*weight[3]+0.14433756729740646*weight[2]*rhs[3]+0.14433756729740646*weight[1]*rhs[3]+0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]+0.08333333333333333*rhs[1]*weight[2]+0.14433756729740646*rhs[0]*weight[2]+0.08333333333333333*weight[1]*rhs[2]+0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]+0.14433756729740646*rhs[0]*weight[1]+0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_lox_dirichletx_loy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[0]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[2]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[3]], 0.25*rhs[3]*weight[3]+0.14433756729740646*rhs[2]*weight[3]+0.14433756729740646*rhs[1]*weight[3]+0.08333333333333333*rhs[0]*weight[3]+0.14433756729740646*weight[2]*rhs[3]+0.14433756729740646*weight[1]*rhs[3]+0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]+0.08333333333333333*rhs[1]*weight[2]+0.14433756729740646*rhs[0]*weight[2]+0.08333333333333333*weight[1]*rhs[2]+0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]+0.14433756729740646*rhs[0]*weight[1]+0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0]);
+#else
+  out[global_idx[3]] += 0.25*rhs[3]*weight[3]+0.14433756729740646*rhs[2]*weight[3]+0.14433756729740646*rhs[1]*weight[3]+0.08333333333333333*rhs[0]*weight[3]+0.14433756729740646*weight[2]*rhs[3]+0.14433756729740646*weight[1]*rhs[3]+0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]+0.08333333333333333*rhs[1]*weight[2]+0.14433756729740646*rhs[0]*weight[2]+0.08333333333333333*weight[1]*rhs[2]+0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]+0.14433756729740646*rhs[0]*weight[1]+0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_lox_dirichletvarx_loy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[3]], 0.25*rhs[3]*weight[3]+0.14433756729740646*rhs[2]*weight[3]+0.14433756729740646*rhs[1]*weight[3]+0.08333333333333333*rhs[0]*weight[3]+0.14433756729740646*weight[2]*rhs[3]+0.14433756729740646*weight[1]*rhs[3]+0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]+0.08333333333333333*rhs[1]*weight[2]+0.14433756729740646*rhs[0]*weight[2]+0.08333333333333333*weight[1]*rhs[2]+0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]+0.14433756729740646*rhs[0]*weight[1]+0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0]);
+#else
+  out[global_idx[3]] += 0.25*rhs[3]*weight[3]+0.14433756729740646*rhs[2]*weight[3]+0.14433756729740646*rhs[1]*weight[3]+0.08333333333333333*rhs[0]*weight[3]+0.14433756729740646*weight[2]*rhs[3]+0.14433756729740646*weight[1]*rhs[3]+0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]+0.08333333333333333*rhs[1]*weight[2]+0.14433756729740646*rhs[0]*weight[2]+0.08333333333333333*weight[1]*rhs[2]+0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]+0.14433756729740646*rhs[0]*weight[1]+0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_upx_dirichletx_loy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[1]] = bc_values[1];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[2]], 0.25*rhs[3]*weight[3]-0.14433756729740646*rhs[2]*weight[3]+0.14433756729740646*rhs[1]*weight[3]-0.08333333333333333*rhs[0]*weight[3]-0.14433756729740646*weight[2]*rhs[3]+0.14433756729740646*weight[1]*rhs[3]-0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]-0.08333333333333333*rhs[1]*weight[2]+0.14433756729740646*rhs[0]*weight[2]-0.08333333333333333*weight[1]*rhs[2]+0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]-0.14433756729740646*rhs[0]*weight[1]-0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0]);
+#else
+  out[global_idx[2]] += 0.25*rhs[3]*weight[3]-0.14433756729740646*rhs[2]*weight[3]+0.14433756729740646*rhs[1]*weight[3]-0.08333333333333333*rhs[0]*weight[3]-0.14433756729740646*weight[2]*rhs[3]+0.14433756729740646*weight[1]*rhs[3]-0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]-0.08333333333333333*rhs[1]*weight[2]+0.14433756729740646*rhs[0]*weight[2]-0.08333333333333333*weight[1]*rhs[2]+0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]-0.14433756729740646*rhs[0]*weight[1]-0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[3]] = bc_values[1];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_lox_dirichletx_upx_dirichletx_loy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[0]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[1]] = bc_values[1];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[2]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[3]] = bc_values[1];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_lox_dirichletvarx_upx_dirichletx_loy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[1]] = bc_values[1];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[3]] = bc_values[1];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_upx_dirichletvarx_loy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[2]], 0.25*rhs[3]*weight[3]-0.14433756729740646*rhs[2]*weight[3]+0.14433756729740646*rhs[1]*weight[3]-0.08333333333333333*rhs[0]*weight[3]-0.14433756729740646*weight[2]*rhs[3]+0.14433756729740646*weight[1]*rhs[3]-0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]-0.08333333333333333*rhs[1]*weight[2]+0.14433756729740646*rhs[0]*weight[2]-0.08333333333333333*weight[1]*rhs[2]+0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]-0.14433756729740646*rhs[0]*weight[1]-0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0]);
+#else
+  out[global_idx[2]] += 0.25*rhs[3]*weight[3]-0.14433756729740646*rhs[2]*weight[3]+0.14433756729740646*rhs[1]*weight[3]-0.08333333333333333*rhs[0]*weight[3]-0.14433756729740646*weight[2]*rhs[3]+0.14433756729740646*weight[1]*rhs[3]-0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]-0.08333333333333333*rhs[1]*weight[2]+0.14433756729740646*rhs[0]*weight[2]-0.08333333333333333*weight[1]*rhs[2]+0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]-0.14433756729740646*rhs[0]*weight[1]-0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_lox_dirichletx_upx_dirichletvarx_loy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[0]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[2]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_lox_dirichletvarx_upx_dirichletvarx_loy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_inx_upy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[0]], 0.25*rhs[3]*weight[3]-0.14433756729740646*rhs[2]*weight[3]-0.14433756729740646*rhs[1]*weight[3]+0.08333333333333333*rhs[0]*weight[3]-0.14433756729740646*weight[2]*rhs[3]-0.14433756729740646*weight[1]*rhs[3]+0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]+0.08333333333333333*rhs[1]*weight[2]-0.14433756729740646*rhs[0]*weight[2]+0.08333333333333333*weight[1]*rhs[2]-0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]-0.14433756729740646*rhs[0]*weight[1]-0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0]);
+#else
+  out[global_idx[0]] += 0.25*rhs[3]*weight[3]-0.14433756729740646*rhs[2]*weight[3]-0.14433756729740646*rhs[1]*weight[3]+0.08333333333333333*rhs[0]*weight[3]-0.14433756729740646*weight[2]*rhs[3]-0.14433756729740646*weight[1]*rhs[3]+0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]+0.08333333333333333*rhs[1]*weight[2]-0.14433756729740646*rhs[0]*weight[2]+0.08333333333333333*weight[1]*rhs[2]-0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]-0.14433756729740646*rhs[0]*weight[1]-0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[1]], 0.25*rhs[3]*weight[3]+0.14433756729740646*rhs[2]*weight[3]-0.14433756729740646*rhs[1]*weight[3]-0.08333333333333333*rhs[0]*weight[3]+0.14433756729740646*weight[2]*rhs[3]-0.14433756729740646*weight[1]*rhs[3]-0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]-0.08333333333333333*rhs[1]*weight[2]-0.14433756729740646*rhs[0]*weight[2]-0.08333333333333333*weight[1]*rhs[2]-0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]+0.14433756729740646*rhs[0]*weight[1]+0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0]);
+#else
+  out[global_idx[1]] += 0.25*rhs[3]*weight[3]+0.14433756729740646*rhs[2]*weight[3]-0.14433756729740646*rhs[1]*weight[3]-0.08333333333333333*rhs[0]*weight[3]+0.14433756729740646*weight[2]*rhs[3]-0.14433756729740646*weight[1]*rhs[3]-0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]-0.08333333333333333*rhs[1]*weight[2]-0.14433756729740646*rhs[0]*weight[2]-0.08333333333333333*weight[1]*rhs[2]-0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]+0.14433756729740646*rhs[0]*weight[1]+0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[3]));
+#else
+  out[global_idx[2]] = bc_values[3];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[3]));
+#else
+  out[global_idx[3]] = bc_values[3];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_lox_dirichletx_upy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[0]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[1]], 0.25*rhs[3]*weight[3]+0.14433756729740646*rhs[2]*weight[3]-0.14433756729740646*rhs[1]*weight[3]-0.08333333333333333*rhs[0]*weight[3]+0.14433756729740646*weight[2]*rhs[3]-0.14433756729740646*weight[1]*rhs[3]-0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]-0.08333333333333333*rhs[1]*weight[2]-0.14433756729740646*rhs[0]*weight[2]-0.08333333333333333*weight[1]*rhs[2]-0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]+0.14433756729740646*rhs[0]*weight[1]+0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0]);
+#else
+  out[global_idx[1]] += 0.25*rhs[3]*weight[3]+0.14433756729740646*rhs[2]*weight[3]-0.14433756729740646*rhs[1]*weight[3]-0.08333333333333333*rhs[0]*weight[3]+0.14433756729740646*weight[2]*rhs[3]-0.14433756729740646*weight[1]*rhs[3]-0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]-0.08333333333333333*rhs[1]*weight[2]-0.14433756729740646*rhs[0]*weight[2]-0.08333333333333333*weight[1]*rhs[2]-0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]+0.14433756729740646*rhs[0]*weight[1]+0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[2]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[3]));
+#else
+  out[global_idx[3]] = bc_values[3];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_lox_dirichletvarx_upy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[1]], 0.25*rhs[3]*weight[3]+0.14433756729740646*rhs[2]*weight[3]-0.14433756729740646*rhs[1]*weight[3]-0.08333333333333333*rhs[0]*weight[3]+0.14433756729740646*weight[2]*rhs[3]-0.14433756729740646*weight[1]*rhs[3]-0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]-0.08333333333333333*rhs[1]*weight[2]-0.14433756729740646*rhs[0]*weight[2]-0.08333333333333333*weight[1]*rhs[2]-0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]+0.14433756729740646*rhs[0]*weight[1]+0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0]);
+#else
+  out[global_idx[1]] += 0.25*rhs[3]*weight[3]+0.14433756729740646*rhs[2]*weight[3]-0.14433756729740646*rhs[1]*weight[3]-0.08333333333333333*rhs[0]*weight[3]+0.14433756729740646*weight[2]*rhs[3]-0.14433756729740646*weight[1]*rhs[3]-0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]-0.08333333333333333*rhs[1]*weight[2]-0.14433756729740646*rhs[0]*weight[2]-0.08333333333333333*weight[1]*rhs[2]-0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]+0.14433756729740646*rhs[0]*weight[1]+0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[3]));
+#else
+  out[global_idx[3]] = bc_values[3];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_upx_dirichletx_upy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[0]], 0.25*rhs[3]*weight[3]-0.14433756729740646*rhs[2]*weight[3]-0.14433756729740646*rhs[1]*weight[3]+0.08333333333333333*rhs[0]*weight[3]-0.14433756729740646*weight[2]*rhs[3]-0.14433756729740646*weight[1]*rhs[3]+0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]+0.08333333333333333*rhs[1]*weight[2]-0.14433756729740646*rhs[0]*weight[2]+0.08333333333333333*weight[1]*rhs[2]-0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]-0.14433756729740646*rhs[0]*weight[1]-0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0]);
+#else
+  out[global_idx[0]] += 0.25*rhs[3]*weight[3]-0.14433756729740646*rhs[2]*weight[3]-0.14433756729740646*rhs[1]*weight[3]+0.08333333333333333*rhs[0]*weight[3]-0.14433756729740646*weight[2]*rhs[3]-0.14433756729740646*weight[1]*rhs[3]+0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]+0.08333333333333333*rhs[1]*weight[2]-0.14433756729740646*rhs[0]*weight[2]+0.08333333333333333*weight[1]*rhs[2]-0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]-0.14433756729740646*rhs[0]*weight[1]-0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[1]] = bc_values[1];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[3]));
+#else
+  out[global_idx[2]] = bc_values[3];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[3]] = bc_values[1];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_lox_dirichletx_upx_dirichletx_upy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[0]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[1]] = bc_values[1];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[2]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[3]] = bc_values[1];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_lox_dirichletvarx_upx_dirichletx_upy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[1]] = bc_values[1];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[3]] = bc_values[1];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_upx_dirichletvarx_upy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[0]], 0.25*rhs[3]*weight[3]-0.14433756729740646*rhs[2]*weight[3]-0.14433756729740646*rhs[1]*weight[3]+0.08333333333333333*rhs[0]*weight[3]-0.14433756729740646*weight[2]*rhs[3]-0.14433756729740646*weight[1]*rhs[3]+0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]+0.08333333333333333*rhs[1]*weight[2]-0.14433756729740646*rhs[0]*weight[2]+0.08333333333333333*weight[1]*rhs[2]-0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]-0.14433756729740646*rhs[0]*weight[1]-0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0]);
+#else
+  out[global_idx[0]] += 0.25*rhs[3]*weight[3]-0.14433756729740646*rhs[2]*weight[3]-0.14433756729740646*rhs[1]*weight[3]+0.08333333333333333*rhs[0]*weight[3]-0.14433756729740646*weight[2]*rhs[3]-0.14433756729740646*weight[1]*rhs[3]+0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]+0.08333333333333333*rhs[1]*weight[2]-0.14433756729740646*rhs[0]*weight[2]+0.08333333333333333*weight[1]*rhs[2]-0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]-0.14433756729740646*rhs[0]*weight[1]-0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[3]));
+#else
+  out[global_idx[2]] = bc_values[3];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_lox_dirichletx_upx_dirichletvarx_upy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[0]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[2]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_lox_dirichletvarx_upx_dirichletvarx_upy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_inx_loy_dirichlety_upy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[2]));
+#else
+  out[global_idx[0]] = bc_values[2];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[2]));
+#else
+  out[global_idx[1]] = bc_values[2];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[3]));
+#else
+  out[global_idx[2]] = bc_values[3];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[3]));
+#else
+  out[global_idx[3]] = bc_values[3];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_lox_dirichletx_loy_dirichlety_upy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[0]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[2]));
+#else
+  out[global_idx[1]] = bc_values[2];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[2]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[3]));
+#else
+  out[global_idx[3]] = bc_values[3];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_lox_dirichletvarx_loy_dirichlety_upy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[2]));
+#else
+  out[global_idx[1]] = bc_values[2];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[3]));
+#else
+  out[global_idx[3]] = bc_values[3];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_upx_dirichletx_loy_dirichlety_upy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[2]));
+#else
+  out[global_idx[0]] = bc_values[2];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[1]] = bc_values[1];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[3]));
+#else
+  out[global_idx[2]] = bc_values[3];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[3]] = bc_values[1];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_lox_dirichletx_upx_dirichletx_loy_dirichlety_upy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[0]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[1]] = bc_values[1];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[2]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[3]] = bc_values[1];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_lox_dirichletvarx_upx_dirichletx_loy_dirichlety_upy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[1]] = bc_values[1];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[3]] = bc_values[1];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_upx_dirichletvarx_loy_dirichlety_upy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[2]));
+#else
+  out[global_idx[0]] = bc_values[2];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[3]));
+#else
+  out[global_idx[2]] = bc_values[3];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_lox_dirichletx_upx_dirichletvarx_loy_dirichlety_upy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[0]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[2]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_lox_dirichletvarx_upx_dirichletvarx_loy_dirichlety_upy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_inx_loy_dirichletvary_upy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[3]));
+#else
+  out[global_idx[2]] = bc_values[3];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[3]));
+#else
+  out[global_idx[3]] = bc_values[3];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_lox_dirichletx_loy_dirichletvary_upy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[0]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[2]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[3]));
+#else
+  out[global_idx[3]] = bc_values[3];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_lox_dirichletvarx_loy_dirichletvary_upy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[3]));
+#else
+  out[global_idx[3]] = bc_values[3];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_upx_dirichletx_loy_dirichletvary_upy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[1]] = bc_values[1];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[3]));
+#else
+  out[global_idx[2]] = bc_values[3];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[3]] = bc_values[1];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_lox_dirichletx_upx_dirichletx_loy_dirichletvary_upy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[0]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[1]] = bc_values[1];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[2]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[3]] = bc_values[1];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_lox_dirichletvarx_upx_dirichletx_loy_dirichletvary_upy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[1]] = bc_values[1];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[3]] = bc_values[1];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_upx_dirichletvarx_loy_dirichletvary_upy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[3]));
+#else
+  out[global_idx[2]] = bc_values[3];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_lox_dirichletx_upx_dirichletvarx_loy_dirichletvary_upy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[0]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[2]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_lox_dirichletvarx_upx_dirichletvarx_loy_dirichletvary_upy_dirichlety(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_inx_upy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[0]], 0.25*rhs[3]*weight[3]-0.14433756729740646*rhs[2]*weight[3]-0.14433756729740646*rhs[1]*weight[3]+0.08333333333333333*rhs[0]*weight[3]-0.14433756729740646*weight[2]*rhs[3]-0.14433756729740646*weight[1]*rhs[3]+0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]+0.08333333333333333*rhs[1]*weight[2]-0.14433756729740646*rhs[0]*weight[2]+0.08333333333333333*weight[1]*rhs[2]-0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]-0.14433756729740646*rhs[0]*weight[1]-0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0]);
+#else
+  out[global_idx[0]] += 0.25*rhs[3]*weight[3]-0.14433756729740646*rhs[2]*weight[3]-0.14433756729740646*rhs[1]*weight[3]+0.08333333333333333*rhs[0]*weight[3]-0.14433756729740646*weight[2]*rhs[3]-0.14433756729740646*weight[1]*rhs[3]+0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]+0.08333333333333333*rhs[1]*weight[2]-0.14433756729740646*rhs[0]*weight[2]+0.08333333333333333*weight[1]*rhs[2]-0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]-0.14433756729740646*rhs[0]*weight[1]-0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[1]], 0.25*rhs[3]*weight[3]+0.14433756729740646*rhs[2]*weight[3]-0.14433756729740646*rhs[1]*weight[3]-0.08333333333333333*rhs[0]*weight[3]+0.14433756729740646*weight[2]*rhs[3]-0.14433756729740646*weight[1]*rhs[3]-0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]-0.08333333333333333*rhs[1]*weight[2]-0.14433756729740646*rhs[0]*weight[2]-0.08333333333333333*weight[1]*rhs[2]-0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]+0.14433756729740646*rhs[0]*weight[1]+0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0]);
+#else
+  out[global_idx[1]] += 0.25*rhs[3]*weight[3]+0.14433756729740646*rhs[2]*weight[3]-0.14433756729740646*rhs[1]*weight[3]-0.08333333333333333*rhs[0]*weight[3]+0.14433756729740646*weight[2]*rhs[3]-0.14433756729740646*weight[1]*rhs[3]-0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]-0.08333333333333333*rhs[1]*weight[2]-0.14433756729740646*rhs[0]*weight[2]-0.08333333333333333*weight[1]*rhs[2]-0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]+0.14433756729740646*rhs[0]*weight[1]+0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_lox_dirichletx_upy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[0]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[1]], 0.25*rhs[3]*weight[3]+0.14433756729740646*rhs[2]*weight[3]-0.14433756729740646*rhs[1]*weight[3]-0.08333333333333333*rhs[0]*weight[3]+0.14433756729740646*weight[2]*rhs[3]-0.14433756729740646*weight[1]*rhs[3]-0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]-0.08333333333333333*rhs[1]*weight[2]-0.14433756729740646*rhs[0]*weight[2]-0.08333333333333333*weight[1]*rhs[2]-0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]+0.14433756729740646*rhs[0]*weight[1]+0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0]);
+#else
+  out[global_idx[1]] += 0.25*rhs[3]*weight[3]+0.14433756729740646*rhs[2]*weight[3]-0.14433756729740646*rhs[1]*weight[3]-0.08333333333333333*rhs[0]*weight[3]+0.14433756729740646*weight[2]*rhs[3]-0.14433756729740646*weight[1]*rhs[3]-0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]-0.08333333333333333*rhs[1]*weight[2]-0.14433756729740646*rhs[0]*weight[2]-0.08333333333333333*weight[1]*rhs[2]-0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]+0.14433756729740646*rhs[0]*weight[1]+0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[2]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_lox_dirichletvarx_upy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[1]], 0.25*rhs[3]*weight[3]+0.14433756729740646*rhs[2]*weight[3]-0.14433756729740646*rhs[1]*weight[3]-0.08333333333333333*rhs[0]*weight[3]+0.14433756729740646*weight[2]*rhs[3]-0.14433756729740646*weight[1]*rhs[3]-0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]-0.08333333333333333*rhs[1]*weight[2]-0.14433756729740646*rhs[0]*weight[2]-0.08333333333333333*weight[1]*rhs[2]-0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]+0.14433756729740646*rhs[0]*weight[1]+0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0]);
+#else
+  out[global_idx[1]] += 0.25*rhs[3]*weight[3]+0.14433756729740646*rhs[2]*weight[3]-0.14433756729740646*rhs[1]*weight[3]-0.08333333333333333*rhs[0]*weight[3]+0.14433756729740646*weight[2]*rhs[3]-0.14433756729740646*weight[1]*rhs[3]-0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]-0.08333333333333333*rhs[1]*weight[2]-0.14433756729740646*rhs[0]*weight[2]-0.08333333333333333*weight[1]*rhs[2]-0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]+0.14433756729740646*rhs[0]*weight[1]+0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_upx_dirichletx_upy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[0]], 0.25*rhs[3]*weight[3]-0.14433756729740646*rhs[2]*weight[3]-0.14433756729740646*rhs[1]*weight[3]+0.08333333333333333*rhs[0]*weight[3]-0.14433756729740646*weight[2]*rhs[3]-0.14433756729740646*weight[1]*rhs[3]+0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]+0.08333333333333333*rhs[1]*weight[2]-0.14433756729740646*rhs[0]*weight[2]+0.08333333333333333*weight[1]*rhs[2]-0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]-0.14433756729740646*rhs[0]*weight[1]-0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0]);
+#else
+  out[global_idx[0]] += 0.25*rhs[3]*weight[3]-0.14433756729740646*rhs[2]*weight[3]-0.14433756729740646*rhs[1]*weight[3]+0.08333333333333333*rhs[0]*weight[3]-0.14433756729740646*weight[2]*rhs[3]-0.14433756729740646*weight[1]*rhs[3]+0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]+0.08333333333333333*rhs[1]*weight[2]-0.14433756729740646*rhs[0]*weight[2]+0.08333333333333333*weight[1]*rhs[2]-0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]-0.14433756729740646*rhs[0]*weight[1]-0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[1]] = bc_values[1];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[3]] = bc_values[1];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_lox_dirichletx_upx_dirichletx_upy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[0]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[1]] = bc_values[1];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[2]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[3]] = bc_values[1];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_lox_dirichletvarx_upx_dirichletx_upy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[1]] = bc_values[1];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[3]] = bc_values[1];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_upx_dirichletvarx_upy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicAdd(&out[global_idx[0]], 0.25*rhs[3]*weight[3]-0.14433756729740646*rhs[2]*weight[3]-0.14433756729740646*rhs[1]*weight[3]+0.08333333333333333*rhs[0]*weight[3]-0.14433756729740646*weight[2]*rhs[3]-0.14433756729740646*weight[1]*rhs[3]+0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]+0.08333333333333333*rhs[1]*weight[2]-0.14433756729740646*rhs[0]*weight[2]+0.08333333333333333*weight[1]*rhs[2]-0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]-0.14433756729740646*rhs[0]*weight[1]-0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0]);
+#else
+  out[global_idx[0]] += 0.25*rhs[3]*weight[3]-0.14433756729740646*rhs[2]*weight[3]-0.14433756729740646*rhs[1]*weight[3]+0.08333333333333333*rhs[0]*weight[3]-0.14433756729740646*weight[2]*rhs[3]-0.14433756729740646*weight[1]*rhs[3]+0.08333333333333333*weight[0]*rhs[3]+0.25*rhs[2]*weight[2]+0.08333333333333333*rhs[1]*weight[2]-0.14433756729740646*rhs[0]*weight[2]+0.08333333333333333*weight[1]*rhs[2]-0.14433756729740646*weight[0]*rhs[2]+0.25*rhs[1]*weight[1]-0.14433756729740646*rhs[0]*weight[1]-0.14433756729740646*weight[0]*rhs[1]+0.25*rhs[0]*weight[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_lox_dirichletx_upx_dirichletvarx_upy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[0]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[2]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_lox_dirichletvarx_upx_dirichletvarx_upy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_inx_loy_dirichlety_upy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[2]));
+#else
+  out[global_idx[0]] = bc_values[2];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[2]));
+#else
+  out[global_idx[1]] = bc_values[2];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_lox_dirichletx_loy_dirichlety_upy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[0]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[2]));
+#else
+  out[global_idx[1]] = bc_values[2];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[2]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_lox_dirichletvarx_loy_dirichlety_upy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[2]));
+#else
+  out[global_idx[1]] = bc_values[2];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_upx_dirichletx_loy_dirichlety_upy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[2]));
+#else
+  out[global_idx[0]] = bc_values[2];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[1]] = bc_values[1];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[3]] = bc_values[1];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_lox_dirichletx_upx_dirichletx_loy_dirichlety_upy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[0]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[1]] = bc_values[1];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[2]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[3]] = bc_values[1];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_lox_dirichletvarx_upx_dirichletx_loy_dirichlety_upy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[1]] = bc_values[1];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[3]] = bc_values[1];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_upx_dirichletvarx_loy_dirichlety_upy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[2]));
+#else
+  out[global_idx[0]] = bc_values[2];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_lox_dirichletx_upx_dirichletvarx_loy_dirichlety_upy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[0]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[2]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_lox_dirichletvarx_upx_dirichletvarx_loy_dirichlety_upy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_inx_loy_dirichletvary_upy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_lox_dirichletx_loy_dirichletvary_upy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[0]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[2]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_lox_dirichletvarx_loy_dirichletvary_upy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_upx_dirichletx_loy_dirichletvary_upy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[1]] = bc_values[1];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[3]] = bc_values[1];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_lox_dirichletx_upx_dirichletx_loy_dirichletvary_upy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[0]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[1]] = bc_values[1];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[2]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[3]] = bc_values[1];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_lox_dirichletvarx_upx_dirichletx_loy_dirichletvary_upy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[1]] = bc_values[1];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(bc_values[1]));
+#else
+  out[global_idx[3]] = bc_values[1];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_upx_dirichletvarx_loy_dirichletvary_upy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_lox_dirichletx_upx_dirichletvarx_loy_dirichletvary_upy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[0]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(bc_values[0]));
+#else
+  out[global_idx[2]] = bc_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_lox_dirichletvarx_upx_dirichletvarx_loy_dirichletvary_upy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[0]] = 1.5*boundary_values[3]-0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(-(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[1]] = -(1.5*boundary_values[3])-0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(-(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[2]] = -(1.5*boundary_values[3])+0.8660254037844386*boundary_values[2]-0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0]));
+#else
+  out[global_idx[3]] = 1.5*boundary_values[3]+0.8660254037844386*boundary_values[2]+0.8660254037844386*boundary_values[1]+0.5*boundary_values[0];
+#endif
 }
 
 GKYL_CU_DH void fem_proj_2x_ser_p1_sol(const double *input, double *out) {
