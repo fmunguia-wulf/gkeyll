@@ -193,7 +193,7 @@ intdPsidr(double r, void *ctx)
   struct gk_app_ctx *app = ctx;
   struct integrand_ctx tmp_ctx = {.app_ctx = app, .r = r};
   struct gkyl_qr_res integral;
-  integral = gkyl_dbl_exp(integrand_JoRsq, &tmp_ctx, 0., 2. * M_PI, 7, 1e-10);
+  integral = gkyl_dbl_exp(integrand_JoRsq, &tmp_ctx, 0., 2. * M_PI, 10, 1e-14);
   return integral.res;
 }
 
@@ -242,10 +242,10 @@ compute_alpha_integral(double r, double twrap, void *ctx)
   }
 
   if (0. < twrap) {
-    integral = gkyl_dbl_exp(integrand_JoRsq, &tmp_ctx, 0., twrap, 7, 1e-10);
+    integral = gkyl_dbl_exp(integrand_JoRsq, &tmp_ctx, 0., twrap, 10, 1e-14);
     return integral.res;
   } else {
-    integral = gkyl_dbl_exp(integrand_JoRsq, &tmp_ctx, twrap, 0., 7, 1e-10);
+    integral = gkyl_dbl_exp(integrand_JoRsq, &tmp_ctx, twrap, 0., 10, 1e-14);
     return -integral.res;
   }
 }
