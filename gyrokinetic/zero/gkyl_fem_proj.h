@@ -20,14 +20,30 @@ struct gkyl_fem_proj_bc {
   double lo_value[GKYL_MAX_CDIM], up_value[GKYL_MAX_CDIM];
 };
 
+// Constant Dirichlet data on a grid-aligned plane spanning the solve range.
+struct gkyl_fem_proj_bias_plane {
+  int dir; // Direction normal to the plane.
+  double loc; // Physical coordinate in the supplied grid.
+  double val; // Prescribed solution on the plane.
+};
+
+struct gkyl_fem_proj_bias_plane_list {
+  int num_bias_plane; // Number of planes supplied.
+  const struct gkyl_fem_proj_bias_plane *bp; // Plane data, copied during construction.
+};
+
 struct gkyl_fem_proj_inp {
   const struct gkyl_rect_grid *grid;
-  const struct gkyl_range *solve_range; // May be a subrange of an extended range. 
+  const struct gkyl_range *solve_range; // May be a subrange of an extended range.
   const struct gkyl_basis *basis;
   struct gkyl_fem_proj_bc bcs;
   // Scalar DG weights in the input basis/layout; NULL independently means unity.
   // Weights must remain unchanged until release. weight_left must be positive.
   const struct gkyl_array *weight_left, *weight_right;
+  // Optional fixed biases. Requires solve indices within grid cells [1,cells[d]].
+  // Planes outside the solve range are ignored. Intersecting prescriptions,
+  // including varying boundary data and periodic copies, must agree.
+  const struct gkyl_fem_proj_bias_plane_list *bias_plane_list;
   bool use_gpu;
 };
 

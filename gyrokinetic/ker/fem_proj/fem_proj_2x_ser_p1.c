@@ -4454,6 +4454,126 @@ GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_lox_dirichletvarx_upx_dirichletv
 #endif
 }
 
+void fem_proj_2x_ser_p1_bias_lhs_lox_dirichletx_iny(const long *global_idx, gkyl_mat_triples *matrix) {
+  if (global_idx[0] != global_idx[1])
+    gkyl_mat_triples_insert(matrix, global_idx[0], global_idx[1], 0.0);
+  if (global_idx[0] != global_idx[2])
+    gkyl_mat_triples_insert(matrix, global_idx[0], global_idx[2], 0.0);
+  if (global_idx[0] != global_idx[3])
+    gkyl_mat_triples_insert(matrix, global_idx[0], global_idx[3], 0.0);
+  gkyl_mat_triples_insert(matrix, global_idx[0], global_idx[0], 1.0);
+  if (global_idx[2] != global_idx[0])
+    gkyl_mat_triples_insert(matrix, global_idx[2], global_idx[0], 0.0);
+  if (global_idx[2] != global_idx[1])
+    gkyl_mat_triples_insert(matrix, global_idx[2], global_idx[1], 0.0);
+  if (global_idx[2] != global_idx[3])
+    gkyl_mat_triples_insert(matrix, global_idx[2], global_idx[3], 0.0);
+  gkyl_mat_triples_insert(matrix, global_idx[2], global_idx[2], 1.0);
+}
+
+void fem_proj_2x_ser_p1_bias_lhs_upx_dirichletx_iny(const long *global_idx, gkyl_mat_triples *matrix) {
+  if (global_idx[1] != global_idx[0])
+    gkyl_mat_triples_insert(matrix, global_idx[1], global_idx[0], 0.0);
+  if (global_idx[1] != global_idx[2])
+    gkyl_mat_triples_insert(matrix, global_idx[1], global_idx[2], 0.0);
+  if (global_idx[1] != global_idx[3])
+    gkyl_mat_triples_insert(matrix, global_idx[1], global_idx[3], 0.0);
+  gkyl_mat_triples_insert(matrix, global_idx[1], global_idx[1], 1.0);
+  if (global_idx[3] != global_idx[0])
+    gkyl_mat_triples_insert(matrix, global_idx[3], global_idx[0], 0.0);
+  if (global_idx[3] != global_idx[1])
+    gkyl_mat_triples_insert(matrix, global_idx[3], global_idx[1], 0.0);
+  if (global_idx[3] != global_idx[2])
+    gkyl_mat_triples_insert(matrix, global_idx[3], global_idx[2], 0.0);
+  gkyl_mat_triples_insert(matrix, global_idx[3], global_idx[3], 1.0);
+}
+
+void fem_proj_2x_ser_p1_bias_lhs_inx_loy_dirichlety(const long *global_idx, gkyl_mat_triples *matrix) {
+  if (global_idx[0] != global_idx[1])
+    gkyl_mat_triples_insert(matrix, global_idx[0], global_idx[1], 0.0);
+  if (global_idx[0] != global_idx[2])
+    gkyl_mat_triples_insert(matrix, global_idx[0], global_idx[2], 0.0);
+  if (global_idx[0] != global_idx[3])
+    gkyl_mat_triples_insert(matrix, global_idx[0], global_idx[3], 0.0);
+  gkyl_mat_triples_insert(matrix, global_idx[0], global_idx[0], 1.0);
+  if (global_idx[1] != global_idx[0])
+    gkyl_mat_triples_insert(matrix, global_idx[1], global_idx[0], 0.0);
+  if (global_idx[1] != global_idx[2])
+    gkyl_mat_triples_insert(matrix, global_idx[1], global_idx[2], 0.0);
+  if (global_idx[1] != global_idx[3])
+    gkyl_mat_triples_insert(matrix, global_idx[1], global_idx[3], 0.0);
+  gkyl_mat_triples_insert(matrix, global_idx[1], global_idx[1], 1.0);
+}
+
+void fem_proj_2x_ser_p1_bias_lhs_inx_upy_dirichlety(const long *global_idx, gkyl_mat_triples *matrix) {
+  if (global_idx[2] != global_idx[0])
+    gkyl_mat_triples_insert(matrix, global_idx[2], global_idx[0], 0.0);
+  if (global_idx[2] != global_idx[1])
+    gkyl_mat_triples_insert(matrix, global_idx[2], global_idx[1], 0.0);
+  if (global_idx[2] != global_idx[3])
+    gkyl_mat_triples_insert(matrix, global_idx[2], global_idx[3], 0.0);
+  gkyl_mat_triples_insert(matrix, global_idx[2], global_idx[2], 1.0);
+  if (global_idx[3] != global_idx[0])
+    gkyl_mat_triples_insert(matrix, global_idx[3], global_idx[0], 0.0);
+  if (global_idx[3] != global_idx[1])
+    gkyl_mat_triples_insert(matrix, global_idx[3], global_idx[1], 0.0);
+  if (global_idx[3] != global_idx[2])
+    gkyl_mat_triples_insert(matrix, global_idx[3], global_idx[2], 0.0);
+  gkyl_mat_triples_insert(matrix, global_idx[3], global_idx[3], 1.0);
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_bias_src_lox_dirichletx_iny(double value, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(value));
+#else
+  out[global_idx[0]] = value;
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(value));
+#else
+  out[global_idx[2]] = value;
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_bias_src_upx_dirichletx_iny(double value, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(value));
+#else
+  out[global_idx[1]] = value;
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(value));
+#else
+  out[global_idx[3]] = value;
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_bias_src_inx_loy_dirichlety(double value, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(value));
+#else
+  out[global_idx[0]] = value;
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(value));
+#else
+  out[global_idx[1]] = value;
+#endif
+}
+
+GKYL_CU_DH void fem_proj_2x_ser_p1_bias_src_inx_upy_dirichlety(double value, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[2]], __double_as_longlong(value));
+#else
+  out[global_idx[2]] = value;
+#endif
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[3]], __double_as_longlong(value));
+#else
+  out[global_idx[3]] = value;
+#endif
+}
+
 GKYL_CU_DH void fem_proj_2x_ser_p1_sol(const double *input, double *out) {
   out[0] = 0.5*input[3]+0.5*input[2]+0.5*input[1]+0.5*input[0]; 
   out[1] = 0.2886751345948129*input[3]-0.2886751345948129*input[2]+0.2886751345948129*input[1]-0.2886751345948129*input[0]; 

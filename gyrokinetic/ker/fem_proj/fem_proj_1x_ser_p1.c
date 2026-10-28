@@ -333,6 +333,34 @@ GKYL_CU_DH void fem_proj_1x_ser_p1_src_weighted_lox_dirichletvarx_upx_dirichletv
 #endif
 }
 
+void fem_proj_1x_ser_p1_bias_lhs_lox_dirichletx(const long *global_idx, gkyl_mat_triples *matrix) {
+  if (global_idx[0] != global_idx[1])
+    gkyl_mat_triples_insert(matrix, global_idx[0], global_idx[1], 0.0);
+  gkyl_mat_triples_insert(matrix, global_idx[0], global_idx[0], 1.0);
+}
+
+void fem_proj_1x_ser_p1_bias_lhs_upx_dirichletx(const long *global_idx, gkyl_mat_triples *matrix) {
+  if (global_idx[1] != global_idx[0])
+    gkyl_mat_triples_insert(matrix, global_idx[1], global_idx[0], 0.0);
+  gkyl_mat_triples_insert(matrix, global_idx[1], global_idx[1], 1.0);
+}
+
+GKYL_CU_DH void fem_proj_1x_ser_p1_bias_src_lox_dirichletx(double value, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[0]], __double_as_longlong(value));
+#else
+  out[global_idx[0]] = value;
+#endif
+}
+
+GKYL_CU_DH void fem_proj_1x_ser_p1_bias_src_upx_dirichletx(double value, const long *global_idx, double *out) {
+#ifdef __CUDA_ARCH__
+  atomicExch((unsigned long long int*) &out[global_idx[1]], __double_as_longlong(value));
+#else
+  out[global_idx[1]] = value;
+#endif
+}
+
 GKYL_CU_DH void fem_proj_1x_ser_p1_sol(const double *input, double *out) {
   out[0] = 0.7071067811865475*input[1]+0.7071067811865475*input[0]; 
   out[1] = 0.408248290463863*input[1]-0.408248290463863*input[0]; 

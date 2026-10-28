@@ -7,7 +7,13 @@
 struct gk_field_ts_fem_perpproj {
   struct gkyl_rect_grid grid;
   struct gkyl_basis basis;
-  struct gkyl_range local, local_ext;
+  struct gkyl_basis *boundary_basis;
+  struct gkyl_range local, local_ext, ghost;
+  struct gkyl_range sol_skin, core_skin;
+  struct gkyl_array *boundary_values, *boundary_buffer;
+  struct gkyl_deflate_zsurf *deflate_sol;
+  struct gkyl_bc_basic_gyrokinetic *copy_lcfs;
+  void (*prepare_boundary)(const gkyl_gyrokinetic_app *, struct gk_field_ts_fem_perpproj *, const struct gkyl_array *);
   struct gkyl_array *buff_dg, *buff_fem;
   struct gkyl_deflate_zsurf *deflate;
   struct gkyl_translate_dim *inflate;
@@ -46,11 +52,14 @@ gk_field_ts_fem_perpproj_check_input(const gkyl_gyrokinetic_app *app, const stru
 static void
 gk_field_ts_fem_perpproj_validate(const gkyl_gyrokinetic_app *app, const struct gk_field *field)
 {
-  if (app->gk_geom->has_LCFS || field->bc_par_phi != GKYL_BC_GK_FIELD_TWISTSHIFT) {
-    gkyl_exit("ts_field_dg=false requires an electrostatic twist-shift flux tube without an LCFS.");
+  if (!app->gk_geom->has_LCFS && field->bc_par_phi != GKYL_BC_GK_FIELD_TWISTSHIFT) {
+    gkyl_exit("ts_field_dg=false requires twist-shift field boundaries.");
   }
-  if (field->use_flr || (field->info.bias_line_list && field->info.bias_line_list->num_bias_line)) {
-    gkyl_exit("ts_field_dg=false does not support FLR or internal bias lines.");
+  if (field->use_flr) {
+    gkyl_exit("ts_field_dg=false does not support FLR.");
+  }
+  if (app->gk_geom->has_LCFS && (!app->global_core.volume || !app->global_sol.volume)) {
+    gkyl_exit("ts_field_dg=false requires nonempty core and SOL ranges in an IWL simulation.");
   }
   const struct gkyl_poisson_bc *bcs = &field->poisson_bcs;
   if (bcs->lo_type[0] != GKYL_POISSON_DIRICHLET || bcs->up_type[0] != GKYL_POISSON_DIRICHLET ||
@@ -66,6 +75,125 @@ gk_field_ts_fem_perpproj_validate(const gkyl_gyrokinetic_app *app, const struct 
   }
 }
 
+// Constant radial data need no field-dependent boundary preparation.
+static void
+gk_field_ts_fem_perpproj_boundary_disabled(
+  const gkyl_gyrokinetic_app *app, struct gk_field_ts_fem_perpproj *proj,
+  const struct gkyl_array *potential
+)
+{
+}
+
+// Match the lower physical SOL boundary at the LCFS. Evaluate the SOL skin's
+// lower z face, then extend its LCFS value into the adjacent core boundary cell.
+// This operates only on a separate boundary-data buffer, not on the potential.
+static void
+gk_field_ts_fem_perpproj_boundary_sol(
+  const gkyl_gyrokinetic_app *app, struct gk_field_ts_fem_perpproj *proj,
+  const struct gkyl_array *potential
+)
+{
+  gkyl_deflate_zsurf_advance(
+    proj->deflate_sol, app->global.lower[2], &app->global_ext, &proj->sol_skin, potential,
+    proj->boundary_values, 1
+  );
+  gkyl_bc_basic_gyrokinetic_advance(proj->copy_lcfs, proj->boundary_buffer, proj->boundary_values);
+}
+
+// Allocate the optional varying-Dirichlet data at the core/SOL interface.
+static void
+gk_field_ts_fem_perpproj_init_sol(
+  const gkyl_gyrokinetic_app *app, struct gk_field_ts_fem_perpproj *proj, int side
+)
+{
+  int lower[] = {side ? proj->local.upper[0] : proj->local.lower[0], proj->local.lower[1]};
+  int upper[] = {lower[0], proj->local.upper[1]};
+  gkyl_sub_range_init(&proj->core_skin, &proj->local_ext, lower, upper);
+
+  lower[0] += side ? 1 : -1;
+  upper[0] = lower[0];
+  gkyl_sub_range_init(&proj->sol_skin, &proj->local_ext, lower, upper);
+
+  proj->boundary_values = mkarr(app->use_gpu, proj->basis.num_basis, proj->local_ext.volume);
+  proj->boundary_buffer = mkarr(app->use_gpu, proj->basis.num_basis, proj->sol_skin.volume);
+
+  proj->deflate_sol = gkyl_deflate_zsurf_new(&app->basis, &proj->basis, 0, app->use_gpu);
+
+  proj->boundary_basis = app->use_gpu ? gkyl_cart_modal_serendip_cu_dev_new(2, 1) : &proj->basis;
+
+  proj->copy_lcfs = gkyl_bc_basic_gyrokinetic_new(
+    0, side ? GKYL_LOWER_EDGE : GKYL_UPPER_EDGE, GKYL_BC_GK_FIELD_BOUNDARY_VALUE,
+    proj->boundary_basis, &proj->sol_skin, &proj->core_skin, proj->basis.num_basis, 2, app->use_gpu
+  );
+
+  proj->prepare_boundary = gk_field_ts_fem_perpproj_boundary_sol;
+}
+
+// Select y-directed input lines on the lower z boundary. Boundary lines become
+// ordinary Dirichlet BCs; only strictly internal lines need bias-plane kernels.
+static struct gkyl_fem_proj_bias_plane_list
+gk_field_ts_fem_perpproj_init_bias(
+  const gkyl_gyrokinetic_app *app, const struct gk_field *field,
+  struct gk_field_ts_fem_perpproj *proj, struct gkyl_fem_proj_bc *bcs
+)
+{
+  int lcfs_side = -1;
+  if (app->gk_geom->has_LCFS) {
+    lcfs_side = proj->local.lower[0] == app->global.lower[0] ? 1 : 0;
+    if (lcfs_side) {
+      bcs->up_type[0] = GKYL_FEM_PROJ_DIRICHLET_VARYING;
+    } else {
+      bcs->lo_type[0] = GKYL_FEM_PROJ_DIRICHLET_VARYING;
+    }
+  }
+  struct gkyl_fem_proj_bias_plane_list selected = {0};
+  const struct gkyl_poisson_bias_line_list *list = field->info.bias_line_list;
+  if (list && list->num_bias_line) {
+    struct gkyl_fem_proj_bias_plane *planes = gkyl_malloc(list->num_bias_line * sizeof(*planes));
+    selected.bp = planes;
+    for (int b = 0; b < list->num_bias_line; b++) {
+      const struct gkyl_poisson_bias_line *line = &list->bl[b];
+      if (line->perp_dirs[0] != 0 || line->perp_dirs[1] != 2) {
+        gkyl_exit("ts_field_dg=false supports bias lines parallel to y only.");
+      }
+      if (fabs((line->perp_coords[1] - app->grid.lower[2]) / app->grid.dx[2]) > 1e-9) {
+        continue;
+      }
+      double position = (line->perp_coords[0] - proj->grid.lower[0]) / proj->grid.dx[0];
+      if (position < proj->local.lower[0] - 1 - 1e-9 || position > proj->local.upper[0] + 1e-9) {
+        continue;
+      }
+      if (!isfinite(position) || !isfinite(line->val) || fabs(position - round(position)) > 1e-9) {
+        gkyl_exit("ts_field_dg=false requires finite, grid-aligned bias lines.");
+      }
+      int face_idx = (int)round(position);
+      int side = face_idx == proj->local.lower[0] - 1 ? 0 :
+                 face_idx == proj->local.upper[0]     ? 1 :
+                                                        -1;
+      if (side >= 0) {
+        enum gkyl_fem_proj_bc_type *type = side ? &bcs->up_type[0] : &bcs->lo_type[0];
+        double *value = side ? &bcs->up_value[0] : &bcs->lo_value[0];
+        if (*type == GKYL_FEM_PROJ_DIRICHLET && *value != line->val) {
+          gkyl_exit("ts_field_dg=false: conflicting radial boundary biases.");
+        }
+        *type = GKYL_FEM_PROJ_DIRICHLET;
+        *value = line->val;
+      } else {
+        planes[selected.num_bias_plane++] = (struct gkyl_fem_proj_bias_plane){
+          .dir = 0,
+          .loc = line->perp_coords[0],
+          .val = line->val,
+        };
+      }
+    }
+  }
+  if (lcfs_side >= 0 &&
+      (lcfs_side ? bcs->up_type[0] : bcs->lo_type[0]) == GKYL_FEM_PROJ_DIRICHLET_VARYING) {
+    gk_field_ts_fem_perpproj_init_sol(app, proj, lcfs_side);
+  }
+  return selected;
+}
+
 static void
 gk_field_ts_fem_perpproj_enabled(
   const gkyl_gyrokinetic_app *app, struct gk_field *field, struct gkyl_array *potential
@@ -77,11 +205,12 @@ gk_field_ts_fem_perpproj_enabled(
     proj->deflate, app->global.lower[2] - 1, &app->global_ext, &proj->local, potential,
     proj->buff_dg, 1
   );
-  gkyl_fem_proj_set_rhs(proj->projector, proj->buff_dg, NULL);
+  proj->prepare_boundary(app, proj, potential);
+  gkyl_fem_proj_set_rhs(proj->projector, proj->buff_dg, proj->boundary_values);
   gkyl_fem_proj_solve(proj->projector, proj->buff_fem);
   // Constant-in-z inflation supplies the corrected boundary value without touching the RHS.
   gkyl_translate_dim_advance(
-    proj->inflate, &proj->local, &app->global_lower_ghost[2], proj->buff_fem, 1, potential
+    proj->inflate, &proj->local, &proj->ghost, proj->buff_fem, 1, potential
   );
 }
 
@@ -98,11 +227,21 @@ gk_field_ts_fem_perpproj_new(const gkyl_gyrokinetic_app *app, struct gk_field *f
   gk_field_ts_fem_perpproj_validate(app, field);
 
   struct gk_field_ts_fem_perpproj *proj = gkyl_malloc(sizeof(*proj));
+  *proj = (struct gk_field_ts_fem_perpproj){0};
+  proj->prepare_boundary = gk_field_ts_fem_perpproj_boundary_disabled;
 
   // Perpendicular grid, basis and range.
   gkyl_rect_grid_init(&proj->grid, 2, app->grid.lower, app->grid.upper, app->grid.cells);
   gkyl_cart_modal_serendip(&proj->basis, 2, 1);
   gkyl_create_grid_ranges(&proj->grid, (int[]){1, 1}, &proj->local_ext, &proj->local);
+
+  proj->ghost = app->global_lower_ghost[2];
+  if (app->gk_geom->has_LCFS) {
+    gkyl_sub_range_init(
+      &proj->local, &proj->local_ext, app->global_core.lower, app->global_core.upper
+    );
+    proj->ghost = app->global_lower_ghost_par_core;
+  }
 
   // DG and FEM buffers.
   proj->buff_dg = mkarr(app->use_gpu, proj->basis.num_basis, proj->local_ext.volume);
@@ -122,7 +261,11 @@ gk_field_ts_fem_perpproj_new(const gkyl_gyrokinetic_app *app, struct gk_field *f
       },
     .use_gpu = app->use_gpu,
   };
+  struct gkyl_fem_proj_bias_plane_list biases =
+    gk_field_ts_fem_perpproj_init_bias(app, field, proj, &inp.bcs);
+  inp.bias_plane_list = &biases;
   proj->projector = gkyl_fem_proj_inew(&inp);
+  gkyl_free((void *)biases.bp);
 
   // Inflation and deflation operators.
   proj->deflate = gkyl_deflate_zsurf_new(&app->basis, &proj->basis, 1, app->use_gpu);
@@ -154,5 +297,14 @@ gk_field_ts_fem_perpproj_release(struct gk_field *field)
   gkyl_translate_dim_release(proj->inflate);
   gkyl_array_release(proj->buff_dg);
   gkyl_array_release(proj->buff_fem);
+  if (proj->boundary_values) {
+    gkyl_bc_basic_gyrokinetic_release(proj->copy_lcfs);
+    gkyl_deflate_zsurf_release(proj->deflate_sol);
+    gkyl_array_release(proj->boundary_values);
+    gkyl_array_release(proj->boundary_buffer);
+    if (proj->boundary_basis != &proj->basis) {
+      gkyl_cart_modal_basis_release_cu(proj->boundary_basis);
+    }
+  }
   gkyl_free(proj);
 }

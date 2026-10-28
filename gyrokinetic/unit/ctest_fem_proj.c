@@ -21,6 +21,8 @@ struct fproj_case {
   struct gkyl_range ext, local;
   struct gkyl_basis basis;
   struct gkyl_fem_proj_bc bcs;
+  bool grid_indexed; // Physical coordinates use the full grid and 1-based cell indices.
+  struct gkyl_fem_proj_bias_plane_list biases; // Optional constraints for subrange tests.
   bool use_gpu; // Execution backend for the projector arrays.
   int direction; // Direction of the distinct-value affine boundary field.
   bool has_left, has_right, has_dirichlet;
@@ -47,10 +49,13 @@ fproj_boundary_function(const struct fproj_case *ctx, const double *point)
   double variation = 0.2;
   for (int d = 0; d < ctx->grid.ndim; d++) {
     if (ctx->bcs.lo_type[d] == GKYL_FEM_PROJ_DIRICHLET) {
-      variation *= point[d] - ctx->grid.lower[d];
+      variation *= point[d] - ctx->grid.lower[d] -
+                   (ctx->grid_indexed ? ctx->local.lower[d] - 1 : 0) * ctx->grid.dx[d];
     }
     if (ctx->bcs.up_type[d] == GKYL_FEM_PROJ_DIRICHLET) {
-      variation *= point[d] - ctx->grid.upper[d];
+      variation *= point[d] - (ctx->grid_indexed ?
+                                 ctx->grid.lower[d] + ctx->local.upper[d] * ctx->grid.dx[d] :
+                                 ctx->grid.upper[d]);
     }
     variation *= 0.7 + 0.1 * point[d];
   }
@@ -170,12 +175,14 @@ fproj_case_init_projector(
     for (int n = 0; n < nb; n++) {
       double xy[2] = {0, 0};
       for (int d = 0; d < ndim; d++) {
-        xy[d] = ctx->grid.lower[d] +
-                (iter.idx[d] - ctx->local.lower[d] + 0.5 * (ctx->nodes[n * ndim + d] + 1)) *
-                  ctx->grid.dx[d];
-        if (ctx->bcs.lo_type[d] == GKYL_FEM_PROJ_PERIODIC &&
-            fabs(xy[d] - ctx->grid.upper[d]) < 1e-13) {
-          xy[d] = ctx->grid.lower[d];
+        xy[d] = ctx->grid.lower[d] + (iter.idx[d] - (ctx->grid_indexed ? 1 : ctx->local.lower[d]) +
+                                      0.5 * (ctx->nodes[n * ndim + d] + 1)) *
+                                       ctx->grid.dx[d];
+        double lower =
+          ctx->grid.lower[d] + (ctx->grid_indexed ? ctx->local.lower[d] - 1 : 0) * ctx->grid.dx[d];
+        double upper = lower + (ctx->local.upper[d] - ctx->local.lower[d] + 1) * ctx->grid.dx[d];
+        if (ctx->bcs.lo_type[d] == GKYL_FEM_PROJ_PERIODIC && fabs(xy[d] - upper) < 1e-13) {
+          xy[d] = lower;
         }
       }
 
@@ -205,6 +212,21 @@ fproj_case_init_projector(
           }
         }
       }
+      for (int b = 0; b < ctx->biases.num_bias_plane; b++) {
+        const struct gkyl_fem_proj_bias_plane *plane = &ctx->biases.bp[b];
+        int dir = plane->dir;
+        double location = plane->loc;
+        double lower = ctx->grid.lower[dir] + (ctx->local.lower[dir] - 1) * ctx->grid.dx[dir];
+        double upper = ctx->grid.lower[dir] + ctx->local.upper[dir] * ctx->grid.dx[dir];
+        if (ctx->bcs.lo_type[dir] == GKYL_FEM_PROJ_PERIODIC && fabs(location - upper) < 1e-12) {
+          location = lower;
+        }
+        if (fabs(xy[dir] - location) < 1e-12) {
+          ctx->has_dirichlet = true;
+          ctx->constrained[global] = true;
+          ctx->prescribed[global] = plane->val;
+        }
+      }
     }
 
     ctx->basis.nodal_to_modal(values, gkyl_array_fetch(ctx->boundary_ho, loc));
@@ -221,6 +243,7 @@ fproj_case_init_projector(
     .solve_range = &ctx->local,
     .use_gpu = ctx->use_gpu,
     .bcs = ctx->bcs,
+    .bias_plane_list = &ctx->biases,
     .weight_left = ctx->has_left ? ctx->weight_left : NULL,
     .weight_right = ctx->has_right ? ctx->weight_right : NULL,
   };
@@ -714,10 +737,136 @@ test_fem_proj_poisson_dev(void)
 }
 #endif
 
+// Exercise constraints on a true portion of the full grid, with untouched cells
+// on both sides. Reference residuals use physical node matching and quadrature.
+static void
+fproj_bias_case(
+  int ndim, int poly_order, int direction, int weights, int single_mask, int scenario, bool use_gpu
+)
+{
+  TEST_CASE_(
+    "bias dim=%d p=%d dir=%d weights=%d single=%d scenario=%d gpu=%d", ndim, poly_order, direction,
+    weights, single_mask, scenario, use_gpu
+  );
+
+  struct fproj_case ctx;
+  fproj_case_init(&ctx, ndim, poly_order, weights, single_mask, use_gpu);
+
+  ctx.grid_indexed = true;
+  int cells[2], upper[2];
+  double lower[2], high[2];
+  for (int d = 0; d < ndim; d++) {
+    cells[d] = ctx.grid.cells[d] + 2;
+    upper[d] = cells[d] - 1;
+    lower[d] = ctx.grid.lower[d] - ctx.grid.dx[d];
+    high[d] = ctx.grid.upper[d] + ctx.grid.dx[d];
+    if (d != direction && scenario != 4) {
+      ctx.bcs.lo_type[d] = ctx.bcs.up_type[d] = GKYL_FEM_PROJ_PERIODIC;
+    }
+  }
+
+  // Array sizes and cell spacing are unchanged from fproj_case_init.
+  gkyl_rect_grid_init(&ctx.grid, ndim, lower, high, cells);
+  gkyl_range_init(&ctx.ext, ndim, (int[]){1, 1}, cells);
+  gkyl_sub_range_init(&ctx.local, &ctx.ext, (int[]){2, 2}, upper);
+
+  double lo = lower[direction] + ctx.grid.dx[direction];
+  double hi = high[direction] - ctx.grid.dx[direction];
+  double inside = lo + ctx.grid.dx[direction];
+  struct gkyl_fem_proj_bias_plane planes[4] = {{.dir = direction, .loc = inside, .val = 0.7}};
+  ctx.biases = (struct gkyl_fem_proj_bias_plane_list){.num_bias_plane = 1, .bp = planes};
+  if (scenario == 0) { // Unbiased subrange must retain the original projection equations.
+    ctx.biases.num_bias_plane = 0;
+  } else if (scenario == 2) { // Distinct, parallel biases, including an end plane.
+    planes[1] = (struct gkyl_fem_proj_bias_plane){.dir = direction, .loc = lo, .val = -0.4};
+    ctx.biases.num_bias_plane = 2;
+  } else if (scenario == 3) { // Both physical copies of a periodic end plane.
+    ctx.bcs.lo_type[direction] = ctx.bcs.up_type[direction] = GKYL_FEM_PROJ_PERIODIC;
+    planes[0].loc = lo;
+    planes[1] = planes[0];
+    planes[1].loc = hi;
+    ctx.biases.num_bias_plane = 2;
+  } else if (scenario == 4 && ndim == 2) { // Compatible crossing planes.
+    int other = 1 - direction;
+    planes[1] = (struct gkyl_fem_proj_bias_plane){
+      .dir = other,
+      .loc = lower[other] + 2 * ctx.grid.dx[other],
+      .val = 0.7,
+    };
+    ctx.biases.num_bias_plane = 2;
+  } else if (scenario == 5) { // A bias agrees with a constant outer boundary.
+    planes[0].loc = lo;
+    planes[0].val = 1.25;
+    ctx.bcs.lo_type[direction] = GKYL_FEM_PROJ_DIRICHLET;
+    ctx.bcs.lo_value[direction] = 1.25;
+  }
+  // Outside planes must have no effect, even if their values differ.
+  planes[ctx.biases.num_bias_plane++] =
+    (struct gkyl_fem_proj_bias_plane){.dir = direction, .loc = lower[direction], .val = 5.0};
+
+  fproj_case_init_projector(&ctx, fproj_boundary_function);
+
+  gkyl_array_copy(ctx.rhs, ctx.input_ho);
+  gkyl_array_clear(ctx.out, 12345.0);
+
+  // Perform projection.
+  gkyl_fem_proj_set_rhs(ctx.up, ctx.rhs, ctx.boundary);
+  gkyl_fem_proj_solve(ctx.up, ctx.out);
+
+  // Check result.
+  fproj_check_solution(&ctx, false);
+  if (weights <= 2) {
+    fproj_check_idempotence(&ctx);
+  }
+
+  fproj_case_release(&ctx);
+}
+
+// Cover both directions, orders and backends, including periodic aliases in
+// one-cell directions and independent left/right weights on a partial range.
+static void
+fproj_bias_combos(int ndim, bool use_gpu)
+{
+  for (int poly_order = 1; poly_order <= 2; poly_order++) {
+    for (int direction = 0; direction < ndim; direction++) {
+      for (int weights = 0; weights < 6; weights++) {
+        for (int single = 0; single < (1 << ndim); single++) {
+          for (int scenario = 0; scenario < 6; scenario++) {
+            fproj_bias_case(ndim, poly_order, direction, weights, single, scenario, use_gpu);
+          }
+        }
+      }
+    }
+  }
+}
+
+static void
+test_fem_proj_bias_1x_ho(void)
+{
+  fproj_bias_combos(1, false);
+}
+static void
+test_fem_proj_bias_2x_ho(void)
+{
+  fproj_bias_combos(2, false);
+}
+#ifdef GKYL_HAVE_CUDA
+static void
+test_fem_proj_bias_1x_dev(void)
+{
+  fproj_bias_combos(1, true);
+}
+static void
+test_fem_proj_bias_2x_dev(void)
+{
+  fproj_bias_combos(2, true);
+}
+#endif
+
 static void
 test_fem_proj_invalid_input(void)
 {
-  for (int scenario = 0; scenario < 2; scenario++) {
+  for (int scenario = 0; scenario < 7; scenario++) {
     pid_t child = fork();
     TEST_ASSERT(child >= 0);
     if (child == 0) {
@@ -735,6 +884,29 @@ test_fem_proj_invalid_input(void)
       struct gkyl_fem_proj_inp inp = {.grid = &grid, .basis = &basis, .solve_range = &range};
       if (scenario == 1) {
         inp.bcs.lo_type[0] = GKYL_FEM_PROJ_PERIODIC;
+      }
+      struct gkyl_fem_proj_bias_plane planes[] = {
+        {.dir = 0, .loc = 0.5, .val = 0.7}, {.dir = 0, .loc = 0.5, .val = -0.4}
+      };
+      struct gkyl_fem_proj_bias_plane_list list = {.num_bias_plane = 1, .bp = planes};
+      if (scenario >= 2) {
+        inp.bias_plane_list = &list;
+      }
+      if (scenario == 2) {
+        planes[0].loc = 0.3; // Not a grid face.
+      }
+      if (scenario == 3) {
+        list.num_bias_plane = 2; // Conflicting duplicate.
+      }
+      if (scenario == 4) { // Conflicting intersection.
+        list.num_bias_plane = 2;
+        planes[1].dir = 1;
+      }
+      if (scenario == 5) { // Inconsistent outer Dirichlet data.
+        inp.bcs.lo_type[1] = GKYL_FEM_PROJ_DIRICHLET;
+      }
+      if (scenario == 6) {
+        planes[0].dir = 2; // Invalid plane direction.
       }
       struct gkyl_fem_proj *up = gkyl_fem_proj_inew(&inp);
       gkyl_fem_proj_release(up);
@@ -853,6 +1025,8 @@ TEST_LIST = {
   {"fem_proj_distinct_boundary_2x_p1_ho", test_fem_proj_distinct_boundary_2x_p1_ho},
   {"fem_proj_distinct_boundary_2x_p2_ho", test_fem_proj_distinct_boundary_2x_p2_ho},
   {"fem_proj_poisson_comparison_ho", test_fem_proj_poisson_ho},
+  {"fem_proj_bias_1x_ho", test_fem_proj_bias_1x_ho},
+  {"fem_proj_bias_2x_ho", test_fem_proj_bias_2x_ho},
   {"fem_proj_invalid_input", test_fem_proj_invalid_input},
 #ifdef GKYL_HAVE_CUDA
   {"fem_proj_solver_1x_p1_dev", test_fem_proj_solver_1x_p1_dev},
@@ -863,6 +1037,8 @@ TEST_LIST = {
   {"fem_proj_distinct_boundary_1x_p2_dev", test_fem_proj_distinct_boundary_1x_p2_dev},
   {"fem_proj_distinct_boundary_2x_p1_dev", test_fem_proj_distinct_boundary_2x_p1_dev},
   {"fem_proj_distinct_boundary_2x_p2_dev", test_fem_proj_distinct_boundary_2x_p2_dev},
+  {"fem_proj_bias_1x_dev", test_fem_proj_bias_1x_dev},
+  {"fem_proj_bias_2x_dev", test_fem_proj_bias_2x_dev},
   {"fem_proj_poisson_comparison_dev", test_fem_proj_poisson_dev},
 #endif
   {NULL, NULL}

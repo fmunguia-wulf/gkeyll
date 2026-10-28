@@ -166,6 +166,7 @@ gk_field_fem_projection_par_phi_iwl_3x(
     &app->global_upper_skin_par_core
   );
   gkyl_bc_twistshift_advance(field->bc_ts_lo, field->rho_c_global_dg, field->rho_c_global_dg);
+  gk_field_ts_fem_perpproj_advance(app, field, field->rho_c_global_dg);
   gkyl_bc_basic_gyrokinetic_advance(
     field->gfss_bc_op_core_up, field->bc_buffer, field->rho_c_global_dg
   );

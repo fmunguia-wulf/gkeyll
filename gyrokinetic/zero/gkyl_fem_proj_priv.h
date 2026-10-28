@@ -15,6 +15,8 @@ typedef long (*fem_proj_num_nodes_t)(const int *, const bool *);
 typedef void (*fem_proj_local_to_global_t)(const int *, const int *, long *);
 typedef void (*fem_proj_mass_t)(const double *, const long *, gkyl_mat_triples *);
 typedef void (*fem_proj_src_t)(const double *, const double *, const double *, const double *, const long *, double *);
+typedef void (*fem_proj_bias_lhs_t)(const long *, gkyl_mat_triples *);
+typedef void (*fem_proj_bias_src_t)(double, const long *, double *);
 typedef void (*fem_proj_transform_t)(const double *, double *);
 
 struct fem_proj_kernels {
@@ -23,6 +25,8 @@ struct fem_proj_kernels {
     local_to_global[1 << GKYL_MAX_CDIM]; // Compact indices by upper-boundary flags.
   fem_proj_mass_t mass[1 << (2 * GKYL_MAX_CDIM)]; // Host matrix assembly by cell location.
   fem_proj_src_t src[1 << (2 * GKYL_MAX_CDIM)]; // RHS assembly by cell location.
+  fem_proj_bias_lhs_t bias_lhs[2 * GKYL_MAX_CDIM]; // Host constraints by cell face.
+  fem_proj_bias_src_t bias_src[2 * GKYL_MAX_CDIM]; // RHS constraints by cell face.
   fem_proj_transform_t sol; // Nodal-to-modal reconstruction.
 };
 
@@ -627,6 +631,31 @@ static const fem_proj_num_nodes_t fem_proj_num_nodes_list[2][3] = {
 };
 #endif
 
+// Bias kernels indexed by dimension minus one, polynomial order, and cell face.
+#ifndef __CUDA_ARCH__
+static const fem_proj_bias_lhs_t fem_proj_bias_lhs_list[2][3][4] = {
+  {{NULL},
+   {fem_proj_1x_ser_p1_bias_lhs_lox_dirichletx, fem_proj_1x_ser_p1_bias_lhs_upx_dirichletx},
+   {fem_proj_1x_ser_p2_bias_lhs_lox_dirichletx, fem_proj_1x_ser_p2_bias_lhs_upx_dirichletx}},
+  {{NULL},
+   {fem_proj_2x_ser_p1_bias_lhs_lox_dirichletx_iny, fem_proj_2x_ser_p1_bias_lhs_upx_dirichletx_iny,
+    fem_proj_2x_ser_p1_bias_lhs_inx_loy_dirichlety, fem_proj_2x_ser_p1_bias_lhs_inx_upy_dirichlety},
+   {fem_proj_2x_ser_p2_bias_lhs_lox_dirichletx_iny, fem_proj_2x_ser_p2_bias_lhs_upx_dirichletx_iny,
+    fem_proj_2x_ser_p2_bias_lhs_inx_loy_dirichlety, fem_proj_2x_ser_p2_bias_lhs_inx_upy_dirichlety}}
+};
+#endif
+
+GKYL_CU_D static const fem_proj_bias_src_t fem_proj_bias_src_list[2][3][4] = {
+  {{NULL},
+   {fem_proj_1x_ser_p1_bias_src_lox_dirichletx, fem_proj_1x_ser_p1_bias_src_upx_dirichletx},
+   {fem_proj_1x_ser_p2_bias_src_lox_dirichletx, fem_proj_1x_ser_p2_bias_src_upx_dirichletx}},
+  {{NULL},
+   {fem_proj_2x_ser_p1_bias_src_lox_dirichletx_iny, fem_proj_2x_ser_p1_bias_src_upx_dirichletx_iny,
+    fem_proj_2x_ser_p1_bias_src_inx_loy_dirichlety, fem_proj_2x_ser_p1_bias_src_inx_upy_dirichlety},
+   {fem_proj_2x_ser_p2_bias_src_lox_dirichletx_iny, fem_proj_2x_ser_p2_bias_src_upx_dirichletx_iny,
+    fem_proj_2x_ser_p2_bias_src_inx_loy_dirichlety, fem_proj_2x_ser_p2_bias_src_inx_upy_dirichlety}}
+};
+
 /**
  * Choose kernels once at construction in the CPU or CUDA execution space.
  *
@@ -636,7 +665,7 @@ static const fem_proj_num_nodes_t fem_proj_num_nodes_list[2][3] = {
  * @param weighted_right Whether the source has a DG weight.
  * @param periodic_mask Bit d is set when direction d is periodic.
  * @param bcs Lower/upper boundary conditions for each direction.
- * @return Selected kernels; num_nodes and mass are populated only on the host.
+ * @return Selected kernels; num_nodes, mass and bias_lhs are host-only.
  */
 GKYL_CU_D static inline struct fem_proj_kernels
 fem_proj_choose_kernels(
@@ -692,6 +721,12 @@ fem_proj_choose_kernels(
     kers.src[location] = dim == 1 ? fem_proj_src_1x[porder][weighted_right][src_code] :
                                     fem_proj_src_2x[porder][weighted_right][src_code];
   }
+  for (int face = 0; face < 2 * dim; face++) {
+#ifndef __CUDA_ARCH__
+    kers.bias_lhs[face] = fem_proj_bias_lhs_list[dim - 1][porder][face];
+#endif
+    kers.bias_src[face] = fem_proj_bias_src_list[dim - 1][porder][face];
+  }
   kers.sol = fem_proj_sol_list[dim - 1][porder];
   return kers;
 }
@@ -729,6 +764,13 @@ fem_proj_cell_location(const struct gkyl_range *range, const int *idx)
   return location;
 }
 
+// One side of a bias plane; internal planes have two incident cell ranges.
+struct fem_proj_bias_face {
+  struct gkyl_range range; // Incident cells, retaining solve-array indexing.
+  int face; // Lower/upper face index, 2*dir + side.
+  double value; // Constant prescribed potential.
+};
+
 struct gkyl_fem_proj {
   struct gkyl_rect_grid grid; // Projection grid.
   struct gkyl_range range; // Solve range with parent-array indexing.
@@ -745,10 +787,15 @@ struct gkyl_fem_proj {
   struct gkyl_array *weight_right; // Fixed RHS weight; NULL means unity.
   double bc_values[2 * GKYL_MAX_CDIM]; // Constant values ordered lower/upper in each direction.
   struct fem_proj_kernels kernels; // Host kernel function pointers.
+  int num_bias_face; // Number of incident cell ranges for fixed bias planes.
+  struct fem_proj_bias_face *bias_faces; // Host bias metadata.
+  void (*bias_src)(struct gkyl_fem_proj *, double *); // Assign biases after source assembly.
   double *rhs; // Assembled global RHS buffer for CPU solves.
   struct gkyl_superlu_prob *prob; // CPU sparse linear solver.
 #ifdef GKYL_HAVE_CUDA
   struct fem_proj_kernels *kernels_cu; // Device kernel function pointers.
+  int num_bias_blocks; // Fixed launch size for the largest incident face range.
+  struct fem_proj_bias_face *bias_faces_cu; // Device copy of bias metadata.
   double *bc_values_cu; // Device copy of constant boundary values.
   struct gkyl_culinsolver_prob *prob_cu; // GPU sparse linear solver.
 #endif
@@ -762,6 +809,9 @@ void fem_proj_init_cu(struct gkyl_fem_proj *up);
 void fem_proj_set_rhs_cu(
   struct gkyl_fem_proj *up, const struct gkyl_array *rhs, const struct gkyl_array *boundary_values
 );
+
+// Assign fixed bias values on device after the volume source kernel.
+void fem_proj_bias_src_cu(struct gkyl_fem_proj *up, double *rhs);
 
 // Solve and reconstruct without host transfers.
 void fem_proj_solve_cu(struct gkyl_fem_proj *up, struct gkyl_array *out);

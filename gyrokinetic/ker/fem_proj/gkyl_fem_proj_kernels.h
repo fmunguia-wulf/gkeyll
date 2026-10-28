@@ -34,6 +34,10 @@ GKYL_CU_DH void fem_proj_1x_ser_p1_src_weighted_lox_dirichletvarx_upx_dirichletx
 GKYL_CU_DH void fem_proj_1x_ser_p1_src_weighted_upx_dirichletvarx(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out);
 GKYL_CU_DH void fem_proj_1x_ser_p1_src_weighted_lox_dirichletx_upx_dirichletvarx(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out);
 GKYL_CU_DH void fem_proj_1x_ser_p1_src_weighted_lox_dirichletvarx_upx_dirichletvarx(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out);
+void fem_proj_1x_ser_p1_bias_lhs_lox_dirichletx(const long *global_idx, gkyl_mat_triples *matrix);
+GKYL_CU_DH void fem_proj_1x_ser_p1_bias_src_lox_dirichletx(double value, const long *global_idx, double *out);
+void fem_proj_1x_ser_p1_bias_lhs_upx_dirichletx(const long *global_idx, gkyl_mat_triples *matrix);
+GKYL_CU_DH void fem_proj_1x_ser_p1_bias_src_upx_dirichletx(double value, const long *global_idx, double *out);
 GKYL_CU_DH void fem_proj_1x_ser_p1_sol(const double *input, double *out);
 long fem_proj_1x_ser_p2_num_nodes(const int *cells, const bool *periodic);
 GKYL_CU_DH void fem_proj_1x_ser_p2_local_to_global_inx_nonperiodicx(const int *num_cells, const int *idx, long *global_idx);
@@ -66,6 +70,10 @@ GKYL_CU_DH void fem_proj_1x_ser_p2_src_weighted_lox_dirichletvarx_upx_dirichletx
 GKYL_CU_DH void fem_proj_1x_ser_p2_src_weighted_upx_dirichletvarx(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out);
 GKYL_CU_DH void fem_proj_1x_ser_p2_src_weighted_lox_dirichletx_upx_dirichletvarx(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out);
 GKYL_CU_DH void fem_proj_1x_ser_p2_src_weighted_lox_dirichletvarx_upx_dirichletvarx(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out);
+void fem_proj_1x_ser_p2_bias_lhs_lox_dirichletx(const long *global_idx, gkyl_mat_triples *matrix);
+GKYL_CU_DH void fem_proj_1x_ser_p2_bias_src_lox_dirichletx(double value, const long *global_idx, double *out);
+void fem_proj_1x_ser_p2_bias_lhs_upx_dirichletx(const long *global_idx, gkyl_mat_triples *matrix);
+GKYL_CU_DH void fem_proj_1x_ser_p2_bias_src_upx_dirichletx(double value, const long *global_idx, double *out);
 GKYL_CU_DH void fem_proj_1x_ser_p2_sol(const double *input, double *out);
 long fem_proj_2x_ser_p1_num_nodes(const int *cells, const bool *periodic);
 GKYL_CU_DH void fem_proj_2x_ser_p1_local_to_global_inx_nonperiodicx_iny_nonperiodicy(const int *num_cells, const int *idx, long *global_idx);
@@ -278,6 +286,14 @@ GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_lox_dirichletvarx_upx_dirichletx
 GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_upx_dirichletvarx_loy_dirichletvary_upy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out);
 GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_lox_dirichletx_upx_dirichletvarx_loy_dirichletvary_upy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out);
 GKYL_CU_DH void fem_proj_2x_ser_p1_src_weighted_lox_dirichletvarx_upx_dirichletvarx_loy_dirichletvary_upy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out);
+void fem_proj_2x_ser_p1_bias_lhs_lox_dirichletx_iny(const long *global_idx, gkyl_mat_triples *matrix);
+GKYL_CU_DH void fem_proj_2x_ser_p1_bias_src_lox_dirichletx_iny(double value, const long *global_idx, double *out);
+void fem_proj_2x_ser_p1_bias_lhs_upx_dirichletx_iny(const long *global_idx, gkyl_mat_triples *matrix);
+GKYL_CU_DH void fem_proj_2x_ser_p1_bias_src_upx_dirichletx_iny(double value, const long *global_idx, double *out);
+void fem_proj_2x_ser_p1_bias_lhs_inx_loy_dirichlety(const long *global_idx, gkyl_mat_triples *matrix);
+GKYL_CU_DH void fem_proj_2x_ser_p1_bias_src_inx_loy_dirichlety(double value, const long *global_idx, double *out);
+void fem_proj_2x_ser_p1_bias_lhs_inx_upy_dirichlety(const long *global_idx, gkyl_mat_triples *matrix);
+GKYL_CU_DH void fem_proj_2x_ser_p1_bias_src_inx_upy_dirichlety(double value, const long *global_idx, double *out);
 GKYL_CU_DH void fem_proj_2x_ser_p1_sol(const double *input, double *out);
 long fem_proj_2x_ser_p2_num_nodes(const int *cells, const bool *periodic);
 GKYL_CU_DH void fem_proj_2x_ser_p2_local_to_global_inx_nonperiodicx_iny_nonperiodicy(const int *num_cells, const int *idx, long *global_idx);
@@ -490,5 +506,13 @@ GKYL_CU_DH void fem_proj_2x_ser_p2_src_weighted_lox_dirichletvarx_upx_dirichletx
 GKYL_CU_DH void fem_proj_2x_ser_p2_src_weighted_upx_dirichletvarx_loy_dirichletvary_upy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out);
 GKYL_CU_DH void fem_proj_2x_ser_p2_src_weighted_lox_dirichletx_upx_dirichletvarx_loy_dirichletvary_upy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out);
 GKYL_CU_DH void fem_proj_2x_ser_p2_src_weighted_lox_dirichletvarx_upx_dirichletvarx_loy_dirichletvary_upy_dirichletvary(const double *weight, const double *rhs, const double *bc_values, const double *boundary_values, const long *global_idx, double *out);
+void fem_proj_2x_ser_p2_bias_lhs_lox_dirichletx_iny(const long *global_idx, gkyl_mat_triples *matrix);
+GKYL_CU_DH void fem_proj_2x_ser_p2_bias_src_lox_dirichletx_iny(double value, const long *global_idx, double *out);
+void fem_proj_2x_ser_p2_bias_lhs_upx_dirichletx_iny(const long *global_idx, gkyl_mat_triples *matrix);
+GKYL_CU_DH void fem_proj_2x_ser_p2_bias_src_upx_dirichletx_iny(double value, const long *global_idx, double *out);
+void fem_proj_2x_ser_p2_bias_lhs_inx_loy_dirichlety(const long *global_idx, gkyl_mat_triples *matrix);
+GKYL_CU_DH void fem_proj_2x_ser_p2_bias_src_inx_loy_dirichlety(double value, const long *global_idx, double *out);
+void fem_proj_2x_ser_p2_bias_lhs_inx_upy_dirichlety(const long *global_idx, gkyl_mat_triples *matrix);
+GKYL_CU_DH void fem_proj_2x_ser_p2_bias_src_inx_upy_dirichlety(double value, const long *global_idx, double *out);
 GKYL_CU_DH void fem_proj_2x_ser_p2_sol(const double *input, double *out);
 EXTERN_C_END
