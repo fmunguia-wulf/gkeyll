@@ -844,8 +844,10 @@ and the maximum number of cuts in a block is %d\n\n",
 
       gkyl_array_release(buffer);
 
-      // Deflate delta_ts.
-      gyrokinetic_deflate_delta_ts(sbapp, delta_ts);
+      // Deflate delta_ts, unless user-provided shift functions override it.
+      if (!sbapp->core_parallel_bcs.lower_shift_func) {
+        gyrokinetic_deflate_delta_ts(sbapp, delta_ts);
+      }
 
       // Write the twistshift shift.
       gyrokinetic_app_write_ts_shift(sbapp);

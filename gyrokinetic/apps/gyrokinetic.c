@@ -105,10 +105,10 @@ gyrokinetic_str_ends_in_b0(char *name)
   }
 }
 
+// Check whether a string ends in _b#, where # is a number.
 static bool
 gyrokinetic_str_ends_in_bnum(const char *name)
 {
-  // Check whether a string ends in _b#, where # is a number.
   size_t len = strlen(name);
 
   if (len < 3) {
@@ -369,8 +369,13 @@ gkyl_gyrokinetic_app_new_geom(struct gkyl_gk *gk)
       }
     }
   }
+  // User-provided twist-shift functions override the shift computed from the geometry.
+  const struct gkyl_gyrokinetic_core_parallel_bcs *cpbcs = &gk->geometry.core_parallel_bcs;
+  bool user_ts_shift = cpbcs->lower_shift_func != NULL;
+  assert(user_ts_shift == (cpbcs->upper_shift_func != NULL));
   // Like tokamak geometries, mapc2p ones get the twist-shift shift from deltats.
-  bool calc_deltats_mapc2p = gk->geometry.geometry_id == GKYL_GEOMETRY_MAPC2P && uses_twistshift;
+  bool calc_deltats_mapc2p = gk->geometry.geometry_id == GKYL_GEOMETRY_MAPC2P && uses_twistshift &&
+                             !user_ts_shift;
   // The multiblock app only syncs deltats for tokamak geometries.
   assert(!(calc_deltats_mapc2p && app->is_multib));
 
@@ -478,12 +483,11 @@ gkyl_gyrokinetic_app_new_geom(struct gkyl_gk *gk)
 
   gkyl_gk_geometry_release(gk_geom_3d); // Release temporary 3d geometry.
 
-  // Twist-shift BCs get their shift from the geometry (deltats). Use the geometry type
-  // of app->gk_geom, which is read from file for GKYL_GEOMETRY_FROMFILE.
-  bool has_ts_shift = app->cdim == 3 &&
-                      (app->gk_geom->geometry_id == GKYL_GEOMETRY_TOKAMAK ||
-                       (app->gk_geom->geometry_id == GKYL_GEOMETRY_MAPC2P && uses_twistshift));
-  // Only tokamak and mapc2p geometries provide the twist-shift shift.
+  // Twist-shift BCs get their shift either from the user or from mapc2p/tokamak geometry.
+  bool has_ts_shift =
+    app->cdim == 3 &&
+    (app->gk_geom->geometry_id == GKYL_GEOMETRY_TOKAMAK ||
+     ((app->gk_geom->geometry_id == GKYL_GEOMETRY_MAPC2P || user_ts_shift) && uses_twistshift));
   assert(!uses_twistshift || has_ts_shift);
 
   double bmag_min_local, bmag_min_global;
@@ -766,7 +770,19 @@ gkyl_gyrokinetic_app_new_geom(struct gkyl_gk *gk)
     app->delta_ts_x_lo = mkarr(false, app->delta_ts_x_basis.num_basis, app->delta_ts_x_rng.volume);
     app->delta_ts_x_up = mkarr(false, app->delta_ts_x_basis.num_basis, app->delta_ts_x_rng.volume);
 
-    if (!gyrokinetic_str_ends_in_bnum(app->name)) {
+    if (user_ts_shift) {
+      // Project the user-provided shift functions.
+      evalf_t shift_func[] = {cpbcs->lower_shift_func, cpbcs->upper_shift_func};
+      void *shift_ctx[] = {cpbcs->lower_shift_ctx, cpbcs->upper_shift_ctx};
+      struct gkyl_array *delta_ts_x[] = {app->delta_ts_x_lo, app->delta_ts_x_up};
+      for (int e = 0; e < 2; e++) {
+        gkyl_eval_on_nodes *ev = gkyl_eval_on_nodes_new(
+          &app->delta_ts_x_grid, &app->delta_ts_x_basis, 1, shift_func[e], shift_ctx[e]
+        );
+        gkyl_eval_on_nodes_advance(ev, 0.0, &app->delta_ts_x_rng, delta_ts_x[e]);
+        gkyl_eval_on_nodes_release(ev);
+      }
+    } else if (!gyrokinetic_str_ends_in_bnum(app->name)) {
       // Sync the numerical shift.
       int par_dir = app->cdim - 1;
       struct gkyl_array *delta_ts = app->gk_geom->geo_surf[par_dir].deltats;
