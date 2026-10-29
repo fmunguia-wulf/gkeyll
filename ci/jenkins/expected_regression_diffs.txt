@@ -23,6 +23,7 @@ gyrokinetic/creg/rt_gk_cbc_3x2v_p1   # twist-shift shift now computed from mapc2
 gyrokinetic/creg/rt_gk_cbc_adiabatic_3x2v_p1   # twist-shift shift now computed from mapc2p (deltats), with the sign fixed; input shift functions removed.
 gyrokinetic/creg/rt_gk_d3d_iwl_3x2v_p1   # twist-shift shift now computed from mapc2p (deltats), with the sign fixed; input shift functions removed.
 gyrokinetic/creg/rt_gk_solovev_out_3x2v_p1   # only the written twist-shift shift and deltats diagnostics change (sign fix of the deltats subtraction).
+gyrokinetic/creg/rt_gk_asdex_solonly_3x2v_p1   # only the written twist-shift shift and deltats diagnostics change (sign fix; deltats written before the twist-shift processing).
 gyrokinetic/creg/rt_gk_tcv_core_3x2v_p1   # twist-shift shift now computed from mapc2p (deltats), with the sign fixed; input shift functions removed.
 gyrokinetic/creg/rt_gk_tcv_iwl_adapt_source_3x2v_p1   # twist-shift shift now computed from mapc2p (deltats), with the sign fixed; input shift functions removed.
 gyrokinetic/creg/rt_gk_cbc_passive_3x2v_p1   # Twist-shift shift now computed from mapc2p (deltats), with the sign fixed; input shift functions removed.

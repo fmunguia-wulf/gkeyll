@@ -373,11 +373,6 @@ gkyl_gyrokinetic_app_new_geom(struct gkyl_gk *gk)
   const struct gkyl_gyrokinetic_core_parallel_bcs *cpbcs = &gk->geometry.core_parallel_bcs;
   bool user_ts_shift = cpbcs->lower_shift_func != NULL;
   assert(user_ts_shift == (cpbcs->upper_shift_func != NULL));
-  // Like tokamak geometries, mapc2p ones get the twist-shift shift from deltats.
-  bool calc_deltats_mapc2p = gk->geometry.geometry_id == GKYL_GEOMETRY_MAPC2P && uses_twistshift &&
-                             !user_ts_shift;
-  // The multiblock app uses the tokamak geometry path to get the shift.
-  assert(!(calc_deltats_mapc2p && app->is_multib));
 
   // Initialize the input struct from user side input struct
   struct gkyl_gk_geometry_inp geometry_inp = {
@@ -399,7 +394,6 @@ gkyl_gyrokinetic_app_new_geom(struct gkyl_gk *gk)
     .comm = app->comm,
     .has_LCFS = gk->geometry.has_LCFS,
     .x_LCFS = gk->geometry.x_LCFS,
-    .calc_deltats_mapc2p = calc_deltats_mapc2p,
   };
   strcpy(geometry_inp.geometry_path, gk->geometry.geometry_path);
   for (int i = 0; i < 3; i++) {
@@ -449,6 +443,32 @@ gkyl_gyrokinetic_app_new_geom(struct gkyl_gk *gk)
     geometry_inp.geo_global = app->global;
     geometry_inp.geo_global_ext = app->global_ext;
     geometry_inp.geo_basis = app->basis;
+  }
+
+  // Like tokamak geometries, mapc2p ones get the twist-shift shift from deltats, which needs
+  // z_lo and z_up to be the same poloidal location. With user-provided shift functions
+  // deltats is only a diagnostic, computed if possible.
+  if (gk->geometry.geometry_id == GKYL_GEOMETRY_MAPC2P && uses_twistshift) {
+    // The multiblock app uses the tokamak geometry path to get the shift.
+    assert(!app->is_multib || user_ts_shift);
+    if (!app->is_multib) {
+      geometry_inp.calc_deltats_mapc2p = gkyl_gk_geometry_mapc2p_z_ends_match(&geometry_inp);
+      if (!geometry_inp.calc_deltats_mapc2p) {
+        if (!user_ts_shift) {
+          gkyl_gyrokinetic_app_cout(
+            app, stderr,
+            "*** Cannot compute the twist-shift shift from mapc2p because the z boundaries "
+            "are not the same poloidal location. Provide the shift functions.\n"
+          );
+          assert(false);
+        }
+        gkyl_gyrokinetic_app_cout(
+          app, stderr,
+          "Warning: deltats is not computed from mapc2p (left zero) because the z boundaries "
+          "are not the same poloidal location.\n"
+        );
+      }
+    }
   }
 
   struct gk_geometry *gk_geom_3d;
@@ -785,7 +805,7 @@ gkyl_gyrokinetic_app_new_geom(struct gkyl_gk *gk)
     } else if (!gyrokinetic_str_ends_in_bnum(app->name)) {
       // Sync the numerical shift.
       int par_dir = app->cdim - 1;
-      struct gkyl_array *delta_ts = app->gk_geom->geo_surf[par_dir].deltats;
+      struct gkyl_array *delta_ts = gkyl_array_clone(app->gk_geom->geo_surf[par_dir].deltats);
       gkyl_array_copy_range_to_range(
         delta_ts, delta_ts, &app->local_upper_skin[par_dir], &app->local_upper_ghost[par_dir]
       );
@@ -813,6 +833,7 @@ gkyl_gyrokinetic_app_new_geom(struct gkyl_gk *gk)
 
       // Deflate delta_ts.
       gyrokinetic_deflate_delta_ts(app, delta_ts);
+      gkyl_array_release(delta_ts);
     }
   }
 

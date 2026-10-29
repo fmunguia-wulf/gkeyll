@@ -279,11 +279,32 @@ gk_geometry_mapc2p_wrap(double val, double period)
   return val - period * floor(val / period + 0.5);
 }
 
+bool
+gkyl_gk_geometry_mapc2p_z_ends_match(const struct gkyl_gk_geometry_inp *geometry_inp)
+{
+  enum { PSI_IDX, AL_IDX, TH_IDX }; // arrangement of computational coordinates
+  const struct gkyl_rect_grid *grid = &geometry_inp->geo_grid;
+
+  // Compare R,Z at (x,y,z_lo) and (x,y,z_up) at the center of the first cell in x and y.
+  double x0 = grid->lower[PSI_IDX] + 0.5 * grid->dx[PSI_IDX];
+  double y0 = grid->lower[AL_IDX] + 0.5 * grid->dx[AL_IDX];
+  double xp_lo[3], xp_up[3];
+  gk_geometry_mapc2p_eval(
+    geometry_inp->mapc2p, geometry_inp->c2p_ctx, geometry_inp->position_map, x0, y0,
+    grid->lower[TH_IDX], xp_lo
+  );
+  gk_geometry_mapc2p_eval(
+    geometry_inp->mapc2p, geometry_inp->c2p_ctx, geometry_inp->position_map, x0, y0,
+    grid->upper[TH_IDX], xp_up
+  );
+  double R_lo = hypot(xp_lo[0], xp_lo[1]), R_up = hypot(xp_up[0], xp_up[1]);
+  return hypot(R_up - R_lo, xp_up[2] - xp_lo[2]) <= 1.0e-6 * hypot(R_lo, xp_lo[2]);
+}
+
 // Compute the shift in the toroidal angle between the lower and upper z boundaries by
 // following the field line from the lower to the upper boundary at a given (x,y) location.
 // The shift in the y direction is obtained by converting the toroidal shift into units of y
 // using the local dphi/dy at the lower boundary (should be continuous in y).
-// We also check that (x,y,z_lo) and (x,y,z_up) yields the same R,Z location.
 static void
 gk_geometry_mapc2p_calc_deltats(
   struct gk_geometry *up, struct gkyl_range *nrange, evalf_t mapc2p_func, void *mapc2p_ctx,
@@ -299,25 +320,6 @@ gk_geometry_mapc2p_calc_deltats(
   // Node coordinates as in gk_geometry_mapc2p_advance_surface (dir = 2): Gauss nodes in x
   // and y, cell faces in z.
   int num_quad = up->basis.poly_order + 1;
-
-  // The shift only makes sense if z_lo and z_up are the same poloidal location.
-  double x0 = gk_geometry_node_coord(
-    &up->grid, &up->local, &up->global, nrange, PSI_IDX, nrange->lower[PSI_IDX], num_quad, true
-  );
-  double y0 = gk_geometry_node_coord(
-    &up->grid, &up->local, &up->global, nrange, AL_IDX, nrange->lower[AL_IDX], num_quad, true
-  );
-  double xp_lo[3], xp_up[3];
-  gk_geometry_mapc2p_eval(mapc2p_func, mapc2p_ctx, position_map, x0, y0, z_lo, xp_lo);
-  gk_geometry_mapc2p_eval(mapc2p_func, mapc2p_ctx, position_map, x0, y0, z_up, xp_up);
-  double R_lo = hypot(xp_lo[0], xp_lo[1]), R_up = hypot(xp_up[0], xp_up[1]);
-  if (hypot(R_up - R_lo, xp_up[2] - xp_lo[2]) > 1.0e-6 * hypot(R_lo, xp_lo[2])) {
-    fprintf(
-      stderr, "gk_geometry_mapc2p: cannot compute the twist-shift shift from mapc2p because "
-              "the z boundaries are not the same poloidal location. Provide the shift functions.\n"
-    );
-    assert(false);
-  }
 
   int cidx[3] = {0};
   for (int ia = nrange->lower[AL_IDX]; ia <= nrange->upper[AL_IDX]; ++ia) {

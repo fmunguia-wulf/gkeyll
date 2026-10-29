@@ -239,8 +239,7 @@ struct gkyl_gk_geometry_inp {
   // Pointer to bfield function.
   void (*bfield_func)(double t, const double *xc, double *xp, void *ctx);
 
-  // Compute deltats at the parallel boundaries (used to get the twist-shift shift)
-  // from mapc2p, like the tokamak geometry does. MAPC2P geometry only.
+  // Compute deltats (used to get the twist-shift shift) from mapc2p.
   bool calc_deltats_mapc2p;
 
   struct gkyl_efit_inp efit_info; // Context with RZ data such as efit file for a tokamak or mirror.
