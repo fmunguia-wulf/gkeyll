@@ -376,7 +376,7 @@ gkyl_gyrokinetic_app_new_geom(struct gkyl_gk *gk)
   // Like tokamak geometries, mapc2p ones get the twist-shift shift from deltats.
   bool calc_deltats_mapc2p = gk->geometry.geometry_id == GKYL_GEOMETRY_MAPC2P && uses_twistshift &&
                              !user_ts_shift;
-  // The multiblock app only syncs deltats for tokamak geometries.
+  // The multiblock app uses the tokamak geometry path to get the shift.
   assert(!(calc_deltats_mapc2p && app->is_multib));
 
   // Initialize the input struct from user side input struct
