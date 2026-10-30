@@ -62,10 +62,14 @@ gk_field_ts_fem_perpproj_validate(const gkyl_gyrokinetic_app *app, const struct 
     gkyl_exit("ts_field_dg=false requires nonempty core and SOL ranges in an IWL simulation.");
   }
   const struct gkyl_poisson_bc *bcs = &field->poisson_bcs;
-  if (bcs->lo_type[0] != GKYL_POISSON_DIRICHLET || bcs->up_type[0] != GKYL_POISSON_DIRICHLET ||
-      bcs->lo_type[1] != GKYL_POISSON_PERIODIC || bcs->up_type[1] != GKYL_POISSON_PERIODIC) {
-    gkyl_exit("ts_field_dg=false requires constant Dirichlet x and periodic y boundary conditions."
-    );
+  if (bcs->lo_type[1] != GKYL_POISSON_PERIODIC || bcs->up_type[1] != GKYL_POISSON_PERIODIC) {
+    gkyl_exit("ts_field_dg=false requires periodic y boundary conditions.");
+  }
+  if ((bcs->lo_type[0] == GKYL_POISSON_PERIODIC) != (bcs->up_type[0] == GKYL_POISSON_PERIODIC)) {
+    gkyl_exit("ts_field_dg=false requires paired periodic x boundary conditions.");
+  }
+  if (app->gk_geom->has_LCFS && bcs->lo_type[0] == GKYL_POISSON_PERIODIC) {
+    gkyl_exit("ts_field_dg=false cannot use periodic x with an LCFS.");
   }
   for (int d = 0; d < 2; d++) {
     if (app->local.lower[d] != app->global.lower[d] ||
@@ -75,7 +79,7 @@ gk_field_ts_fem_perpproj_validate(const gkyl_gyrokinetic_app *app, const struct 
   }
 }
 
-// Constant radial data need no field-dependent boundary preparation.
+// The deflated ghost potential already supplies the physical boundary data.
 static void
 gk_field_ts_fem_perpproj_boundary_disabled(
   const gkyl_gyrokinetic_app *app, struct gk_field_ts_fem_perpproj *proj,
@@ -173,6 +177,9 @@ gk_field_ts_fem_perpproj_init_bias(
       if (side >= 0) {
         enum gkyl_fem_proj_bc_type *type = side ? &bcs->up_type[0] : &bcs->lo_type[0];
         double *value = side ? &bcs->up_value[0] : &bcs->lo_value[0];
+        if (*type == GKYL_FEM_PROJ_PERIODIC) {
+          gkyl_exit("ts_field_dg=false: a boundary bias conflicts with periodic x.");
+        }
         if (*type == GKYL_FEM_PROJ_DIRICHLET && *value != line->val) {
           gkyl_exit("ts_field_dg=false: conflicting radial boundary biases.");
         }
@@ -205,8 +212,13 @@ gk_field_ts_fem_perpproj_enabled(
     proj->deflate, app->global.lower[2] - 1, &app->global_ext, &proj->local, potential,
     proj->buff_dg, 1
   );
+  if (proj->boundary_values) {
+    gkyl_array_copy(proj->boundary_values, proj->buff_dg);
+  }
   proj->prepare_boundary(app, proj, potential);
-  gkyl_fem_proj_set_rhs(proj->projector, proj->buff_dg, proj->boundary_values);
+  gkyl_fem_proj_set_rhs(
+    proj->projector, proj->buff_dg, proj->boundary_values ? proj->boundary_values : proj->buff_dg
+  );
   gkyl_fem_proj_solve(proj->projector, proj->buff_fem);
   // Constant-in-z inflation supplies the corrected boundary value without touching the RHS.
   gkyl_translate_dim_advance(
@@ -248,14 +260,25 @@ gk_field_ts_fem_perpproj_new(const gkyl_gyrokinetic_app *app, struct gk_field *f
   proj->buff_fem = mkarr(app->use_gpu, proj->basis.num_basis, proj->local_ext.volume);
 
   // Consistent mass projection; NULL weights give the unweighted dx dy inner product.
+  bool periodic_x = field->poisson_bcs.lo_type[0] == GKYL_POISSON_PERIODIC;
+  bool dirichlet_lo = field->poisson_bcs.lo_type[0] == GKYL_POISSON_DIRICHLET;
+  bool dirichlet_up = field->poisson_bcs.up_type[0] == GKYL_POISSON_DIRICHLET;
   struct gkyl_fem_proj_inp inp = {
     .grid = &proj->grid,
     .solve_range = &proj->local,
     .basis = &proj->basis,
     .bcs =
       {
-        .lo_type = {GKYL_FEM_PROJ_DIRICHLET, GKYL_FEM_PROJ_PERIODIC},
-        .up_type = {GKYL_FEM_PROJ_DIRICHLET, GKYL_FEM_PROJ_PERIODIC},
+        .lo_type =
+          {periodic_x   ? GKYL_FEM_PROJ_PERIODIC :
+           dirichlet_lo ? GKYL_FEM_PROJ_DIRICHLET :
+                          GKYL_FEM_PROJ_DIRICHLET_VARYING,
+           GKYL_FEM_PROJ_PERIODIC},
+        .up_type =
+          {periodic_x   ? GKYL_FEM_PROJ_PERIODIC :
+           dirichlet_up ? GKYL_FEM_PROJ_DIRICHLET :
+                          GKYL_FEM_PROJ_DIRICHLET_VARYING,
+           GKYL_FEM_PROJ_PERIODIC},
         .lo_value = {field->poisson_bcs.lo_value[0].v[0]},
         .up_value = {field->poisson_bcs.up_value[0].v[0]},
       },
