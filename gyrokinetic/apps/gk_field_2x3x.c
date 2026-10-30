@@ -317,7 +317,13 @@ gk_field_2x3x_add_TS_updaters(
       .filter_half_width = app->core_parallel_bcs.ts_filter_half_width,
       .filter_cutoff_wavelength = app->core_parallel_bcs.ts_filter_cutoff_wavelength,
     };
-    T_LU_lo.shift_dg = app->delta_ts_x_lo;
+    // User shift functions are projected on the (possibly upsampled) twist-shift grid.
+    if (app->core_parallel_bcs.lower_shift_func) {
+      T_LU_lo.shift_func = app->core_parallel_bcs.lower_shift_func;
+      T_LU_lo.shift_func_ctx = app->core_parallel_bcs.lower_shift_ctx;
+    } else {
+      T_LU_lo.shift_dg = app->delta_ts_x_lo;
+    }
     gkf->bc_ts_lo = gkyl_bc_twistshift_inew(&T_LU_lo);
 
     // TS BC updater for upper edge.
@@ -336,7 +342,13 @@ gk_field_2x3x_add_TS_updaters(
       .filter_half_width = app->core_parallel_bcs.ts_filter_half_width,
       .filter_cutoff_wavelength = app->core_parallel_bcs.ts_filter_cutoff_wavelength,
     };
-    T_UL_up.shift_dg = app->delta_ts_x_up;
+    // User shift functions are projected on the (possibly upsampled) twist-shift grid.
+    if (app->core_parallel_bcs.upper_shift_func) {
+      T_UL_up.shift_func = app->core_parallel_bcs.upper_shift_func;
+      T_UL_up.shift_func_ctx = app->core_parallel_bcs.upper_shift_ctx;
+    } else {
+      T_UL_up.shift_dg = app->delta_ts_x_up;
+    }
     gkf->bc_ts_up = gkyl_bc_twistshift_inew(&T_UL_up);
 
     long buff_sz = app->global_lower_ghost[par_dir].volume;
@@ -417,7 +429,13 @@ gk_field_2x3x_add_IWL_updaters(
       .filter_half_width = app->core_parallel_bcs.ts_filter_half_width,
       .filter_cutoff_wavelength = app->core_parallel_bcs.ts_filter_cutoff_wavelength,
     };
-    T_LU_lo.shift_dg = app->delta_ts_x_lo;
+    // User shift functions are projected on the (possibly upsampled) twist-shift grid.
+    if (app->core_parallel_bcs.lower_shift_func) {
+      T_LU_lo.shift_func = app->core_parallel_bcs.lower_shift_func;
+      T_LU_lo.shift_func_ctx = app->core_parallel_bcs.lower_shift_ctx;
+    } else {
+      T_LU_lo.shift_dg = app->delta_ts_x_lo;
+    }
     gkf->bc_ts_lo = gkyl_bc_twistshift_inew(&T_LU_lo);
 
     long buff_sz =
